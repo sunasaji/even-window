@@ -1,0 +1,10 @@
+* text=auto eol=lf
+
+# cmd.exe resolves goto/call by byte offset; LF-only batch files break.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png  binary
+*.jpg  binary
+*.ttf  binary
+*.ehpk binary
