@@ -1,0 +1,219 @@
+// The server link: which server, the auth state, and the fetch helpers.
+//
+// The client modules import each other freely, but only from inside functions: nothing here may
+// use another non-leaf module while this one is still loading.
+
+import { bearer, resetSession, setAuthBase } from './authClient.ts'
+import { log } from './debugLog.ts'
+import { flagSource, noteFlag } from './flags.ts'
+import { maybePromptPairing } from './main.ts'
+import { kickPump, setForcePending } from './pump.ts'
+import { confirmServerChange, serverChangeNeedsConfirm } from './serverGuard.ts'
+import { renderStatus, setStatus } from './statusUi.ts'
+import { startStream } from './stream.ts'
+import { errText } from './util.ts'
+
+// ── server address ─────────────────────────────────────────────────────────────────────────
+// The API base is explicit and may be cross-origin (the simulator and the Vite dev server are
+// other origins than the API; see docs/protocol.md for the CORS policy).
+// Resolution order: `?server=` → localStorage → default. Whatever wins is persisted.
+
+const LOOPBACK_SERVER = 'http://localhost:8787'
+const SERVER_KEY = 'ew.server'
+
+/** Trim and drop a trailing slash so `${SERVER}/api/x` never doubles up. */
+export function normaliseServer(raw: string): string {
+  const s = raw.trim()
+  return s.endsWith('/') ? s.replace(/\/+$/, '') : s
+}
+
+/** Hosts for which "the API is on my own localhost" is a sane guess. */
+function isLoopbackHost(h: string): boolean {
+  return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1'
+}
+
+/** The API base to assume when nothing was specified. Pure.
+ *  `http://localhost:8787` only makes sense when this page is itself on localhost; from any
+ *  other origin the best guess is our own origin, which is right behind a single-origin
+ *  reverse proxy. */
+export function defaultServer(origin: string, host: string): string {
+  if (!origin || origin === 'null') return LOOPBACK_SERVER // file://, sandboxed iframe
+  return isLoopbackHost(host.replace(/:\d+$/, '')) ? LOOPBACK_SERVER : normaliseServer(origin)
+}
+
+export let SERVER = LOOPBACK_SERVER
+
+/** A `?server=` that `initServer` did not adopt by itself, pending `settlePendingServer`
+ *  (see src/client/serverGuard.ts). */
+let pendingServerParam = ''
+
+export function initServer(): void {
+  let q: string | null = null
+  try {
+    q = new URLSearchParams(location.search).get('server')
+  } catch {
+    /* no location */
+  }
+  let stored: string | null = null
+  // Read the stored base even when `?server=` is present: the two are compared (serverGuard.ts).
+  try {
+    stored = localStorage.getItem(SERVER_KEY)
+  } catch {
+    /* storage blocked */
+  }
+  let fallback = LOOPBACK_SERVER
+  try {
+    fallback = defaultServer(location.origin, location.host)
+  } catch {
+    /* no location */
+  }
+  // Defer: whether the change may be adopted depends on `isPaired()`, which is async, and boot
+  // must not wait on it. Keep the stored base meanwhile. With no stored base there is nothing
+  // to protect and the param wins outright.
+  if (q?.trim() && stored?.trim() && normaliseServer(q) !== normaliseServer(stored)) {
+    pendingServerParam = q
+    noteFlag('server', flagSource(false, true), normaliseServer(stored))
+    setServer(stored)
+    return
+  }
+  const v = q?.trim() ? q : stored?.trim() ? stored : fallback
+  // Recorded like the boolean flags, so a server URL persisted by a previous run is visible.
+  noteFlag('server', flagSource(!!q?.trim(), !!stored?.trim()), normaliseServer(v))
+  setServer(v)
+}
+
+export function setServer(raw: string): void {
+  SERVER = normaliseServer(raw)
+  try {
+    localStorage.setItem(SERVER_KEY, SERVER)
+  } catch {
+    /* storage blocked */
+  }
+  // A different server has a different signing secret: drop the cached session so the old
+  // server's token is never sent to the new one.
+  setAuthBase(SERVER)
+  resetSession()
+}
+
+/** Adopt a new API base mid-run: re-point the handshake, drop the old session and re-open
+ *  the stream. Never a reload, which would re-establish the glasses page (docs/glasses.md). */
+export function switchServer(raw: string): void {
+  setServer(raw)
+  setAuthState('unknown')
+  setStatus(`server changed — reconnecting: ${SERVER}`)
+  setForcePending(true)
+  startStream()
+  kickPump()
+}
+
+/** Resolve a `?server=` that `initServer` deferred. Unpaired: adopt it. Paired: one human
+ *  tap, defaulting to keeping the current server. */
+export function settlePendingServer(paired: boolean): void {
+  const param = pendingServerParam
+  if (!param) return
+  pendingServerParam = ''
+  const to = normaliseServer(param)
+  if (!serverChangeNeedsConfirm(param, SERVER, paired, normaliseServer)) {
+    log(`server: adopted ?server=${to} (unpaired — no identity to relay)`)
+    switchServer(param)
+    return
+  }
+  // Logged as well as shown: a headless run has nobody to tap.
+  log(`server: ?server=${to} DIFFERS from ${SERVER} on a paired device — asking before adopting`)
+  try {
+    confirmServerChange({
+      from: SERVER,
+      to,
+      onAccept: () => {
+        log(`server: accepted ${to}`)
+        switchServer(param)
+      },
+      onKeep: () => {
+        log(`server: kept ${SERVER}`)
+      },
+    })
+  } catch (e) {
+    log(`server: confirm dialog failed (${errText(e)}) — kept ${SERVER}`)
+  }
+}
+
+// ── authenticated transport (docs/security.md) ─────────────────────────────────────────────
+// Every /api call carries the session bearer when this device is paired; unpaired sends no
+// header (correct for EW_AUTH=0 and for the open pairing routes). A 401 triggers one
+// re-establish and retry, then the pairing prompt.
+
+/** 'unknown' until a request has been answered. Drives the status line;
+ *  `unpaired`/`unauthorized` opens the pairing dialog. */
+type AuthState = 'unknown' | 'ok' | 'unpaired' | 'unauthorized' | 'offline'
+export let authState: AuthState = 'unknown'
+
+export function setAuthState(s: AuthState): void {
+  if (authState === s) return
+  authState = s
+  renderStatus()
+  // A refused paired device (key revoked, registry wiped) and an unpaired one both need the
+  // pairing dialog.
+  if (s === 'unpaired' || s === 'unauthorized') maybePromptPairing()
+}
+
+export async function authFetch(path: string, init?: RequestInit): Promise<Response> {
+  const doFetch = async (tok: string | null): Promise<Response> => {
+    const h = new Headers(init?.headers ?? {})
+    if (tok) h.set('Authorization', 'Bearer ' + tok)
+    return await fetch(`${SERVER}${path}`, { ...init, headers: h })
+  }
+  const isAuthPath = path.startsWith('/api/auth/')
+  const tok = await bearer()
+  let r: Response
+  try {
+    r = await doFetch(tok)
+  } catch (e) {
+    setAuthState('offline')
+    throw e
+  }
+  if (r.status === 401 && !isAuthPath) {
+    if (tok == null) {
+      setAuthState('unpaired')
+      return r
+    } // server demands auth, no identity
+    resetSession()
+    const tok2 = await bearer()
+    if (tok2) {
+      try {
+        r = await doFetch(tok2)
+      } catch (e) {
+        setAuthState('offline')
+        throw e
+      }
+    }
+    setAuthState(r.status === 401 ? 'unauthorized' : 'ok')
+  } else if (!isAuthPath && r.ok) {
+    setAuthState('ok')
+  }
+  return r
+}
+
+export async function apiPost<T>(path: string, body: unknown): Promise<T | null> {
+  try {
+    const r = await authFetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return (await r.json()) as T
+  } catch (e) {
+    log(`POST ${path} failed: ${errText(e)}`)
+    return null
+  }
+}
+
+/** Authenticated GET + JSON; returns null rather than throwing, like `apiPost`. */
+export async function apiGet<T>(path: string): Promise<T | null> {
+  try {
+    const r = await authFetch(path)
+    return (await r.json()) as T
+  } catch (e) {
+    log(`GET ${path} failed: ${errText(e)}`)
+    return null
+  }
+}

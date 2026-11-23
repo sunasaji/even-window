@@ -1,0 +1,90 @@
+[Unit]
+# speech.cpp as a standalone recogniser answering OpenAI's audio API on loopback.
+# even-window's voice input (docs/voice.md) reaches it through EW_STT_URL, but nothing
+# here is specific to even-window: any server answering POST /v1/audio/transcriptions
+# will do, and this unit reads nothing from the repository.
+#
+# Separate from even-window@.service: the mirror works without a recogniser (voice input
+# is offered only when GET /api/health reports `stt: true`), and restarting one must not
+# drop the other.
+Description=speech.cpp recogniser (OpenAI audio API on loopback)
+Documentation=https://github.com/nyosegawa/speech.cpp
+# No `After=network.target`: this binds loopback only, which is up before any unit runs.
+
+[Service]
+Type=simple
+
+# ── the model ────────────────────────────────────────────────────────────────────────────
+# STT_MODEL is the speech.cpp CLI name. A client sends the id that /v1/models reports,
+# which is a different string per model; sending the CLI name gets a 404.
+#
+#     CLI (STT_MODEL)        HTTP id (EW_STT_MODEL)     languages
+#     qwen3-asr-0.6b         Qwen3-ASR-0.6B             30, incl. en and ja (the default)
+#     reazonspeech-v2        reazonspeech-nemo-v2       ja only, faster; leave EW_STT_LANG unset
+#
+#     curl -s http://127.0.0.1:8757/v1/models | grep -o '"id":"[^"]*"'
+#
+# The `language` hint steers the recogniser; it does not force a language.
+#
+# ── which device ─────────────────────────────────────────────────────────────────────────
+# `auto` is speech.cpp's own default: the first GPU, or the CPU without one. The start-up
+# line names the device it chose:
+#
+#     journalctl --user -u speech-cpp | grep "speech serve:"
+#
+# The installed build decides what `auto` can see. Pin `cpu` only if `auto` picks
+# something slower than the CPU backend, such as a software Vulkan device (lavapipe).
+Environment=STT_MODEL=qwen3-asr-0.6b
+Environment=STT_VAD=silero-vad
+Environment=STT_PORT=8757
+Environment=STT_DEVICE=auto
+Environment=STT_BIN=%h/.local/bin/speech
+
+# ── where the models live ────────────────────────────────────────────────────────────────
+# SPEECH_MODEL_DIR is not set here, which means speech.cpp's default,
+# ~/.cache/speech.cpp/models. Set it in the override file below to put the models
+# elsewhere. Under ProtectSystem=strict a user unit can write inside $HOME but not to
+# another mount, so a relocated model directory is read-only to this service: fetch
+# models with `speech pull` from a shell, or grant access:
+#
+#     systemctl --user edit speech-cpp.service
+#     [Service]
+#     ReadWritePaths=-/your/model/dir      # the `-` tolerates it being absent
+#
+# Override any Environment= above without editing this file.
+EnvironmentFile=-%h/.config/speech.cpp/service.env
+
+# No --threads: speech.cpp's default is the physical core count, and passing the logical
+# count (`nproc`) on a hyperthreaded machine is about 12 times slower.
+#
+# Loopback only: speech.cpp has no authentication and no TLS. The authenticated client in
+# front of it (even-window's POST /api/stt, docs/security.md) is what keeps a microphone
+# transcript off the network. Do not move it off 127.0.0.1 without putting something in
+# front.
+#
+# `/usr/bin/env` is the executable because systemd refuses a variable in the first
+# position; going through env keeps STT_BIN overridable.
+ExecStart=/usr/bin/env ${STT_BIN} serve ${STT_MODEL} ${STT_VAD} --device ${STT_DEVICE} --host 127.0.0.1 --port ${STT_PORT}
+
+# Fetch the model before enabling the unit. `speech serve` downloads a missing model on
+# start, and Type=simple reports the unit active while the port does not answer yet:
+#
+#     speech pull qwen3-asr-0.6b silero-vad
+#
+Restart=on-failure
+RestartSec=5s
+
+# Hardening. This is a user unit, so file permissions already deny most of what these
+# directives deny; they matter if it is installed as a system unit. ProtectHome is not
+# set because the binary lives in ~/.local/bin and the models in ~/.cache. PrivateNetwork
+# is not set because it would cut the loopback socket this unit serves.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=default.target

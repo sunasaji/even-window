@@ -1,0 +1,171 @@
+# Usage
+
+English | [日本語](usage.ja.md)
+
+How to use even-window once it is running and a device is paired
+([getting-started.md](getting-started.md)). The glasses show the mirrored desktop;
+you operate it with gestures on the glasses and with the phone screen.
+
+## Glasses gestures
+
+Gestures come from either temple or from the ring.
+
+| Gesture | While mirroring | While the menu is open |
+| --- | --- | --- |
+| Swipe up / down | Sends a key to the focused window: `Up` / `Down` by default, configurable per application | Moves the cursor (wraps around) |
+| Tap | Sends `Return` | Selects the row |
+| Double tap | Opens the menu | Goes up one level; closes the menu at the top |
+| Long press | Starts voice input, when a recogniser is configured | — |
+
+Several swipes in quick succession are sent together as one batch, so a burst of
+five swipes arrives as five key presses.
+
+## The on-glasses menu
+
+Double tap to open it. While the menu is shown the mirror is hidden; it comes back
+when the menu closes.
+
+The first level lists, in this order:
+
+- the open windows, most recently focused first — tap one to switch to it;
+- rows starting with `+`: up to three recently launched applications — tap one to
+  launch it;
+- `Menu...`, which leads to everything else.
+
+The list holds at most ten rows. Windows take priority, so with many windows open
+there are fewer or no `+` rows; the phone's **apps** palette always has the full list.
+
+Under `Menu...`:
+
+| Row | Purpose |
+| --- | --- |
+| `Keys...` | Send keys that a swipe cannot express: modifiers, movement and editing keys, function keys, characters, and mouse clicks and wheel steps |
+| `Window...` | Window manager actions: next, previous and last window, new terminal, redisplay, key help, and `Kill (force)` |
+| `Invert` | Flip light and dark |
+| `Close Window` | Ask the focused window to close |
+| `Exit...` | Quit the app on the glasses, after a confirmation row |
+
+Choosing an action closes the menu so that you can see its result. After a row
+under `Keys...`, the next double tap reopens the menu at the same place, which makes
+repeated keys practical.
+
+## The phone screen
+
+The phone screen works without looking at the glasses, and most of it works without
+the glasses connected.
+
+| Control | Purpose |
+| --- | --- |
+| **task** | Switch windows: every window, full titles, most recently focused first |
+| **window** | The `Window...` actions and `Close Window`, without using the glasses. `Kill (force)` needs a second tap. |
+| **apps** | Launch an application: the full list with a filter box, and **rescan** |
+| Preview | A live copy of the mirror. Tap to click, drag to press and move (left button). While the glasses show the menu or the voice dialog, the preview shows that text instead. |
+| Text box, **Submit** | Type text into the focused window. See below. |
+| **voice** | Start voice input from the phone; shown only when a recogniser is configured |
+| **▼ dn**, **▲ up**, **● tap**, **●● dbl** | The same four gestures as the glasses |
+| **font −**, **font +** | Make text smaller or larger in the focused application |
+| **keys** | An on-screen keyboard: modifiers, navigation keys and a QWERTY layout |
+| **vRing** | A full-screen gesture pad: swipe vertically anywhere, tap the left half for tap, the right half for double tap |
+| **vPad** | A full-screen trackpad: drag to move, tap to click, hold to press and drag, two-finger drag or the right-edge strip for the wheel, and a left / middle / right button selector |
+| **inv** | Flip light and dark |
+| **color** / **green** | How the preview is drawn: the desktop's colours, or what the glasses show |
+| **lens** | Pause and resume the glasses display |
+| **app** | Per-application bindings |
+| **connection** | Server URL, connection status, pairing, and the list of enrolled devices |
+| **log** | The client log, with copy |
+
+A hardware keyboard paired with the phone types into the focused window whenever no
+text field on the page has focus.
+
+### Sending text
+
+Type into the text box and tap **Submit**, or press `Ctrl+Enter` in the box. The text
+is typed into the focused window, and then the application's **submit** key is
+pressed. The default submit key is `off`: the text is typed and nothing is run. Set
+it once for each application where you want Submit to run the line
+([per-application bindings](#per-application-bindings)).
+
+To send one text without the submit key, hold **Submit** until the button inverts,
+then release. Slide off the button before releasing to cancel.
+
+## Switching, closing and launching
+
+| Task | On the glasses | On the phone |
+| --- | --- | --- |
+| Switch window | Double tap, pick a window | **task** |
+| Close window | `Menu...` → `Close Window` | **window** → `Close Window` |
+| Force-close | `Menu...` → `Window...` → `Kill (force)`, then confirm | **window** → `Kill (force)`, tap twice |
+| Launch | Double tap, pick a `+` row | **apps** |
+| New terminal | `Menu...` → `Window...` → `New terminal` | **window** → `New terminal` |
+
+Every window fills the whole screen; there is no tiling or resizing. To change what
+the launcher lists, edit [`apps.conf`](configuration.md#appsconf).
+
+## Per-application bindings
+
+Open **app** on the phone. The folded heading shows the bindings in effect for the
+focused window.
+
+1. **app** — choose what the binding is attached to. The list offers every identity
+   the focused window has, each labelled with its kind (binary, process name, window
+   class, launcher entry). The preselected one follows the program wherever it is
+   started from. Choose `*` to set the fallback for every application.
+2. **▲ up**, **▼ dn** — the key each swipe sends: a key from the list plus `Ctrl`,
+   `Alt`, `Shift` toggles, or `wheel up` / `wheel down`. A pager wants `Page_Up` /
+   `Page_Down`, vim `Ctrl+u` / `Ctrl+d`, a web page the wheel.
+3. **submit** — the key **Submit** presses after the text: `Enter` for a shell,
+   `C-Enter` for many web forms, `Tab`, or `off`.
+4. **newline** — what a line break inside the text becomes. Use `S-Enter` in chat
+   fields where `Enter` would send.
+5. **fontsize** — the keys **font −/+** press. The default suits xterm; other
+   choices cover browsers and common terminals.
+6. **apply**. **clear** removes the binding, and the application inherits again.
+
+Swipes repeat: binding a swipe to `Return` makes five swipes run five commands, and
+the panel warns when you do that. The bindings are stored in
+[`bindings.json`](configuration.md#bindingsjson).
+
+## Voice input
+
+Available when the server has a recogniser configured
+([set-up](getting-started.md#optional-speech-to-text)). Speech is recognised on your
+PC and typed into the focused window.
+
+1. Long press on the glasses, or tap **voice** on the phone.
+2. Speak, then tap to stop (on the phone, **stop**). Recording also stops by itself
+   after 30 seconds.
+3. The glasses show the transcript with `Send`, `Again` and `Cancel`. Swipe to
+   choose and tap to confirm. A double tap cancels at any stage.
+4. The transcript is also placed in the phone's text box, where you can edit it and
+   tap **Submit** instead. `Cancel` clears the box. The dialog closes by itself after
+   60 seconds without input.
+
+`Send` behaves like **Submit**, including the application's submit key.
+
+The glasses' microphone is used. If the app was started without the glasses
+connected, the phone's microphone is used instead and the dialog appears on the
+phone's preview only. How it works: [voice.md](voice.md).
+
+## Pausing the mirror
+
+Mirroring keeps the lenses lit and the radio link busy. To rest the glasses:
+
+- **lens:on** — tap to pause. Updates stop, the lenses go dark, and the glasses show
+  a short notice naming the control that resumes. The button reads **lens:off**; tap
+  it to resume. The phone keeps working while paused. The pause is not remembered
+  across restarts of the app.
+- **In the case.** Putting the glasses in their case pauses the mirror, and taking
+  them out resumes it. The button reads **lens:case**; tap it if the sensor is wrong,
+  and the case sensor is ignored for the rest of the session.
+
+Taking the glasses off does not pause the mirror: the wearing sensor proved
+unreliable and is not used.
+
+## Light and dark
+
+The glasses are optical see-through and emissive: black is transparent, and bright
+pixels glow. Dark backgrounds with light text read best and use the least power,
+which is why the default terminal is dark.
+
+**inv** on the phone, or `Invert` in the glasses menu, flips light and dark for
+applications that only have a light theme. The setting is remembered on the device.

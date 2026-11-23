@@ -1,0 +1,36 @@
+/* even-window Firefox — web content styling for the Even G2.
+ *
+ * Requires toolkit.legacyUserProfileCustomizations.stylesheets=true (user.js).
+ * Template: scripts/ew-firefox.sh copies it into the runtime profile on every launch,
+ * so edit this file, not the runtime copy. */
+
+:root {
+  /* Pairs with the thin non-native scrollbars set in user.js: a bright green thumb
+     on a black track, always visible as a position indicator. */
+  scrollbar-color: #7cfc7c #000 !important;
+}
+
+/* Bold, bright focus outline. The input router can send Tab and arrow keys, and the
+   default thin ring disappears once the capture is quantised to 16 levels. */
+:focus,
+:focus-visible {
+  outline: 3px solid #7cfc7c !important;
+  outline-offset: 2px !important;
+}
+
+/* Text fields get a dashed frame so that they can be found before being tapped. */
+textarea,
+[contenteditable=""],
+[contenteditable="true"],
+input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="image"]) {
+  outline: 2px dashed #7cfc7c !important;
+  outline-offset: 1px !important;
+}
+
+/* Blank new-tab and blank documents: black instead of white, which would light the
+   whole lens. */
+@-moz-document url("about:blank"), url("about:newtab"), url("about:home") {
+  :root {
+    background-color: #000 !important;
+  }
+}

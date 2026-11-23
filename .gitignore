@@ -4,3 +4,4 @@ dist/
 *.log
 out.ehpk
 .DS_Store
+dev.env

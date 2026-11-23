@@ -2,11 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <!-- zoom-locked: the Even App WebView must not scale our control surface -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <!-- Zoom-locked: the Even App WebView must not scale the control surface. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#232323" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="even-window" />
     <title>even-window</title>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #232323;
+        color: #E5E5E5;
+        font: 14px/1.4 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+        overscroll-behavior: none;
+        /* No selectable page text by default: this is a control surface. `user-select:none` on
+           an overlay only stops the overlay itself being selected, so the document behind it
+           must not be a selection host either, or a hold-drag on vPad selects page content.
+           The log panel (src/client/phoneUi.ts) and form controls (below) opt back in. */
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      #app { display: flex; flex-direction: column; height: 100%; align-items: center; justify-content: flex-start; overflow-y: auto; }
+      /* Press feedback: invert colours while held. `filter` is a post-layout effect, so it
+         keeps every button's geometry; overriding the background makes iOS drop the native
+         button box and resize it. A no-op touchstart listener in src/client/phoneUi.ts makes
+         :active fire on iOS. */
+      button:active { filter: invert(1); }
+      /* The `<details>` disclosure summaries. */
+      summary { cursor: pointer; color: #999; font: 12px/1.6 ui-monospace, monospace; user-select: none; -webkit-user-select: none; list-style: revert; }
+      /* Form controls: 16px, because below that iOS Safari zooms the page on focus, and
+         selectable again, because `user-select:none` inherited from body makes it impossible
+         to place a caret in a text field on iOS. */
+      input, textarea { font-size: 16px; user-select: text; -webkit-user-select: text; }
+    </style>
   </head>
-  <body style="margin:0;background:#111;color:#eee;font:14px system-ui,sans-serif">
+  <body>
     <div id="app"></div>
     <script type="module" src="/src/client/main.ts"></script>
   </body>

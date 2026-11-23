@@ -1,0 +1,201 @@
+/* even-window Firefox — browser-UI (chrome) styling for the Even G2.
+ *
+ * Requires toolkit.legacyUserProfileCustomizations.stylesheets=true (user.js).
+ * Template: scripts/ew-firefox.sh copies it into the runtime profile on every launch,
+ * so edit this file, not the runtime copy.
+ *
+ *   1. Fit a 576px screen (the stock chrome asks for 638).
+ *   2. Make every chrome surface black with a green highlight: the built-in dark
+ *      theme is grey, and grey is a permanently lit band on an emissive display.
+ *
+ * Both selectors and CSS variables are set in places, because which one wins varies
+ * by Firefox version. */
+
+/* ── 1. Fit the screen ───────────────────────────────────────────────────────
+ * A stock profile has a minimum window width of 638px (WM_NORMAL_HINTS). Given a
+ * 576px window it still lays out at 638, and X clips the right 62px. The 638 is the
+ * chrome's intrinsic minimum width; releasing it brings the minimum to 500
+ * (docs/notes/2026-10-firefox-minimum-width.md). */
+:root,
+#navigator-toolbox,
+#titlebar,
+#TabsToolbar,
+#tabbrowser-tabs,
+#nav-bar,
+#urlbar-container,
+#urlbar {
+  min-width: 0 !important;
+}
+
+/* The horizontal tab strip would cost ~30px of a 288px screen; user.js puts the tabs
+ * in the sidebar rail. Firefox hides this toolbar when vertical tabs are on; this
+ * rule keeps it hidden if they are turned off. */
+#TabsToolbar {
+  visibility: collapse !important;
+}
+
+/* Feature and promo toolbar buttons. The translate auto-popup is off in user.js;
+ * this removes its icon too. */
+#translations-button,
+#pocket-button,
+#ipprotection-button, /* the green "VPN" = Firefox IP Protection */
+#reset-pbm-toolbar-button,
+#shopping-sidebar-button,
+#reviewChecker-sidebar-button {
+  display: none !important;
+}
+
+/* ── 2. Pure black chrome ────────────────────────────────────────────────── */
+:root {
+  /* Panels / arrow popups (app menu, identity, etc.) */
+  --arrowpanel-background: #000 !important;
+  --arrowpanel-color: #7cfc7c !important;
+  --panel-background: #000 !important;
+  --panel-background-color: #000 !important; /* newer builds */
+  --panel-color: #7cfc7c !important;
+  --panel-text-color: #7cfc7c !important;
+  /* Menus (context menu, menubar dropdowns) */
+  --menu-background-color: #000 !important;
+  --menu-color: #7cfc7c !important;
+  --menuitem-hover-background-color: #0a3a0a !important;
+  /* Toolbars / urlbar */
+  --toolbar-bgcolor: #000 !important;
+  --toolbar-color: #7cfc7c !important;
+  --toolbarbutton-icon-fill: #7cfc7c !important;
+  --lwt-toolbar-field-background-color: #000 !important;
+  --lwt-toolbar-field-color: #7cfc7c !important;
+  --lwt-toolbar-field-focus: #001a00 !important;
+}
+
+/* Popups: black background + green text on every menu surface. */
+menupopup,
+panel,
+.panel-arrowcontent,
+menu,
+menuitem,
+menucaption,
+menubar {
+  background-color: #000 !important;
+  color: #7cfc7c !important;
+}
+
+/* Selected / hovered menu item — green highlight, so focus is visible in mono. */
+menuitem[_moz-menuactive="true"],
+menu[_moz-menuactive="true"],
+menuitem:hover,
+menu:hover {
+  background-color: #0a3a0a !important;
+  color: #baffba !important;
+}
+
+/* URL-bar input row: black, without the tinted or striped field background. */
+:root {
+  --toolbar-field-background-color: #000 !important;
+  --toolbar-field-focus-background-color: #000 !important;
+  --toolbar-field-color: #7cfc7c !important;
+  --toolbar-field-focus-color: #7cfc7c !important;
+  --toolbar-field-border-color: #0a3a0a !important;
+}
+#urlbar,
+#urlbar-container,
+#urlbar-input-container,
+#urlbar-background,
+#urlbar-input {
+  background: #000 !important;
+  background-image: none !important;
+  color: #7cfc7c !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+/* The field's own border and shadow draw the tinted outline; flatten them. */
+#urlbar,
+#urlbar-background {
+  border: 1px solid #0a3a0a !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+#urlbar-input::selection {
+  background: #0a3a0a !important;
+  color: #baffba !important;
+}
+
+/* The backdrop shown when the urlbar is focused or open is a class, not an id, and
+ * is grey (rgb(66,65,77)) by default. */
+.urlbar-background {
+  background-color: #000 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: 1px solid #0a3a0a !important;
+}
+
+/* URL-bar suggestions dropdown: black (the default is grey). */
+#urlbar[open] {
+  --toolbar-field-focus-background-color: #000 !important;
+}
+#urlbar .urlbarView,
+#urlbar-results,
+.urlbarView,
+.urlbarView-body-outer,
+.urlbarView-body-inner,
+.urlbarView-results {
+  background-color: #000 !important;
+}
+.urlbarView-row {
+  background-color: #000 !important;
+  color: #7cfc7c !important;
+}
+.urlbarView-row[selected],
+.urlbarView-row[selected="true"],
+.urlbarView-row:hover {
+  background-color: #0a3a0a !important;
+  color: #baffba !important;
+}
+.urlbarView-title,
+.urlbarView-url,
+.urlbarView-action,
+.urlbarView-secondary,
+.urlbarView-title-separator {
+  color: #7cfc7c !important;
+}
+
+/* Notification and info bars (permission prompts, session restore, updates). The
+ * infobar background is a CSS variable; #notifications-toolbar is the toolbar that
+ * hosts them and is grey (rgb(43,42,51)) by default. */
+:root {
+  --info-bar-background-color: #000 !important;
+  --info-text-color: #7cfc7c !important;
+}
+#notifications-toolbar,
+#browser,
+.infobar,
+notification-message,
+.notificationbox-stack,
+.messageBar,
+#tab-notification-deck,
+#high-priority-global-notificationbox,
+#global-notificationbox {
+  background: #000 !important;
+  background-color: #000 !important;
+  background-image: none !important;
+  color: #7cfc7c !important;
+}
+.infobar .notification-button,
+.infobar button,
+notification-message button,
+notification-message::part(button) {
+  background-color: #001a00 !important;
+  color: #baffba !important;
+  border: 1px solid #0a3a0a !important;
+}
+
+/* Toolbars are black too (the theme gives dark grey). */
+#navigator-toolbox,
+#nav-bar,
+#PersonalToolbar,
+#TabsToolbar,
+#urlbar,
+#urlbar-background,
+.browserContainer {
+  background-color: #000 !important;
+  color: #7cfc7c !important;
+}

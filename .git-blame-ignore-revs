@@ -1,0 +1,5 @@
+# Formatting-only commits, skipped by `git blame`.
+# Enable locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# chore: add Biome and apply the formatter
+b8508694575d7b5e3c256b152827e0962c301351
