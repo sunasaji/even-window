@@ -456,12 +456,15 @@ describe('the live scan', () => {
   })
 
   it.skipIf(!existsSync('/usr/bin/dpkg-query'))(
-    'finds Section: x11 commands that link libX11 on this (Debian) host',
+    'finds the installed Section: x11 commands that link libX11 on a Debian-family host',
     async () => {
       const cmds = await scanSectionX11()
-      expect(cmds.length).toBeGreaterThan(20)
-      // Includes plain X clients and excludes anything that is not an X client.
-      for (const c of ['xterm', 'xfontsel', 'xcalc', 'oclock', 'rofi']) expect(cmds, c).toContain(c)
+      // Includes plain X clients and excludes anything that is not an X client. Which X clients
+      // exist depends on the host (a CI runner has few), so only the installed ones are expected.
+      const installed = ['xterm', 'xfontsel', 'xcalc', 'oclock', 'rofi'].filter(c =>
+        existsSync(`/usr/bin/${c}`),
+      )
+      for (const c of installed) expect(cmds, c).toContain(c)
       expect(cmds).not.toContain('ffmpeg')
       expect(cmds).not.toContain('X11') // /usr/bin/X11 is a directory symlink
       expect([...cmds].sort()).toEqual(cmds) // sorted and deduped
