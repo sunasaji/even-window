@@ -12,10 +12,8 @@
 import type { Mod } from './keys.ts'
 import { isBindableKey, KEYS, MODS } from './keys.ts'
 
-// ── the root list's limits ─────────────────────────────────────────────────────────────────
-// Defined once here; src/client/menuModel.ts re-exports both.
-/** Rows in the root list: the panel shows ten full text lines (see the row budget below). */
-export const MENU_MAX_ITEMS = 10
+// ── the root list's label limit ────────────────────────────────────────────────────────────
+// Defined once here; src/client/menuModel.ts re-exports it.
 /** A root-list label is cut to this many UTF-8 bytes, which keeps it on one line. */
 export const MENU_ITEM_MAX_BYTES = 32
 
@@ -23,7 +21,8 @@ export const MENU_ITEM_MAX_BYTES = 32
 //
 // The panel shows ten full text lines (an eleventh is clipped at the bottom edge), which a
 // level spends as 1 header + 8 content rows + 1 `< Back`. Counted off the simulator's
-// framebuffer and confirmed on a G2.
+// framebuffer and confirmed on a G2. The root list spends the same nine rows under its own
+// header (`rootPages` in src/client/menuModel.ts).
 export const LEVEL_MAX_ROWS = 9
 /** Rows a level may fill with content: the budget minus the `< Back` row every level carries. */
 export const LEVEL_MAX_CONTENT = LEVEL_MAX_ROWS - 1

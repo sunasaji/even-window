@@ -8,12 +8,14 @@ import {
   buildMenuItems,
   MENU_ENTRY_ID,
   MENU_MAX_APPS,
-  MENU_MAX_WINDOWS,
+  MENU_MORE_ID,
   type MenuApp,
-  menuAppSlots,
+  type MenuItem,
   menuSignature,
   mruOrderItems,
   mruOrderWindows,
+  ROOT_MAX_ROWS,
+  rootPages,
   truncateUtf8,
 } from '../src/client/menuModel.ts'
 import { NAV_SETTLE_MS, type NavClock, NavDebouncer } from '../src/client/navDebounce.ts'
@@ -238,17 +240,17 @@ describe('buildMenuItems', () => {
     active,
   })
 
-  it('caps at 10 items total — 9 windows plus the entry row — with non-zero unique ids', () => {
-    // Ten rows is the item limit (MENU_MAX_ITEMS); ids must be unique and non-zero.
+  it('keeps every window — the panel limit is the pages, not the list — with non-zero unique ids', () => {
     const items = buildMenuItems(
       Array.from({ length: 15 }, (_v, i) => win(String(i + 1), `w${i + 1}`)),
     )
-    expect(items).toHaveLength(10)
-    expect(items).toHaveLength(MENU_MAX_WINDOWS + 1)
-    // Windows take 2..10 in order; the entry row holds the reserved id 1 and sits last in
-    // payload order (= display order).
-    expect(items.map(i => i.itemID)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, MENU_ENTRY_ID])
-    expect(new Set(items.map(i => i.itemID)).size).toBe(10)
+    expect(items).toHaveLength(16)
+    // Windows take 2.. in order; the entry row holds the reserved id 1 and sits last.
+    expect(items.map(i => i.itemID)).toEqual([
+      ...Array.from({ length: 15 }, (_v, i) => i + 2),
+      MENU_ENTRY_ID,
+    ])
+    expect(new Set(items.map(i => i.itemID)).size).toBe(16)
     expect(items.every(i => i.itemID !== 0)).toBe(true)
     expect(items.filter(i => i.kind === 'menu')).toHaveLength(1)
   })
@@ -421,50 +423,61 @@ describe('mruOrderItems — recency decides what is nearest the hand', () => {
 // launcher) and the signature (a launcher row appearing is a list change, and a focus change
 // still is not).
 
-describe('menuAppSlots — windows have priority over the launcher', () => {
+describe('rootPages — the root list on a ten-line panel', () => {
   const win = (id: string, title: string, active = false): WinInfo => ({
     id,
-    wid: `0x40000${id}`,
+    wid: `0x4${id.padStart(5, '0')}`,
     cls: 'XTerm',
     title,
     active,
   })
   const app = (id: string, name: string): MenuApp => ({ id, name })
+  const wins = (n: number) => Array.from({ length: n }, (_v, i) => win(String(i + 1), `w${i + 1}`))
+  const APPS = [app('x11:xcalc', 'xcalc'), app('x11:oclock', 'oclock'), app('x11:xeyes', 'xeyes')]
+  const pagesOf = (n: number, apps: MenuApp[] = APPS) => rootPages(buildMenuItems(wins(n), apps))
+  const kinds = (p: readonly MenuItem[]) => p.map(i => i.kind[0]).join('')
 
-  it("gives the launcher the slack left by the windows, never a window's slot", () => {
-    expect(menuAppSlots(0)).toBe(MENU_MAX_APPS)
-    expect(menuAppSlots(1)).toBe(MENU_MAX_APPS) // the ordinary case: the boot xterm
-    expect(menuAppSlots(MENU_MAX_WINDOWS - MENU_MAX_APPS)).toBe(MENU_MAX_APPS)
-    expect(menuAppSlots(7)).toBe(2)
-    expect(menuAppSlots(8)).toBe(1)
-    expect(menuAppSlots(MENU_MAX_WINDOWS)).toBe(0) // nine windows: you need a switcher
-    expect(menuAppSlots(99)).toBe(0) // never negative
+  // The regression this pins: header + rows must never exceed the ten lines the panel shows.
+  it('never puts more rows on a page than the panel has under the header', () => {
+    for (let n = 0; n <= 40; n++) {
+      for (const p of pagesOf(n)) expect(p.length).toBeLessThanOrEqual(ROOT_MAX_ROWS)
+    }
   })
 
-  it('still caps the whole payload at 10 with unique non-zero ids and the entry row last', () => {
-    const items = buildMenuItems(
-      Array.from({ length: 6 }, (_v, i) => win(String(i + 1), `w${i + 1}`)),
-      [
-        app('x11:xcalc', 'xcalc'),
-        app('x11:oclock', 'oclock'),
-        app('x11:xfontsel', 'xfontsel'),
-        app('x11:xeyes', 'xeyes'),
-      ],
-    )
-    expect(items).toHaveLength(10)
-    expect(items.map(i => i.itemID)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, MENU_ENTRY_ID])
-    expect(new Set(items.map(i => i.itemID)).size).toBe(10)
+  it('is one page while the windows fit, apps taking only the slack', () => {
+    expect(pagesOf(0).map(kinds)).toEqual(['aaam'])
+    expect(pagesOf(1).map(kinds)).toEqual(['waaam']) // the ordinary case: the boot terminal
+    expect(pagesOf(5).map(kinds)).toEqual(['wwwwwaaam'])
+    expect(pagesOf(6).map(kinds)).toEqual(['wwwwwwaam'])
+    expect(pagesOf(8).map(kinds)).toEqual(['wwwwwwwwm']) // a window never loses a row to an app
+  })
+
+  it('pages past eight windows, with More and Menu on every page', () => {
+    expect(pagesOf(9).map(kinds)).toEqual(['wwwwwwwmm', 'wwaaamm'])
+    expect(pagesOf(14).map(kinds)).toEqual(['wwwwwwwmm', 'wwwwwwwmm'])
+    expect(pagesOf(15).map(kinds)).toEqual(['wwwwwwwmm', 'wwwwwwwmm', 'waaamm'])
+    for (const p of pagesOf(15)) {
+      expect(p.at(-2)).toMatchObject({ kind: 'more', itemID: MENU_MORE_ID, itemName: 'More...' })
+      expect(p.at(-1)).toMatchObject({ kind: 'menu', itemID: MENU_ENTRY_ID })
+    }
+  })
+
+  it('reaches every window exactly once, in the order it was given', () => {
+    const items = mruOrderItems(buildMenuItems(wins(23), APPS), ['0x400023', '0x400009'])
+    const shown = rootPages(items)
+      .flat()
+      .filter(i => i.kind === 'window')
+      .map(i => i.itemName)
+    expect(shown).toEqual(items.filter(i => i.kind === 'window').map(i => i.itemName))
+    // Recency picks the first page: the two most recent head it, whatever their numbers.
+    expect(shown.slice(0, 2)).toEqual(['w23', 'w9'])
+  })
+
+  it('still hands the launcher at most MENU_MAX_APPS rows, the entry row last', () => {
+    const items = buildMenuItems(wins(2), [...APPS, app('x11:xfontsel', 'xfontsel')])
     expect(items.filter(i => i.kind === 'app')).toHaveLength(MENU_MAX_APPS) // the 4th is dropped
     expect(items[items.length - 1]).toMatchObject({ kind: 'menu', itemID: MENU_ENTRY_ID })
-  })
-
-  it('drops the launcher entirely when the windows fill the budget', () => {
-    const items = buildMenuItems(
-      Array.from({ length: 12 }, (_v, i) => win(String(i + 1), `w${i + 1}`)),
-      [app('x11:xcalc', 'xcalc')],
-    )
-    expect(items.filter(i => i.kind === 'window')).toHaveLength(MENU_MAX_WINDOWS)
-    expect(items.filter(i => i.kind === 'app')).toHaveLength(0)
+    expect(new Set(items.map(i => i.itemID)).size).toBe(items.length)
   })
 
   it('marks a launcher row with `+ ` and carries the id, never a command', () => {
@@ -1114,9 +1127,9 @@ describe('the stream open is guarded against its own await', () => {
 
 // ── mruOrderWindows — the same order, over the raw list (docs/phone-ui.md) ─────────────────
 //
-// The phone's `task` palette cannot use `mruOrderItems(buildMenuItems(...))`: that path caps the
-// list at MENU_MAX_WINDOWS and truncates every label to 32 UTF-8 bytes, both of which
-// are properties of the lens. These cases pin that this one keeps everything and still agrees
+// The phone's `task` palette cannot use `mruOrderItems(buildMenuItems(...))`: that path
+// truncates every label to 32 UTF-8 bytes, which is a property of the lens. These cases pin
+// that this one keeps whole titles and still agrees
 // with the glasses about the order — the one thing the two surfaces must not disagree about.
 
 describe('mruOrderWindows — every window, whole titles, same recency rule', () => {
@@ -1160,14 +1173,16 @@ describe('mruOrderWindows — every window, whole titles, same recency rule', ()
     expect(titles(mruOrderWindows([win('1', 'bash'), noxid], ['0x400001']))).toEqual(['bash'])
   })
 
-  it("does not truncate or cap — that is what makes it the phone's builder", () => {
+  it("does not truncate — that is what makes it the phone's builder", () => {
     const long = 'x'.repeat(200)
     const many = Array.from({ length: 20 }, (_, i) => win(String(i), `${long}${String(i)}`))
     const out = mruOrderWindows(many, [])
     expect(out).toHaveLength(20)
     expect(out[0]?.title).toHaveLength(201)
-    // …while the glasses' builder caps the same input.
-    expect(buildMenuItems(many).filter(i => i.kind === 'window').length).toBeLessThan(20)
+    // …while the glasses' builder keeps every window too, but cuts each label.
+    const glasses = buildMenuItems(many).filter(i => i.kind === 'window')
+    expect(glasses).toHaveLength(20)
+    expect(glasses[0]?.itemName).toHaveLength(32)
   })
 
   it('is a permutation of the selectable windows — the same objects', () => {

@@ -11,7 +11,7 @@
 // The gesture rule and the paging are pinned as ordinary tables.
 
 import { describe, expect, it } from 'vitest'
-import { MENU_MAX_ITEMS } from '../src/client/menuModel.ts'
+import { ROOT_MAX_ROWS } from '../src/client/menuModel.ts'
 import {
   BACK_LABEL,
   BACK_TOKEN,
@@ -46,11 +46,11 @@ const ST: MenuState = { mods: [], invert: false, hasWindow: true }
 const utf8 = (s: string) => new TextEncoder().encode(s).length
 
 describe('the row budget', () => {
-  // The panel's capacity (10 full lines = header + 9 rows) is the limit that binds; it is
-  // also inside the 10-item cap of the root list.
-  it('fits the overlay panel and stays inside the item cap', () => {
+  // The panel's capacity (10 full lines = header + 9 rows) is the limit that binds, for a
+  // level and for the root list alike.
+  it('fits the overlay panel, and the root list has the same budget', () => {
     expect(LEVEL_MAX_ROWS).toBe(9)
-    expect(LEVEL_MAX_ROWS).toBeLessThanOrEqual(MENU_MAX_ITEMS)
+    expect(ROOT_MAX_ROWS).toBe(LEVEL_MAX_ROWS)
     expect(LEVEL_MAX_CONTENT).toBe(LEVEL_MAX_ROWS - 1)
   })
 

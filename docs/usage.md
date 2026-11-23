@@ -32,8 +32,12 @@ The first level lists, in this order:
   launch it;
 - `Menu...`, which leads to everything else.
 
-The list holds at most ten rows. Windows take priority, so with many windows open
+The panel shows a header and nine rows. Windows take priority, so with many windows open
 there are fewer or no `+` rows; the phone's **apps** palette always has the full list.
+
+With more than eight windows the list is split into pages of seven, and the header shows the
+page (`1/2`). `More...` turns to the next page and wraps from the last to the first; `Menu...`
+is on every page.
 
 Under `Menu...`:
 

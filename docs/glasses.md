@@ -338,14 +338,21 @@ selection.
 
 ### Root list
 
-Built by `buildMenuItems`, at most 10 rows (`MENU_MAX_ITEMS`, the lines the panel shows), labels cut to 32 UTF-8 bytes
+Built by `buildMenuItems` and laid out by `rootPages`: a header and at most nine rows
+(`ROOT_MAX_ROWS`, the same budget as a level). Labels are cut to 32 UTF-8 bytes
 (`MENU_ITEM_MAX_BYTES`).
 
 | Rows | Source | On tap |
 | --- | --- | --- |
-| Windows, up to 9; the focused one is marked `*` | `{t:'windows'}.list` | `POST /api/windows {wid}` |
-| `+ <name>` launcher rows, `min(3, 9 - windows)` | most recently launched apps, `{t:'apps'}.recent` | `POST /api/spawn {id}` |
+| Windows, all of them; the focused one is marked `*` | `{t:'windows'}.list` | `POST /api/windows {wid}` |
+| `+ <name>` launcher rows, at most 3, in the rows the last page has left | most recently launched apps, `{t:'apps'}.recent` | `POST /api/spawn {id}` |
+| `More...`, only when there are several pages, `itemID` 0 | added by `rootPages` | next page, wrapping; the menu stays open |
 | `Menu...`, always last, `itemID` 1 | fixed | descend into level `menu` |
+
+- Up to eight windows fit on one page. Beyond that the windows are split into pages of seven,
+  each ending in `More...` and `Menu...`, and the header carries the page (`Windows + apps 1/2`).
+- Recency decides the pages as well as the order: the most recently focused windows are on
+  the first page.
 
 - Windows are drawn most-recently-focused first (`mruOrderItems`, from `{t:'windows'}.recent`),
   never-focused ones last. This is display order only; `itemID`s follow the server's order.

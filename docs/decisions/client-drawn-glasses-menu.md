@@ -30,8 +30,8 @@ tap. `menuObject` is not registered. Levels are pure data in `src/shared/glassMe
 - Labels are restricted to ASCII because the firmware font's coverage is unknown.
 - While the menu is up, gestures are consumed by it and the mirror is blanked, so rows that act
   on the mirrored desktop close the menu before acting.
-- The row and label limits of the firmware menu (10 rows, 32 bytes) are still honoured by the
-  root list.
+- The firmware menu's label limit (32 bytes) is still honoured by the root list. Its row count
+  is the panel's: a header and nine rows per page.
 
 Background: [gestures and the firmware menu](../notes/2026-10-gestures-and-firmware-menu.md),
 [container semantics](../notes/2026-10-glasses-container-semantics.md).

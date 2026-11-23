@@ -29,6 +29,7 @@ import {
   type MenuItem,
   menuSignature,
   mruOrderItems,
+  rootPages,
 } from './menuModel.ts'
 import { glassCovered, measuringLink, mirrorPaused, overlayBusy, syncOverlay } from './overlay.ts'
 import { palettePanelUpdate, renderAppsEntry } from './palette.ts'
@@ -117,11 +118,11 @@ function rebuildMenu(why: 'windows' | 'apps'): void {
   const changed = sig !== menuSig
   menuSig = sig
   menuItems = next
+  // A window closing can remove the page the list was on.
+  menuPage = Math.min(menuPage, rootPagesNow().length - 1)
   // Clamp the cursor only while the root list is what it indexes; inside a level, an unrelated
   // window opening must not move the highlight.
-  if (menuPath.length === 0 && menuSel >= menuItems.length) {
-    menuSel = Math.max(0, menuItems.length - 1)
-  }
+  if (menuPath.length === 0) menuSel = Math.min(menuSel, Math.max(0, rootRows().length - 1))
   if (changed) {
     const n = menuItems.filter(it => it.kind === 'app').length
     log(`${why}: ${menuItems.length} menu item(s) (${n} launcher)`)
@@ -173,10 +174,9 @@ export function activeWindow(): WinInfo | null {
   return windows.find(w => w.active && w.wid) ?? null
 }
 
-/** How many rows the surface is showing — the root list or a level. `mruOrderItems` is a
- *  permutation, so the root list's count is `menuItems.length` either way. */
+/** How many rows the surface is showing — the root list's current page or a level. */
 export function menuRowCount(): number {
-  return menuPath.length === 0 ? menuItems.length : menuLevelRows.length
+  return menuPath.length === 0 ? rootRows().length : menuLevelRows.length
 }
 
 /** The recency order the open root list renders by, frozen at `openMenu` so a focus change from
@@ -184,11 +184,25 @@ export function menuRowCount(): number {
  *  the live `winRecent` instead. */
 export let menuRootOrder: string[] = []
 
-/** The root list as drawn: the items in display order. The one accessor for it: the overlay
+/** Which page of the root list is up. Reset by `openMenu`, advanced by the `More...` row. */
+export let menuPage = 0
+
+/** The root list in display order, laid out as pages (`rootPages`): never empty. */
+function rootPagesNow(): MenuItem[][] {
+  return rootPages(mruOrderItems(menuItems, menuOpen ? menuRootOrder : winRecent))
+}
+
+/** How many pages the root list has, for the header. */
+export function rootPageCount(): number {
+  return rootPagesNow().length
+}
+
+/** The root list as drawn: the rows of the current page. The one accessor for it: the overlay
  *  renderer and the selection path must index the same array, or a tap lands on a row the user
  *  is not looking at. */
 export function rootRows(): MenuItem[] {
-  return mruOrderItems(menuItems, menuOpen ? menuRootOrder : winRecent)
+  const pages = rootPagesNow()
+  return pages[Math.min(menuPage, pages.length - 1)] ?? []
 }
 
 /** Re-derive the current level's rows in place, keeping the cursor. For a toggle (`Mods...`,
@@ -262,10 +276,15 @@ export function openMenu(): void {
       return
     }
   }
-  // The cursor opens on the focused window, which MRU puts at the top of the list, so the
-  // previous window is one swipe away.
-  const active = rootRows().findIndex(it => it.kind === 'window' && it.active)
-  menuSel = Math.max(active, 0)
+  // The cursor opens on the focused window, which MRU puts at the top of the first page, so
+  // the previous window is one swipe away. Searched across the pages because a server that
+  // sends no recency leaves the focused window wherever the window order has it.
+  const isActive = (it: MenuItem) => it.kind === 'window' && it.active
+  menuPage = Math.max(
+    rootPagesNow().findIndex(p => p.some(isActive)),
+    0,
+  )
+  menuSel = Math.max(rootRows().findIndex(isActive), 0)
   syncOverlay()
 }
 
@@ -300,6 +319,14 @@ export async function chooseMenu(): Promise<void> {
     // The same array the overlay drew (display order), read before `closeMenu` releases the
     // frozen order.
     const it = rootRows()[menuSel]
+    // Turning the page is navigation: the menu stays up, on the next page's first row.
+    if (it?.kind === 'more') {
+      menuPage = (menuPage + 1) % rootPageCount()
+      menuSel = 0
+      log(`menu page ${String(menuPage + 1)}/${String(rootPageCount())}`)
+      syncOverlay()
+      return
+    }
     closeMenu()
     if (it) await activateMenuItem(it)
     return
