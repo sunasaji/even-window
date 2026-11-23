@@ -66,7 +66,7 @@ export function palettePanelUpdate(ev: 'apps' | 'windows'): void {
 // `kbdShouldHandle` gate are all single-valued. `openPaletteShell` closes whatever is up first.
 /** The superseded curtain's z-index, above the palettes, vPad/vRing and the toast: the one
  *  surface in this app that must not be reachable past. */
-const SUPERSEDED_Z = 90
+const SUPERSEDED_Z = 10001
 
 /** The undismissable "a newer instance owns the glasses" curtain.
  *

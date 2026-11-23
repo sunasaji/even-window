@@ -136,10 +136,12 @@ export function pillRow(...kids: HTMLElement[]): HTMLDivElement {
 }
 
 // The toast: transient feedback for a launch, whose result reaches the mirror only via the 1 Hz
-// window poll. `z-index:60` so it is readable over an open vRing / vPad.
+// window poll. Above the vRing / vPad touch layers (9999), which dim the page and are where a
+// launch from the glasses menu is driven from; below the pairing and server-guard screens.
+// `pointer-events:none` so it never takes a gesture meant for the layer beneath it.
 const TOAST_CSS =
   'display:none;position:fixed;left:50%;bottom:16px;transform:translateX(-50%);' +
-  'z-index:60;max-width:90%;box-sizing:border-box;background:#2a2320;color:#ffd9b0;' +
+  'z-index:10000;pointer-events:none;max-width:90%;box-sizing:border-box;background:#2a2320;color:#ffd9b0;' +
   'border:1px solid #a5673a;border-radius:8px;padding:8px 12px;font:12px/1.4 system-ui;' +
   'box-shadow:0 2px 8px rgba(0,0,0,.5);'
 
