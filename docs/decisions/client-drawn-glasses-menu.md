@@ -25,13 +25,14 @@ tap. `menuObject` is not registered. Levels are pure data in `src/shared/glassMe
 
 - Moving within the menu costs one text update and no image push; no rebuild is ever needed for
   the menu.
-- The menu must fit the panel: 10 text lines, so 8 content rows per level plus header and
-  `< Back`; long groups are paged.
-- Labels are restricted to ASCII because the firmware font's coverage is unknown.
+- The menu must fit the panel: 10 text lines, so a header and 9 rows per level; long groups
+  are paged. A double tap ascends, so only the confirmation levels spend a row on `< Back`.
+- Labels written in the code are restricted to ASCII because the firmware font's coverage is
+  unknown. Window titles and application names are shown as they are.
 - While the menu is up, gestures are consumed by it and the mirror is blanked, so rows that act
   on the mirrored desktop close the menu before acting.
-- The firmware menu's label limit (32 bytes) is still honoured by the root list. Its row count
-  is the panel's: a header and nine rows per page.
+- The firmware menu's label limit (32 bytes) no longer applies: the root list cuts a label by
+  its width on the panel. Its row count is the panel's: a header and nine rows per page.
 
 Background: [gestures and the firmware menu](../notes/2026-10-gestures-and-firmware-menu.md),
 [container semantics](../notes/2026-10-glasses-container-semantics.md).

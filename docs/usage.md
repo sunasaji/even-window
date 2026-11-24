@@ -31,17 +31,18 @@ when the menu closes.
 The first level, headed `Tasks`, lists, in this order:
 
 - `Menu...`, which leads to everything else — the cursor is on it when the menu opens;
-- the open windows, most recently focused first — tap one to switch to it;
-- rows starting with `+`: up to three recently launched applications — tap one to
+- the open windows, most recently focused first — tap one to switch to it. A short title
+  is followed by the application, as in `~ (XTerm)`;
+- rows starting with `+`: up to eight recently launched applications — tap one to
   launch it.
 
 The panel shows a header and nine rows: `Menu...` and eight windows and `+` rows. With more
 than eight windows and `+` rows together, the list is split into pages of eight, windows
-first, and the header shows the page (`Tasks 1/2`). No `+` row is dropped for space; the
-phone's **apps** palette has the full list of applications.
+first, and the header shows the page (`Tasks 1/2`). No `+` row is dropped for space. Every
+other application is under `Menu...` → `Launch...`, and in the phone's **apps** palette.
 
-With several pages, the first row reads `Menu/Prev/Next...`, and under it, below
-`< Back`, are `Prev Page` and `Next Page`. They return to the list on the neighbouring page,
+With several pages, the first row reads `Menu/Prev/Next...`, and the level under it ends
+with `Prev Page` and `Next Page`. They return to the list on the neighbouring page,
 wrapping, with the cursor on the first row again: tap, swipe up, tap turns to the next page.
 
 Under `Menu...`:
@@ -50,10 +51,14 @@ Under `Menu...`:
 | --- | --- |
 | `Keys...` | Send keys that a swipe cannot express: modifiers, movement and editing keys, function keys, characters, and mouse clicks and wheel steps |
 | `Window...` | Window manager actions: next, previous and last window, new terminal, redisplay, key help, and `Kill (force)` |
+| `Launch...` | Launch any application: the full list in name order. Up to nine are listed directly; more are split into pages, each row naming its range and the start of each name in it, such as `Fi-Gn (Files\|Firefox\|GIMP\|Gnome Te)` |
 | `Invert` | Flip light and dark |
 | `Close Window` | Ask the focused window to close |
 | `Exit...` | Quit the app on the glasses, after a confirmation row |
-| `Prev Page` / `Next Page` | Only with several pages, below `< Back`: turn the first level's page |
+| `Prev Page` / `Next Page` | Only with several pages, last: turn the first level's page |
+
+A double tap goes up one level, and closes the menu from the first one. Only the two
+confirmation levels (`Exit...`, `Kill (force)...`) have a `< Back` row.
 
 Choosing an action closes the menu so that you can see its result. After a row
 under `Keys...`, the next double tap reopens the menu at the same place, which makes
@@ -107,7 +112,7 @@ then release. Slide off the button before releasing to cancel.
 | Switch window | Double tap, pick a window | **task** |
 | Close window | `Menu...` → `Close Window` | **window** → `Close Window` |
 | Force-close | `Menu...` → `Window...` → `Kill (force)`, then confirm | **window** → `Kill (force)`, tap twice |
-| Launch | Double tap, pick a `+` row | **apps** |
+| Launch | Double tap, pick a `+` row; or `Menu...` → `Launch...` | **apps** |
 | New terminal | `Menu...` → `Window...` → `New terminal` | **window** → `New terminal` |
 
 Every window fills the whole screen; there is no tiling or resizing. To change what

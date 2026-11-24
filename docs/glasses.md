@@ -345,19 +345,20 @@ selection.
 ### Root list
 
 Built by `buildMenuItems` and laid out by `rootPages`: a header and at most nine rows
-(`ROOT_MAX_ROWS`, the same budget as a level). Labels are cut to 32 UTF-8 bytes
-(`MENU_ITEM_MAX_BYTES`).
+(`ROOT_MAX_ROWS`, the same budget as a level). Labels are cut by width, to
+`ROW_LABEL_UNITS` (see [Row width](#row-width)); the focus mark `*` and the `+ ` prefix count
+towards it.
 
 | Rows | Source | On tap |
 | --- | --- | --- |
 | `Menu...`, always first, `itemID` 1; `Menu/Prev/Next...` when there are several pages | fixed | descend into level `menu` |
 | Windows, all of them; the focused one is marked `*` | `{t:'windows'}.list` | `POST /api/windows {wid}` |
-| `+ <name>` launcher rows, at most 3, after the windows; paged with them | most recently launched apps, `{t:'apps'}.recent` | `POST /api/spawn {id}` |
+| `+ <name>` launcher rows, at most 8 (`MENU_MAX_APPS`), after the windows; paged with them | most recently launched apps, `{t:'apps'}.recent` | `POST /api/spawn {id}` |
 
 - The header is `Tasks`. Eight windows and apps fit under `Menu...` on a page. Beyond eight
   of them together they are split into pages of eight, windows first, and the header carries
   the page (`Tasks 1/2`). An app row is never dropped for space.
-- While paged (`MenuState.rootPaged`), level `menu` ends `< Back`, `Prev Page`, `Next Page`
+- While paged (`MenuState.rootPaged`), level `menu` ends `Prev Page`, `Next Page`
   (tokens `page:prev` / `page:next`). Each returns to the root list on the neighbouring page,
   wrapping, with the cursor on row 1. A page spends no row on paging.
 - Recency decides the pages as well as the order: the most recently focused windows are on
@@ -367,27 +368,91 @@ Built by `buildMenuItems` and laid out by `rootPages`: a header and at most nine
   never-focused ones last. This is display order only; `itemID`s follow the server's order.
 - The order is frozen while the menu is open (`menuRootOrder`) so a row cannot move under the
   cursor, which opens on `Menu...`.
+- A window row is its title (`windowLabel`). A title that leaves room is followed by the
+  application in brackets, `~ (XTerm)`, unless it already names it; a long title is cut and
+  stands alone. The application is `WinInfo.cls`, else `WinInfo.app`, the same name the
+  phone's `task` palette shows; the client does not know which OS filled them.
 - Windows are selected by `wid`. Selecting a row closes the menu first, then acts.
 
 ### Levels
 
 | Level id | Rows |
 | --- | --- |
-| `menu` | `Keys...`, `Window...`, `[x] Invert`, `Close Window` (only with a focused window), `Exit...` |
+| `menu` | `Keys...`, `Window...`, `Launch...` (only with applications), `[x] Invert`, `Close Window` (only with a focused window), `Exit...` |
 | `keys` | `Mods...`, `Move...`, `Edit...`, `Func...`, `Chars...` (`Letters...`, `Digits...`, `Punct...`, `Keypad...`), `Clicks...` |
 | `kmods` | `[ ] Ctrl`, `[ ] Alt`, `[ ] Shift`: sticky for the next key, then cleared |
 | `kmove`, `kedit`, `kfn` | the `nav`, `edit` and `fn` groups of the key catalogue |
 | `kclick` | `Click`, `Double-click`, `Click-hold`, `Click-release`, `Wheel up`, `Wheel down`, at the current pointer position |
 | `rp` (`Window...`) | the window-manager key catalogue `RP_KEYS`: help, last window, next, previous, new terminal, redisplay, banish pointer, `Kill (force)...` |
-| `rpkill`, `cexit` | confirmation levels whose single content row is the action |
+| `rpkill`, `cexit` | confirmation levels: the action, then `< Back` |
+| `launch` (`Launch...`) | every application in `{t:'apps'}.list`, in name order |
 | `<id>/N` | page N of a group too long for one level |
+| `launch/I/J...` | the page, or group of pages, at that path of indices |
 
-Every level ends with `< Back`. A level holds at most `LEVEL_MAX_ROWS = 9` rows (8 content rows
-plus `< Back`), because the panel shows 10 full text lines including the breadcrumb header.
-Longer groups are split by `balancedChunk` into evenly sized pages whose row label lists the
-page's keys. Labels are ASCII only: the firmware font's coverage is unknown and a missing glyph
-looks like a broken menu. The header is the breadcrumb (`pathHeader`), followed by what a double
-tap will do.
+A level holds at most `LEVEL_MAX_ROWS = 9` rows, because the panel shows 10 full text lines
+including the breadcrumb header. No row is spent on going back: a double tap ascends, and the
+header says so. Only the confirmation levels end with `< Back`, so that the cursor has a row to
+rest on that does nothing. Longer groups are split by `balancedChunk` into evenly sized pages
+whose row label lists the page's keys. Labels written in the code are ASCII only: the firmware
+font's coverage is unknown and a missing glyph looks like a broken menu. The header is the
+breadcrumb (`pathHeader`), followed by what a double tap will do.
+
+### Launch
+
+`Launch...` lists every application, so that the glasses can start one that was never launched
+from the phone. The number of applications is whatever the machine has installed, so the level
+is an index of unbounded depth (`launchTree`):
+
+- Up to 9 applications are the level itself.
+- More are split into pages of at most 9, and the level lists the pages. More than 9 pages
+  (82 applications or more) are grouped again, as often as it takes.
+- A page row names its range, then the start of each name on it:
+  `Fi-Gn (Files|Firefox|GIMP|Gnome Te)`. Each entry is as long as lets them all fit, from
+  eight characters down to four; at four, a list that still does not fit ends `...`.
+  Neighbours that start alike, whatever the case, are listed once. A row for a group of pages lists where each page starts. The
+  breadcrumb shows only the range (`MenuRow.crumb`).
+- Names are shown as they are, like window titles, and are cut by width
+  (see [Row width](#row-width)).
+- Order is by lower-cased code point, so it is the same on every device.
+
+### Row width
+
+A row must not overflow. The firmware breaks an overflowing row at its first space, so the
+cursor is left alone on a line, the label takes the next two, and the last row of the list
+falls off the panel. Arbitrary text (a window title, an application name, an index row) is
+therefore cut by width, to `ROW_LABEL_UNITS = 57` units of `glassWidth`
+(`src/shared/voiceDialog.ts`), of the `LINE_UNITS = 63` a line holds. The cursor column and
+the focus mark take up to 2.8 more, so a full row is 95 % of the line.
+
+`glassWidth` is the one width model for lens text: the menu, the voice dialog's line counts,
+the startup hint and the phone's copy of the lens text all use it.
+
+| Characters | Units |
+| --- | --- |
+| CJK and full width | 2.25 |
+| capitals | 1.35 |
+| `m`, `w`, `@`, `%` | 1.5 |
+| digits and `-` | 1.18 |
+| `f`, `t`, `r` | 0.65 |
+| `\|`, `i`, `l`, `j`, `I`, brackets, punctuation, space | 0.5 |
+| anything else (lower case) | 1.15 |
+
+Three lines measured on a G2 fix the scale; each filled a line and one more character
+wrapped:
+
+| Line | Length |
+| --- | --- |
+| CJK | 28 characters |
+| A ruler of digits and `-` | 53 characters |
+| `*` and a window title in lower case (`Taumatawhakatangi...`) | 58 characters |
+
+The classes in between are fitted: those three come out at a full line, and rows seen to fit
+(the `Launch...` index of 47 applications, a mostly Japanese window title) come out under
+one. They are not a measurement of the firmware font.
+
+Characters that are not meant to be seen (soft hyphen, zero-width space and joiners,
+direction marks, control characters) are removed from a label before it is cut (`plainText`).
+The panel does not hide them: a soft hyphen is drawn as `-`.
 
 ### Tokens
 
@@ -401,6 +466,7 @@ dropped.
 | `key:<name>` | `POST /api/desktop/input {kind:'key'}` with the armed modifiers; `<name>` must be in `KEYS` | resume |
 | `click:<action>` | `POST /api/desktop/input` pointer action (`clickInput`) | resume |
 | `rp:<key>` | `POST /api/wm/key {key}`; `<key>` must be in `RP_KEYS` | reset |
+| `app:<id>` | `POST /api/spawn {id}` | reset |
 | `close` | `POST /api/windows/close {wid}` for the focused window | reset |
 | `invert` | toggle polarity | reset |
 | `exit` | `shutDownPageContainer(1)` | reset |
@@ -466,7 +532,8 @@ encode path.
 9. Link state changes only on host evidence, through `setGlassLink`. Absence of evidence never
    stops the mirror.
 10. Never infer that something was drawn from a return value.
-11. Menu labels are ASCII, at most 32 UTF-8 bytes, and a level never exceeds `LEVEL_MAX_ROWS`.
+11. Menu labels written in the code are ASCII; every row label is at most `ROW_LABEL_UNITS`
+    wide by `glassWidth`. A level never exceeds `LEVEL_MAX_ROWS`.
 
 `tests/client.invert.test.ts`, `tests/client.overlay.test.ts`, `tests/client.link.test.ts` and
 `tests/shared.glassMenu.test.ts` pin most of these.
