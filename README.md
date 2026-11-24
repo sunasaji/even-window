@@ -75,6 +75,10 @@ It cannot:
 - run on Windows yet. The server reaches the operating system through one interface
   ([docs/platform.md](docs/platform.md)), and the only backend drives an X11 desktop. It is
   developed and tested on Linux; other Unix systems with X11 are untested.
+- last a working day on the glasses. Continuous use drains the G2 battery in a few hours,
+  so it suits short check-ins on your PC while you are out or doing chores rather than
+  all-day work. For the same reason, everything can also be done from the phone alone,
+  without the glasses.
 
 ## Requirements
 
