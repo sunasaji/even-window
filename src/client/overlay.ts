@@ -10,6 +10,7 @@ import { LatestAsyncWriter } from '../shared/latestAsyncWriter.ts'
 import { voiceOverlay } from '../shared/voiceDialog.ts'
 import { log } from './debugLog.ts'
 import { established, flushLogNow, glassLinkUp, pushImage, renderPageWarning } from './glassPage.ts'
+import { STARTUP_HINT_MS, startupHintText, takeHint } from './hints.ts'
 import {
   formatLinkBase,
   LINK_BASE_PUSHES,
@@ -35,7 +36,7 @@ import { kickPump, lastTiles, pumpQuiesce, setForcePending } from './pump.ts'
 import { sameBytes, TILE_NAMES } from './pumpStats.ts'
 import { applyMirrorMode } from './settings.ts'
 import { renderStatus, setStatus, syncPreviewOverlay } from './statusUi.ts'
-import { availMsg, stopStream } from './stream.ts'
+import { availMsg, stopStream, sttReady } from './stream.ts'
 import { encodeTilePng } from './tiles.ts'
 import { errText, withTimeout } from './util.ts'
 import { voice } from './voice.ts'
@@ -158,6 +159,50 @@ export function setLensOn(on: boolean): void {
   // Show the notice (blanking the tiles under it) or hide it (reset the baseline and repaint),
   // serialised with every other transition.
   syncOverlay()
+}
+
+// ── the startup hint (hints.ts) ────────────────────────────────────────────────────────────
+//
+// The mirror carries no hint of its own, so the double-tap that opens everything else is
+// invisible to a first-time user. The first time a page load establishes, on the first few
+// launches per device, the lens shows the gestures for `STARTUP_HINT_MS`. Any gesture closes
+// it: swipe and tap are consumed (their effect could not be seen under the text), a double-tap
+// goes on to open the menu. A lowest-priority notice: the menu, the dialog, `X unavailable`
+// and a pause all draw over it, and its timer runs regardless.
+
+/** Is the startup hint on the lens? */
+export let startupHint = false
+/** Considered once per page load, so a re-establish never shows it again. */
+let startupHintConsidered = false
+let startupHintTimer: ReturnType<typeof setTimeout> | null = null
+
+/** Called when the page establishes. Shows the hint if this device is still due one. */
+export function maybeShowStartupHint(): void {
+  if (startupHintConsidered) return
+  startupHintConsidered = true
+  if (!takeHint('startup')) return
+  log(`startup hint ON for ${String(STARTUP_HINT_MS)} ms (hints.ts; any gesture closes it)`)
+  startupHint = true
+  startupHintTimer = setTimeout(() => {
+    startupHintTimer = null
+    dismissStartupHint()
+  }, STARTUP_HINT_MS)
+  syncOverlay()
+}
+
+/** Take the hint down. True when it was up, so a gesture that only closed it can stop there.
+ *  `sync: false` for a caller that is redrawing the overlay itself (`syncOverlay`), so the lens
+ *  goes hint → menu without a blank in between. */
+export function dismissStartupHint(sync = true): boolean {
+  if (!startupHint) return false
+  startupHint = false
+  if (startupHintTimer !== null) {
+    clearTimeout(startupHintTimer)
+    startupHintTimer = null
+  }
+  log('startup hint OFF')
+  if (sync) syncOverlay()
+  return true
 }
 
 // ── a foreground layer is covering the panel ───────────────────────────────────────────────
@@ -411,6 +456,7 @@ export function overlayContent(): string {
   const paused = mirrorPaused()
   // It names the control, not just the state, so the notice can be acted on.
   if (paused !== null) return `mirror paused — ${paused}\ntask / window / apps still work there`
+  if (startupHint) return startupHintText(sttReady)
   return ' ' // blank again — the content container 6 was established with
 }
 
@@ -466,6 +512,9 @@ const planeOps: PlaneOps = {
 let overlayTxn: Promise<void> = Promise.resolve()
 
 export function syncOverlay(): void {
+  // The menu or the voice dialog coming up retires the startup hint, whoever opened it (the
+  // glasses, a phone pill, a palette): the hint must not reappear when they close.
+  if (startupHint && interactiveOverlay() !== null) dismissStartupHint(false)
   renderStatus()
   syncPreviewOverlay()
   const content = overlayContent()

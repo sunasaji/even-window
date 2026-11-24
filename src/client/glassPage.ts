@@ -24,6 +24,7 @@ import {
 import { DEBUG_EVENTS, log, logForwarder } from './debugLog.ts'
 import { bridge, type SdkModule, sdk } from './main.ts'
 import {
+  maybeShowStartupHint,
   overlayContent,
   setGlassInCase,
   setOverlaySkipLogged,
@@ -230,6 +231,8 @@ function markEstablished(ok: boolean): boolean {
     // while the glasses are in fact there. The establish retry is not gated on the link so
     // that it can discover one.
     setGlassLink(true)
+    // The first establish of this page load: point a first-time user at the gestures.
+    maybeShowStartupHint()
     return true
   }
   established = false

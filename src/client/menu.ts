@@ -32,7 +32,14 @@ import {
   mruOrderItems,
   rootPages,
 } from './menuModel.ts'
-import { glassCovered, measuringLink, mirrorPaused, overlayBusy, syncOverlay } from './overlay.ts'
+import {
+  glassCovered,
+  measuringLink,
+  mirrorPaused,
+  overlayBusy,
+  startupHint,
+  syncOverlay,
+} from './overlay.ts'
 import { palettePanelUpdate, renderAppsEntry } from './palette.ts'
 import { apiPost } from './serverLink.ts'
 import { invert, setInvert } from './settings.ts'
@@ -79,7 +86,8 @@ export function overlayActive(): boolean {
     overlayBusy ||
     measuringLink ||
     glassCovered ||
-    mirrorPaused() !== null
+    mirrorPaused() !== null ||
+    startupHint
   )
 }
 

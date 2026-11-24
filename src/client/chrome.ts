@@ -150,7 +150,8 @@ const TOAST_MS = 2600
 let toastEl: HTMLElement | null = null
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
-export function toast(msg: string): void {
+/** `ms`: how long it stays; the default suits a one-line result, a sentence to read wants more. */
+export function toast(msg: string, ms = TOAST_MS): void {
   if (!toastEl) {
     toastEl = document.createElement('div')
     toastEl.style.cssText = TOAST_CSS
@@ -162,5 +163,5 @@ export function toast(msg: string): void {
   toastTimer = setTimeout(() => {
     toastTimer = null
     if (toastEl) toastEl.style.display = 'none'
-  }, TOAST_MS)
+  }, ms)
 }

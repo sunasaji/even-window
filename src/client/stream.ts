@@ -15,6 +15,7 @@ import { kickPump, setForcePending } from './pump.ts'
 import { authFetch, SERVER } from './serverLink.ts'
 import { setStatus } from './statusUi.ts'
 import { processTile, tileFault } from './tiles.ts'
+import { maybeOpenTourOnFirstRun } from './tour.ts'
 import { errText } from './util.ts'
 
 export let availMsg: string | null = null
@@ -107,6 +108,7 @@ async function startStreamAsync(): Promise<void> {
       log(
         `voice: ${sttReady ? 'available — long-press opens it' : 'OFF (the server has no EW_STT_URL)'}`,
       )
+      maybeOpenTourOnFirstRun(sttReady)
     },
     () => {
       /* authFetch already set the state */

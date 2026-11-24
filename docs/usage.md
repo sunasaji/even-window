@@ -20,6 +20,9 @@ Gestures come from either temple or from the ring.
 Several swipes in quick succession are sent together as one batch, so a burst of
 five swipes arrives as five key presses.
 
+On the first few launches, the lens lists these gestures for a few seconds when the app
+starts. Any gesture closes the list; a double tap also opens the menu.
+
 ## The on-glasses menu
 
 Double tap to open it. While the menu is shown the mirror is hidden; it comes back
@@ -58,7 +61,8 @@ repeated keys practical.
 ## The phone screen
 
 The phone screen works without looking at the glasses, and most of it works without
-the glasses connected.
+the glasses connected. The first time it connects, a short tour walks through it; **?** in
+the title row shows the tour again.
 
 | Control | Purpose |
 | --- | --- |
@@ -89,7 +93,8 @@ Type into the text box and tap **Submit**, or press `Ctrl+Enter` in the box. The
 is typed into the focused window, and then the application's **submit** key is
 pressed. The default submit key is `off`: the text is typed and nothing is run. Set
 it once for each application where you want Submit to run the line
-([per-application bindings](#per-application-bindings)).
+([per-application bindings](#per-application-bindings)). The first few times Submit types
+without a key, a toast points to this setting.
 
 To send one text without the submit key, hold **Submit** until the button inverts,
 then release. Slide off the button before releasing to cancel.

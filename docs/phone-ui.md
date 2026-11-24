@@ -15,7 +15,7 @@ Top to bottom, one scrolling column (max width 720 px):
 
 | Row | Contents |
 | --- | --- |
-| Title row | `even-window`, then the three palette openers `task`, `window`, `apps N` |
+| Title row | `even-window`, `?` (the [tour](#tour)), then the three palette openers `task`, `window`, `apps N` |
 | Page warning | Hidden unless the glasses page is not established (see [glasses.md](glasses.md)) |
 | Mirror preview | 576x288 canvas showing the mirrored desktop; also a touch surface |
 | Text row | Text box, `🎤 voice` (only when the server reports speech-to-text; see [voice.md](voice.md)), `Submit` |
@@ -361,11 +361,44 @@ There is no `kbd` pill: the hardware-keyboard path has no mode.
 
 ## Toasts
 
-`toast(msg)` shows one line at the bottom centre for 2.6 s (`z-index` 60: above palettes,
-below the full-screen overlays). It answers actions whose result is not immediately visible:
+`toast(msg, ms = 2600)` shows one line at the bottom centre (`z-index` 10000: above palettes
+and the vRing / vPad layers, below the pairing and server-guard screens). It answers actions whose result is not immediately visible:
 `launching <name>…`, `<name> started — watch the mirror`, `launch failed: …`, and the
-`rescan` result. The wording claims only that the process started; the window appears on the
+`rescan` result. One first-use hint uses it too: after a successful Submit whose app has the
+submit key `off` (not a hold-send), `submitOffHintText()` is shown for 6 s, on the first three
+such sends per device (`takeHint('submit-off')`, `src/client/hints.ts`). The wording claims only that the process started; the window appears on the
 next window poll.
+
+## Tour
+
+`src/client/tour.ts`. Six cards, each spotlighting part of this UI and saying what it does:
+
+1. The mirror preview (tap = click, drag = drag).
+2. The glasses gestures. No button is lit: a schematic of the G2 from its right side (the pad on the temple tip behind the ear, swiped along its slant: back = Down) and the R1 ring
+   (`gestureFigureSvg()`) is laid over the mirror's box (`figureAt`), so what is pointed at is
+   what is explained.
+3. The gesture row: `▼ dn` `▲ up` `● tap` `●● dbl` and `font −/+`.
+4. The tools row: `keys`, `vRing`, `vPad`, `inv`, `color`, `lens`.
+5. Typing: the text row (Submit bottom right, `🎤 voice` top right) and `▶ app` (the submit
+   key). Late on purpose: typing is wanted once the rest is understood.
+6. The palette openers, ending on how to reopen the tour.
+
+Voice rows (the long press, `🎤 voice`) appear only with a recogniser.
+
+- Opens by itself on the first `GET /api/health` that answers OK, once per device (`ew.tour.seen`
+  in localStorage, set by any close). Not before: a tour over a connection that does not work
+  would explain controls that do nothing.
+- `?` in the title row opens it again. `?tour=1` opens it at boot regardless; `?tour=0` keeps
+  it shut for that load (for runs that drive the UI by coordinates). Neither is stored.
+- `skip`, `back`, `next` / `done`; `Escape`, `←`, `→` and `Enter` from a hardware keyboard.
+  Those keys stop there and do not reach the mirrored window.
+- The spotlight is the live UI. A transparent full-screen layer at `z-index` 9999 takes every
+  touch, and a dim layer under it has the holes clipped out (`dimPath()`, an even-odd
+  `clip-path`). A card can cut more than one hole, so the text row and `▶ app` light up
+  without the rows between them. The card goes below the holes, else above, else pinned to
+  the roomier edge (`cardTop()`); positions are recomputed on scroll and resize.
+- It sits below the toast and the pairing and server-guard screens. A first-run tour that opens
+  under the pairing dialog is waiting when pairing is done.
 
 ## Hardware keyboard and trackpad
 
@@ -425,6 +458,7 @@ anything else decides nothing.
 | `encworker=worker\|main\|abba` | Instrument, read only with `stats` | Pins or alternates the tile encode path |
 | `keyprobe` | Instrument | Mounts the key probe panel |
 | `voicefeed=<url>` | Test hook | See [voice.md](voice.md) |
+| `tour=1\|0` | One-shot | Opens the [tour](#tour) at boot, or keeps it shut for this load |
 
 Settings resolve as query → `localStorage` → default, and the winner is stored. Instruments
 are read from the URL only and never persist. When a setting came from storage rather than

@@ -180,8 +180,9 @@ describe('the task palette switches by wid, through the one route', () => {
 })
 
 describe('the title row is the three palette openers', () => {
+  // Plus the tour's `?` beside the title (tour.ts), which is about the page, not an action.
   it('holds task, window and apps, and not the mirror-mode button', () => {
-    expect(src.has('titleRow.append(title, taskBtn, windowBtn, appsBtn)')).toBe(true)
+    expect(src.has('titleRow.append(title, helpBtn, taskBtn, windowBtn, appsBtn)')).toBe(true)
   })
 
   it('the mirror-mode button sits in the tools row, beside invert', () => {

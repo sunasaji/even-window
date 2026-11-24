@@ -14,7 +14,7 @@ import { activeWin, bindings, fontStepFor } from './bindingsEditor.ts'
 import { DEBUG_EVENTS, log } from './debugLog.ts'
 import { chooseMenu, closeMenu, menuOpen, menuPath, moveMenu, openMenu, popLevel } from './menu.ts'
 import { NavDebouncer } from './navDebounce.ts'
-import { setGlassCovered } from './overlay.ts'
+import { dismissStartupHint, setGlassCovered } from './overlay.ts'
 import { apiPost } from './serverLink.ts'
 import { sttReady } from './stream.ts'
 import { onVoiceFrame, voiceActive, voiceGestureRoute, voiceStart } from './voice.ts'
@@ -176,6 +176,7 @@ export function ringFire(kind: string, fn: () => void): void {
 
 export function onSwipe(dir: -1 | 1): void {
   if (voiceGestureRoute(dir < 0 ? 'swipe-up' : 'swipe-down')) return // the dialog is in front
+  if (dismissStartupHint()) return // it only closes the hint: its key could not be seen landing
   if (menuOpen) {
     moveMenu(dir)
     return
@@ -185,6 +186,7 @@ export function onSwipe(dir: -1 | 1): void {
 
 export async function onTap(): Promise<void> {
   if (voiceGestureRoute('tap')) return
+  if (dismissStartupHint()) return // as for a swipe
   if (menuOpen) {
     await chooseMenu()
     return
@@ -207,6 +209,8 @@ export async function onDouble(): Promise<void> {
     else closeMenu()
     return
   }
+  // A startup hint up goes with it: it names the double-tap, so the double-tap goes on to do
+  // what the hint said, and the menu's redraw retires the hint (`syncOverlay`).
   log('double — opening the root list')
   openMenu()
 }

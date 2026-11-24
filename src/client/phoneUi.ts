@@ -6,7 +6,7 @@
 import { SCREEN_H, SCREEN_W } from '../shared/geom.ts'
 import { submitChordLabel } from '../shared/keys.ts'
 import { activeWin, buildAppPanel, newlineChordFor, submitChordFor } from './bindingsEditor.ts'
-import { button, pillRow, setLit } from './chrome.ts'
+import { button, pillRow, setLit, toast } from './chrome.ts'
 import { ackKeys, renderKeys } from './clients.ts'
 import {
   copyLog,
@@ -20,6 +20,7 @@ import {
 } from './debugLog.ts'
 import { fontStep, onDouble, onSwipe, onTap, ringFire, submitText } from './gestures.ts'
 import { renderPageWarning } from './glassPage.ts'
+import { submitOffHintText, takeHint } from './hints.ts'
 import { fieldEnterAction, wireHardwareKeyboard } from './hwKeyboard.ts'
 import { KEY_PROBE, mountKeyProbe } from './keyProbe.ts'
 import { pairingHooks, setPairingPrompted } from './main.ts'
@@ -40,6 +41,7 @@ import {
 } from './settings.ts'
 import { invertLabel, renderConnSummary, renderStatus } from './statusUi.ts'
 import { startStream, sttReady } from './stream.ts'
+import { openTour, registerTourTarget } from './tour.ts'
 import { onVoiceBtn, voiceResolve } from './voice.ts'
 import { closeVPad, openVPad, SUBMIT_HINT_MS, SUBMIT_HOLD_MS, vpadOpen } from './vpad.ts'
 import { closeVRing, openVRing, vRingOpen } from './vring.ts'
@@ -131,7 +133,21 @@ export function mountUi(): void {
   titleRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin:0 0 4px'
   const title = document.createElement('h1')
   title.textContent = 'even-window'
-  title.style.cssText = 'font-size:16px;margin:0;flex:1;min-width:0'
+  // Ellipsised rather than wrapped: on a narrow phone the title gives way to the buttons.
+  title.style.cssText =
+    'font-size:16px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;' +
+    'text-overflow:ellipsis'
+  // `?`: the tour (tour.ts), which also opens by itself on a device's first run. Beside the
+  // title rather than among the palette openers: it is about the page, not an action.
+  const helpBtn = button(
+    '?',
+    () => {
+      openTour(sttReady, '? button')
+    },
+    'a short tour of this screen and the glasses gestures',
+  )
+  helpBtn.setAttribute('aria-haspopup', 'dialog')
+  helpBtn.setAttribute('aria-label', 'tour')
   // A native pill, like every other control in a row of controls.
   appsBtn = button(
     'apps ',
@@ -167,7 +183,8 @@ export function mountUi(): void {
       'with the glasses off',
   )
   windowBtn.setAttribute('aria-haspopup', 'dialog')
-  titleRow.append(title, taskBtn, windowBtn, appsBtn)
+  titleRow.append(title, helpBtn, taskBtn, windowBtn, appsBtn)
+  registerTourTarget('palettes', [taskBtn, windowBtn, appsBtn])
   ui.appendChild(titleRow)
 
   // Above the preview, because it explains a mirror that never lights up. Not a toast: it must
@@ -208,6 +225,7 @@ export function mountUi(): void {
     ' makes a drag a drag. Swipe anywhere else to scroll.)'
   ui.appendChild(mirrorEl)
   wireMirrorTouch(mirrorEl)
+  registerTourTarget('mirror', mirrorEl)
 
   // Text input + Submit. One `{kind:'type'}` injection carries a whole string into the focused
   // nested-X window, so this is the only text path not rationed by the touch-rate ceiling.
@@ -248,11 +266,13 @@ export function mountUi(): void {
     // `bare` is the long press on Submit: this one send skips the app's key (see `holdHint`).
     // It does not touch the setting.
     const w = activeWin()
-    void submitText(
-      v,
-      bare ? null : submitChordFor(w).chord,
-      newlineChordFor(w).chord ?? { mods: [], key: 'Return' },
-    )
+    const press = bare ? null : submitChordFor(w).chord
+    void submitText(v, press, newlineChordFor(w).chord ?? { mods: [], key: 'Return' }).then(ok => {
+      // The default submit key is `off`: the text lands but nothing runs, which a first-time
+      // user reads as a broken Submit. Say where the setting is, a few times per device
+      // (hints.ts). Not after a hold-send, which asked for exactly this.
+      if (ok && press === null && !bare && takeHint('submit-off')) toast(submitOffHintText(), 6000)
+    })
   }
   // Published so the voice dialog can reach the box and the one submit path.
   textBox = text
@@ -436,6 +456,7 @@ export function mountUi(): void {
   )
   gestures.id = 'gestures'
   ui.appendChild(gestures)
+  registerTourTarget('gestures', gestures)
 
   // Row 2: the tools.
   const keyPad = buildKeyPad()
@@ -513,11 +534,15 @@ export function mountUi(): void {
   tools.id = 'tools'
   ui.appendChild(tools)
   applyMirrorMode() // the label and the disabled state, now that the button exists
+  registerTourTarget('tools', tools)
   ui.appendChild(keyPad)
 
   // `▶ app`: the per-app binding editor, directly under the rows whose pills it governs, and
   // folded. Its summary line carries what this app does right now, the submit key first.
-  ui.appendChild(buildAppPanel())
+  // The Submit card spotlights the text row together with this fold, where the submit key is.
+  const appPanel = buildAppPanel()
+  ui.appendChild(appPanel)
+  registerTourTarget('text', textRow, appPanel)
 
   // The launcher is the `apps` button in the title row, which opens a palette anchored to the
   // top of the visible viewport: a filter box down here would sit where the soft keyboard

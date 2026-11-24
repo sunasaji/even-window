@@ -186,6 +186,10 @@ Background: [notes/2026-10-simulator-harness-traps.md](notes/2026-10-simulator-h
 
 ### Driving the phone UI
 
+On a simulator profile that has never closed it, the phone tour opens over the UI at the first
+health answer. Start with `--app-query tour=0` when clicking by coordinates, or close it once
+(`Escape`).
+
 The simulator is an ordinary X client, so `xdotool` on the simulator's display operates the
 WebView. Its two windows, `Browser` (600x800) and `Glasses Display`, overlap by default and
 `Browser` may start off-screen. Clicks that land on `Glasses Display` vanish without any
