@@ -35,11 +35,12 @@ The first level, headed `Tasks`, lists, in this order:
 - rows starting with `+`: up to three recently launched applications — tap one to
   launch it.
 
-The panel shows a header and nine rows. Windows take priority, so with many windows open
-there are fewer or no `+` rows; the phone's **apps** palette always has the full list.
+The panel shows a header and nine rows: `Menu...` and eight windows and `+` rows. With more
+than eight windows and `+` rows together, the list is split into pages of eight, windows
+first, and the header shows the page (`Tasks 1/2`). No `+` row is dropped for space; the
+phone's **apps** palette has the full list of applications.
 
-With more than eight windows the list is split into pages of eight, and the header shows the
-page (`Tasks 1/2`). The first row then reads `Menu/Prev/Next...`, and under it, below
+With several pages, the first row reads `Menu/Prev/Next...`, and under it, below
 `< Back`, are `Prev Page` and `Next Page`. They return to the list on the neighbouring page,
 wrapping, with the cursor on the first row again: tap, swipe up, tap turns to the next page.
 

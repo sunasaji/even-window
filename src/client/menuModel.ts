@@ -39,9 +39,8 @@ export const ROOT_PAGE_SIZE = ROOT_MAX_ROWS - 1
 // launched apps, kept server-side (src/server/appRecency.ts). MRU needs no write route and no
 // empty state (it is seeded with the default client), at the cost that it cannot be pinned.
 //
-// Windows come first and apps take only the slack of the last page (`rootPages`). The menu is
-// the only way to reach a window from the glasses, while every app stays reachable on the
-// phone.
+// Windows come first and the apps follow them (`rootPages`). Both count towards the pages, so
+// an app row is never dropped for space: it moves to the next page instead.
 export const MENU_MAX_APPS = 3
 
 /** Prefix that distinguishes "launch this" from "switch to this" in the root list: the label is
@@ -207,21 +206,20 @@ export function mruOrderItems(
 // page turns are the last two rows of the level it enters, so a page spends no row on them,
 // and the way into the hierarchy (and from there to Exit) is on every page.
 //
-// Windows are never split unevenly to make room for an app: apps take what the last page has
-// left, at most `MENU_MAX_APPS`.
+// Windows and apps are paged together, windows first: apps are never dropped for lack of
+// room, they go onto a further page. At most `MENU_MAX_APPS` of them (`buildMenuItems`).
 
 /** Pure: lay the display-ordered items (`mruOrderItems`) out as pages. Always at least one
  *  page, and every page starts with the `Menu...` row when the list has one. */
 export function rootPages(ordered: readonly MenuItem[]): MenuItem[][] {
-  const wins = ordered.filter(it => it.kind === 'window')
-  const apps = ordered.filter(it => it.kind === 'app')
+  const rows = [
+    ...ordered.filter(it => it.kind === 'window'),
+    ...ordered.filter(it => it.kind === 'app'),
+  ]
   const head = ordered.filter(it => it.kind === 'menu')
   const pages: MenuItem[][] = []
-  for (let i = 0; i === 0 || i < wins.length; i += ROOT_PAGE_SIZE) {
-    const chunk = wins.slice(i, i + ROOT_PAGE_SIZE)
-    const last = i + ROOT_PAGE_SIZE >= wins.length
-    const fill = last ? apps.slice(0, ROOT_PAGE_SIZE - chunk.length) : []
-    pages.push([...chunk, ...fill])
+  for (let i = 0; i === 0 || i < rows.length; i += ROOT_PAGE_SIZE) {
+    pages.push(rows.slice(i, i + ROOT_PAGE_SIZE))
   }
   const label = pages.length > 1 ? MENU_ROOT_PAGED_LABEL : MENU_ROOT_LABEL
   return pages.map(p => [...head.map(it => ({ ...it, itemName: label })), ...p])

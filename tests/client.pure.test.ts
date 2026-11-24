@@ -443,18 +443,31 @@ describe('rootPages — the root list on a ten-line panel', () => {
     }
   })
 
-  it('is one page while the windows fit, Menu first and apps taking only the slack', () => {
+  it('is one page while windows and apps fit together, Menu first', () => {
     expect(pagesOf(0).map(kinds)).toEqual(['maaa'])
     expect(pagesOf(1).map(kinds)).toEqual(['mwaaa']) // the ordinary case: the boot terminal
     expect(pagesOf(5).map(kinds)).toEqual(['mwwwwwaaa'])
-    expect(pagesOf(6).map(kinds)).toEqual(['mwwwwwwaa'])
-    expect(pagesOf(8).map(kinds)).toEqual(['mwwwwwwww']) // a window never loses a row to an app
-    expect(pagesOf(8)[0]![0]).toMatchObject({ kind: 'menu', itemName: 'Menu...' })
+    expect(pagesOf(8, []).map(kinds)).toEqual(['mwwwwwwww'])
+    expect(pagesOf(8, [])[0]![0]).toMatchObject({ kind: 'menu', itemName: 'Menu...' })
   })
 
-  it('pages past eight windows, Menu/Prev/Next... heading every page and no More row', () => {
+  // The regression this pins: an app row used to fill only the last page's slack, so with six
+  // or more windows the recent apps vanished without a page to find them on.
+  it('pages windows and apps together, so no app row is dropped for space', () => {
+    expect(pagesOf(6).map(kinds)).toEqual(['mwwwwwwaa', 'ma'])
+    expect(pagesOf(8).map(kinds)).toEqual(['mwwwwwwww', 'maaa'])
     expect(pagesOf(9).map(kinds)).toEqual(['mwwwwwwww', 'mwaaa'])
-    expect(pagesOf(16).map(kinds)).toEqual(['mwwwwwwww', 'mwwwwwwww'])
+    expect(pagesOf(16).map(kinds)).toEqual(['mwwwwwwww', 'mwwwwwwww', 'maaa'])
+    for (let n = 0; n <= 40; n++) {
+      expect(
+        pagesOf(n)
+          .flat()
+          .filter(i => i.kind === 'app'),
+      ).toHaveLength(APPS.length)
+    }
+  })
+
+  it('heads every page with Menu/Prev/Next... once paged, and has no More row', () => {
     expect(pagesOf(17).map(kinds)).toEqual(['mwwwwwwww', 'mwwwwwwww', 'mwaaa'])
     for (const p of pagesOf(17)) {
       expect(p[0]).toMatchObject({

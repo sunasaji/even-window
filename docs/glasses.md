@@ -352,10 +352,11 @@ Built by `buildMenuItems` and laid out by `rootPages`: a header and at most nine
 | --- | --- | --- |
 | `Menu...`, always first, `itemID` 1; `Menu/Prev/Next...` when there are several pages | fixed | descend into level `menu` |
 | Windows, all of them; the focused one is marked `*` | `{t:'windows'}.list` | `POST /api/windows {wid}` |
-| `+ <name>` launcher rows, at most 3, in the rows the last page has left | most recently launched apps, `{t:'apps'}.recent` | `POST /api/spawn {id}` |
+| `+ <name>` launcher rows, at most 3, after the windows; paged with them | most recently launched apps, `{t:'apps'}.recent` | `POST /api/spawn {id}` |
 
 - The header is `Tasks`. Eight windows and apps fit under `Menu...` on a page. Beyond eight
-  windows they are split into pages of eight and the header carries the page (`Tasks 1/2`).
+  of them together they are split into pages of eight, windows first, and the header carries
+  the page (`Tasks 1/2`). An app row is never dropped for space.
 - While paged (`MenuState.rootPaged`), level `menu` ends `< Back`, `Prev Page`, `Next Page`
   (tokens `page:prev` / `page:next`). Each returns to the root list on the neighbouring page,
   wrapping, with the cursor on row 1. A page spends no row on paging.
