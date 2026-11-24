@@ -30,6 +30,7 @@ import {
   rootPageCount,
   rootRows,
 } from './menu.ts'
+import { ACTIVE_MARK } from './menuModel.ts'
 import { showSupersededOverlay } from './palette.ts'
 import { lensBtn } from './phoneUi.ts'
 import { kickPump, lastTiles, pumpQuiesce, setForcePending } from './pump.ts'
@@ -485,7 +486,7 @@ export function interactiveOverlay(): string | null {
     // `rootRows()`, not `menuItems`: the window rows are drawn most-recently-focused first
     // (`mruOrderItems`), and `chooseMenu` indexes the same array.
     const rows = rootRows().map(
-      (it, i) => `${i === menuSel ? '>' : ' '} ${it.active ? '*' : ''}${it.itemName}`,
+      (it, i) => `${i === menuSel ? '>' : ' '} ${it.active ? ACTIVE_MARK : ''}${it.itemName}`,
     )
     return [head, ...rows].join('\n')
   }

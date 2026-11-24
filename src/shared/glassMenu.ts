@@ -15,11 +15,6 @@ import type { Mod } from './keys.ts'
 import { isBindableKey, KEYS, MODS } from './keys.ts'
 import { glassWidth, plainText } from './voiceDialog.ts'
 
-// ── the root list's label limit ────────────────────────────────────────────────────────────
-// Defined once here; src/client/menuModel.ts re-exports it.
-/** A root-list label is cut to this many UTF-8 bytes, which keeps it on one line. */
-export const MENU_ITEM_MAX_BYTES = 32
-
 // ── the row budget ─────────────────────────────────────────────────────────────────────────
 //
 // The panel shows ten full text lines (an eleventh is clipped at the bottom edge), which a

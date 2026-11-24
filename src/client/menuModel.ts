@@ -3,12 +3,14 @@
 // A leaf: it imports no other client module, so anything may use it at load time.
 
 import {
+  fitUnits,
   LEVEL_MAX_ROWS,
-  MENU_ITEM_MAX_BYTES,
   MENU_ROOT_LABEL,
   MENU_ROOT_PAGED_LABEL,
+  ROW_LABEL_UNITS,
 } from '../shared/glassMenu.ts'
 import type { WinInfo } from '../shared/types.ts'
+import { glassWidth, plainText } from '../shared/voiceDialog.ts'
 
 // ── window switcher ────────────────────────────────────────────────────────────────────────
 //
@@ -17,10 +19,6 @@ import type { WinInfo } from '../shared/types.ts'
 // and opened by a double-tap. Everything below it is the hierarchy in src/shared/glassMenu.ts.
 // The firmware's `menuObject` is not used: a page may carry a z plan or that menu, never both
 // (docs/decisions/client-drawn-glasses-menu.md).
-
-// The label limit lives in src/shared/glassMenu.ts, where the hierarchy is built.
-// Re-exported so the menu tests can assert the client has no copy of its own.
-export { MENU_ITEM_MAX_BYTES }
 
 /** Reserved `itemID` for the root's first row, `Menu...`. Fixed rather than positional so it
  *  never collides with a window item and never moves when the window set changes. Window items
@@ -35,32 +33,50 @@ export const ROOT_PAGE_SIZE = ROOT_MAX_ROWS - 1
 
 // ── the curated launcher slots ─────────────────────────────────────────────────────────────
 //
-// The full application list lives on the phone; the glasses get a short set: the most recently
-// launched apps, kept server-side (src/server/appRecency.ts). MRU needs no write route and no
+// The root list carries a short set: the most recently launched apps, kept server-side
+// (src/server/appRecency.ts), as many as the server keeps. MRU needs no write route and no
 // empty state (it is seeded with the default client), at the cost that it cannot be pinned.
+// Every other application is under `Menu... > Launch...` (src/shared/glassMenu.ts).
 //
 // Windows come first and the apps follow them (`rootPages`). Both count towards the pages, so
 // an app row is never dropped for space: it moves to the next page instead.
-export const MENU_MAX_APPS = 3
+export const MENU_MAX_APPS = 8
 
 /** Prefix that distinguishes "launch this" from "switch to this" in the root list: the label is
- *  the only styling a row has. Two characters out of the 32-byte budget. */
+ *  the only styling a row has. It comes out of the row's width budget. */
 export const MENU_APP_PREFIX = '+ '
 
-/** Truncate to at most `maxBytes` UTF-8 bytes without splitting a character. `for..of` iterates
- *  code points, so neither a surrogate pair nor a multi-byte sequence is cut in half. */
-export function truncateUtf8(s: string, maxBytes = MENU_ITEM_MAX_BYTES): string {
-  const enc = new TextEncoder()
-  if (enc.encode(s).length <= maxBytes) return s
-  let used = 0
-  let out = ''
-  for (const ch of s) {
-    const n = enc.encode(ch).length
-    if (used + n > maxBytes) break
-    used += n
-    out += ch
+/** The mark the overlay puts before the focused window's label. Its width comes out of a
+ *  window row's budget, so the row is as wide focused as not. */
+export const ACTIVE_MARK = '*'
+
+// ── what a window row says ─────────────────────────────────────────────────────────────────
+//
+// A title alone can say very little: a terminal's is often just `~`. So a short title is
+// followed by the application in brackets, `~ (XTerm)`.
+//
+// Both halves are plain `WinInfo` fields, filled by the backend for whatever the OS calls
+// them (docs/platform.md); nothing here knows which OS that is. The phone's `task` palette
+// shows the same name in its dim column.
+
+/** The application a window belongs to, as the user would name it: the class it declares, else
+ *  its process name. '' when the backend resolved neither. */
+export function windowAppName(w: WinInfo): string {
+  return w.cls || w.app || ''
+}
+
+/** Pure: a window's row label, at most `units` wide. The title, then the application in
+ *  brackets when the whole of it fits and the title does not already name it; a long title is
+ *  cut and stands alone, since the room is better spent on it. */
+export function windowLabel(w: WinInfo, units: number): string {
+  const name = plainText(windowAppName(w))
+  const title = plainText(w.title).trim()
+  if (!title) return fitUnits(name || w.wid, units)
+  if (name && !title.toLowerCase().includes(name.toLowerCase())) {
+    const both = `${title} (${name})`
+    if (glassWidth(both) <= units) return both
   }
-  return out
+  return fitUnits(title, units)
 }
 
 // Select by `wid`, never by the window-manager number: the server's window-set comparison
@@ -70,7 +86,7 @@ export function truncateUtf8(s: string, maxBytes = MENU_ITEM_MAX_BYTES): string 
 export interface MenuItem {
   /** Non-zero and unique within a built list. */
   itemID: number
-  /** <= 32 UTF-8 bytes. Never carries the active marker: the overlay adds its own at render
+  /** At most `ROW_LABEL_UNITS` wide, less the active marker. Never carries that marker: the overlay adds its own at render
    *  time, from `active`, which keeps focus out of `menuSignature`. */
   itemName: string
   /** `window` = switch to `wid`; `app` = launch `appId`; `menu` = descend into the hierarchy
@@ -107,11 +123,10 @@ export function buildMenuItems(
   for (const w of list) {
     // No wid → not selectable by the stable key, so it must not become a menu entry at all.
     if (!w.wid) continue
-    const label = w.title || w.cls || w.app || w.wid
     out.push({
       // +2: id 1 is reserved for the entry row, so these run from 2 and stay unique.
       itemID: out.length + 2,
-      itemName: truncateUtf8(label),
+      itemName: windowLabel(w, ROW_LABEL_UNITS - glassWidth(ACTIVE_MARK)),
       kind: 'window',
       wid: w.wid,
       appId: null,
@@ -122,7 +137,7 @@ export function buildMenuItems(
     if (!a.id) continue
     out.push({
       itemID: out.length + 2,
-      itemName: truncateUtf8(MENU_APP_PREFIX + (a.name || a.id)),
+      itemName: fitUnits(MENU_APP_PREFIX + (a.name || a.id), ROW_LABEL_UNITS),
       kind: 'app',
       wid: null,
       appId: a.id,
@@ -165,7 +180,7 @@ function mruRank(recent: readonly string[] | undefined): Map<string, number> {
 }
 
 /** Pure: the window list in MRU order, for the phone's `task` palette. Not `mruOrderItems` over
- *  `buildMenuItems`: that path truncates labels to 32 bytes, which is a property of the lens. Windows with no wid are dropped (no stable key to select by).
+ *  `buildMenuItems`: that path cuts labels to the panel's width, which is a property of the lens. Windows with no wid are dropped (no stable key to select by).
  *  Unranked windows sort after every ranked one, keeping their relative order. */
 export function mruOrderWindows(
   list: readonly WinInfo[],

@@ -5,7 +5,9 @@ import { describe, expect, it } from 'vitest'
 import { parseMirrorMode } from '../src/client/flags.ts'
 import { ringGateAccept } from '../src/client/gestures.ts'
 import {
+  ACTIVE_MARK,
   buildMenuItems,
+  MENU_APP_PREFIX,
   MENU_ENTRY_ID,
   MENU_MAX_APPS,
   type MenuApp,
@@ -15,7 +17,6 @@ import {
   mruOrderWindows,
   ROOT_MAX_ROWS,
   rootPages,
-  truncateUtf8,
 } from '../src/client/menuModel.ts'
 import { NAV_SETTLE_MS, type NavClock, NavDebouncer } from '../src/client/navDebounce.ts'
 import { charKeysym } from '../src/client/oskb.ts'
@@ -33,10 +34,11 @@ import {
 } from '../src/client/pumpStats.ts'
 import { normaliseServer } from '../src/client/serverLink.ts'
 import { createOk, pageEstablished, rebuildOk } from '../src/shared/establishPage.ts'
+import { ROW_LABEL_UNITS } from '../src/shared/glassMenu.ts'
 import type { WinInfo } from '../src/shared/types.ts'
+import { glassWidth, LINE_UNITS } from '../src/shared/voiceDialog.ts'
 import { clientSource } from './helpers/source.ts'
 
-const enc = new TextEncoder()
 const bytes = (...n: number[]) => new Uint8Array(n)
 
 // ── sameBytes ──────────────────────────────────────────────────────────────────────────────
@@ -164,67 +166,100 @@ describe('pickTile (the pump dequeue)', () => {
   })
 })
 
-// ── UTF-8-safe truncation (itemName <= 32 UTF-8 bytes) ─────────────────────────────────────
+// ── labels are cut by width, on a character boundary ───────────────────────────────────────
 
-describe('truncateUtf8', () => {
-  const fits = (s: string, max = 32) => enc.encode(s).length <= max
-  /** The result must be a byte-prefix of the input — that is what "cut on a character
-   *  boundary, never mid-byte" means operationally. */
-  const isPrefix = (out: string, src: string) => {
-    const a = enc.encode(out),
-      b = enc.encode(src)
-    if (a.length > b.length) return false
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
-    return true
-  }
+describe('fitUnits: a root-list label on one line of the panel', () => {
+  const label = (title: string, active = false) =>
+    buildMenuItems([{ id: '1', wid: '0x1', title, cls: '', app: '', active }])[0]!.itemName
 
-  it('leaves short strings untouched', () => {
-    expect(truncateUtf8('xterm')).toBe('xterm')
-    expect(truncateUtf8('')).toBe('')
+  it('leaves a title that fits untouched', () => {
+    expect(label('xterm')).toBe('xterm')
+    expect(label('日本語のタイトル')).toBe('日本語のタイトル')
   })
 
-  it('keeps an exactly-32-byte ASCII string whole', () => {
-    const s = 'a'.repeat(32)
-    expect(truncateUtf8(s)).toBe(s)
-  })
-
-  it('cuts ASCII at 32 bytes', () => {
-    const out = truncateUtf8('a'.repeat(40))
-    expect(out).toHaveLength(32)
-    expect(fits(out)).toBe(true)
-  })
-
-  it('cuts 3-byte CJK on a character boundary, not mid-byte', () => {
-    const src = 'あ'.repeat(20) // 60 bytes
-    const out = truncateUtf8(src)
-    expect(out).toBe('あ'.repeat(10)) // 30 bytes; an 11th would be 33
-    expect(enc.encode(out).length).toBe(30)
-    expect(isPrefix(out, src)).toBe(true)
-  })
-
-  it('never splits a surrogate pair (4-byte emoji)', () => {
-    const src = '\u{1F44D}'.repeat(9) // 36 bytes
-    const out = truncateUtf8(src)
-    expect([...out]).toHaveLength(8) // 32 bytes exactly
-    expect(enc.encode(out).length).toBe(32)
-    expect(out).not.toContain('�')
-    expect(isPrefix(out, src)).toBe(true)
-  })
-
-  it('handles a mixed-width string', () => {
-    const src = `a${'\u{1F44D}'.repeat(10)}` // 1 + 40 bytes
-    const out = truncateUtf8(src)
-    expect(enc.encode(out).length).toBe(29) // 'a' + 7 emoji; an 8th would be 33
-    expect(isPrefix(out, src)).toBe(true)
-  })
-
-  it('respects a custom limit and never exceeds it for any prefix length', () => {
-    const src = 'aあ\u{1F44D}bう\u{1F600}cc'
-    for (let max = 0; max <= enc.encode(src).length + 4; max++) {
-      const out = truncateUtf8(src, max)
-      expect(enc.encode(out).length).toBeLessThanOrEqual(max)
-      expect(isPrefix(out, src)).toBe(true)
+  it('cuts by width, so a CJK title runs as far across the panel as an ASCII one', () => {
+    const ja = label('あ'.repeat(60))
+    const en = label('a'.repeat(120))
+    expect([...ja].length).toBe(24) // 32 bytes would be 10
+    expect(en.length).toBe(48)
+    for (const s of [ja, en]) {
+      expect(glassWidth(`> ${ACTIVE_MARK}${s}`)).toBeLessThanOrEqual(LINE_UNITS)
+      expect(glassWidth(s)).toBeGreaterThan(ROW_LABEL_UNITS - 4)
     }
+  })
+
+  it('gives fewer characters to a title in capitals than to one in narrow letters', () => {
+    expect(label('W'.repeat(120)).length).toBeLessThan(label('i'.repeat(200)).length / 2)
+  })
+
+  // On a G2 a soft hyphen is drawn as `-`: a Wikipedia title with three of them, budgeted as
+  // if they took no room, wrapped and pushed the list down a line.
+  it('drops what is not meant to be seen, instead of guessing how the panel draws it', () => {
+    expect(label('Tau\u00admata\u200bwha\ufeff')).toBe('Taumatawha')
+    expect(label('two\nlines\ttab')).toBe('twolinestab')
+    expect(label('~\u00ad', false)).toBe('~')
+    const long = label(`${'a'.repeat(30)}\u00ad${'b'.repeat(60)}`)
+    expect(long).not.toContain('\u00ad')
+    expect(glassWidth(long)).toBeLessThanOrEqual(ROW_LABEL_UNITS)
+  })
+
+  it('never splits a surrogate pair', () => {
+    const src = '\u{1F44D}'.repeat(80)
+    const out = label(src)
+    expect(out).not.toContain('\uFFFD')
+    expect(src.startsWith(out)).toBe(true)
+    expect(out.length % 2).toBe(0)
+  })
+
+  it('is as wide focused as not: the mark comes out of the budget', () => {
+    expect(label('a'.repeat(120), true)).toBe(label('a'.repeat(120), false))
+    expect(glassWidth(ACTIVE_MARK + label('a'.repeat(120), true))).toBeLessThanOrEqual(
+      ROW_LABEL_UNITS,
+    )
+  })
+
+  it('cuts a launcher row with its `+ ` counted', () => {
+    const items = buildMenuItems([], [{ id: 'x', name: 'あ'.repeat(60) }])
+    const row = items.find(i => i.kind === 'app')!.itemName
+    expect(row.startsWith(MENU_APP_PREFIX)).toBe(true)
+    expect(glassWidth(row)).toBeLessThanOrEqual(ROW_LABEL_UNITS)
+  })
+})
+
+describe('windowLabel: a short title is followed by the application', () => {
+  const w = (title: string, cls: string, app?: string): WinInfo => ({
+    id: '1',
+    wid: '0x1',
+    title,
+    cls,
+    active: false,
+    ...(app === undefined ? {} : { app }),
+  })
+  const label = (x: WinInfo) => buildMenuItems([x])[0]!.itemName
+
+  // The case it is for: a terminal whose whole title is its directory.
+  it('says which application a bare title belongs to', () => {
+    expect(label(w('~', 'XTerm'))).toBe('~ (XTerm)')
+    expect(label(w('~', '', 'kitty'))).toBe('~ (kitty)') // no class: the process name
+  })
+
+  it('does not repeat an application the title already names, whatever the case', () => {
+    expect(label(w('Amazon — Mozilla Firefox', 'firefox'))).toBe('Amazon — Mozilla Firefox')
+    expect(label(w('xterm', 'XTerm'))).toBe('xterm')
+  })
+
+  it('spends the row on a long title: the name is added whole or not at all', () => {
+    const long = 'a'.repeat(46)
+    expect(label(w(long, 'XTerm'))).toBe(long)
+    expect(glassWidth(label(w('a'.repeat(200), 'XTerm')))).toBeLessThanOrEqual(ROW_LABEL_UNITS)
+    expect(label(w('a'.repeat(200), 'XTerm'))).not.toContain('(')
+  })
+
+  it('falls back to the application, then the window id, when there is no title', () => {
+    expect(label(w('', 'Firefox'))).toBe('Firefox')
+    expect(label(w('  ', '', 'firefox'))).toBe('firefox')
+    expect(label(w('', ''))).toBe('0x1')
+    expect(label(w('~', ''))).toBe('~') // nothing known to add
   })
 })
 
@@ -234,7 +269,7 @@ describe('buildMenuItems', () => {
   const win = (id: string, title: string, active = false): WinInfo => ({
     id,
     wid: `0x40000${id}`,
-    cls: 'XTerm',
+    cls: '',
     title,
     active,
   })
@@ -269,10 +304,10 @@ describe('buildMenuItems', () => {
     ])
   })
 
-  it('truncates every label to 32 UTF-8 bytes', () => {
+  it('cuts every label to the width of a row', () => {
     const items = buildMenuItems([win('1', 'あ'.repeat(40))])
     expect(items[0]).toBeDefined()
-    expect(enc.encode(items[0]!.itemName).length).toBeLessThanOrEqual(32)
+    expect(glassWidth(items[0]!.itemName)).toBeLessThanOrEqual(ROW_LABEL_UNITS)
   })
 
   it('carries active as a flag, not baked into itemName, and falls back to cls', () => {
@@ -330,7 +365,7 @@ describe('mruOrderItems — recency decides what is nearest the hand', () => {
   const win = (id: string, title: string, active = false): WinInfo => ({
     id,
     wid: `0x40000${id}`,
-    cls: 'XTerm',
+    cls: '',
     title,
     active,
   })
@@ -426,7 +461,7 @@ describe('rootPages — the root list on a ten-line panel', () => {
   const win = (id: string, title: string, active = false): WinInfo => ({
     id,
     wid: `0x4${id.padStart(5, '0')}`,
-    cls: 'XTerm',
+    cls: '',
     title,
     active,
   })
@@ -490,8 +525,9 @@ describe('rootPages — the root list on a ten-line panel', () => {
   })
 
   it('still hands the launcher at most MENU_MAX_APPS rows, the entry row last', () => {
-    const items = buildMenuItems(wins(2), [...APPS, app('x11:xfontsel', 'xfontsel')])
-    expect(items.filter(i => i.kind === 'app')).toHaveLength(MENU_MAX_APPS) // the 4th is dropped
+    const extra = Array.from({ length: MENU_MAX_APPS }, (_, i) => app(`x11:a${String(i)}`, 'a'))
+    const items = buildMenuItems(wins(2), [...APPS, ...extra])
+    expect(items.filter(i => i.kind === 'app')).toHaveLength(MENU_MAX_APPS) // the rest are dropped
     expect(items[items.length - 1]).toMatchObject({ kind: 'menu', itemID: MENU_ENTRY_ID })
     expect(new Set(items.map(i => i.itemID)).size).toBe(items.length)
   })
@@ -510,11 +546,11 @@ describe('rootPages — the root list on a ten-line panel', () => {
     expect(JSON.stringify(items)).not.toContain('xterm -bg')
   })
 
-  it('truncates a long app name to 32 UTF-8 bytes including the prefix', () => {
+  it('cuts a long app name to the width of a row, the prefix included', () => {
     const items = buildMenuItems([], [app('u:long', 'あ'.repeat(40))])
     const row = items.find(i => i.kind === 'app')
     expect(row).toBeDefined()
-    expect(enc.encode(row!.itemName).length).toBeLessThanOrEqual(32)
+    expect(glassWidth(row!.itemName)).toBeLessThanOrEqual(ROW_LABEL_UNITS)
     expect(row!.itemName.startsWith('+ ')).toBe(true)
   })
 
@@ -1144,7 +1180,7 @@ describe('the stream open is guarded against its own await', () => {
 // ── mruOrderWindows — the same order, over the raw list (docs/phone-ui.md) ─────────────────
 //
 // The phone's `task` palette cannot use `mruOrderItems(buildMenuItems(...))`: that path
-// truncates every label to 32 UTF-8 bytes, which is a property of the lens. These cases pin
+// cuts every label to the width of a lens row, which is a property of the lens. These cases pin
 // that this one keeps whole titles and still agrees
 // with the glasses about the order — the one thing the two surfaces must not disagree about.
 
@@ -1152,7 +1188,7 @@ describe('mruOrderWindows — every window, whole titles, same recency rule', ()
   const win = (id: string, title: string, active = false): WinInfo => ({
     id,
     wid: `0x40000${id}`,
-    cls: 'XTerm',
+    cls: '',
     title,
     active,
   })
@@ -1198,7 +1234,7 @@ describe('mruOrderWindows — every window, whole titles, same recency rule', ()
     // …while the glasses' builder keeps every window too, but cuts each label.
     const glasses = buildMenuItems(many).filter(i => i.kind === 'window')
     expect(glasses).toHaveLength(20)
-    expect(glasses[0]?.itemName).toHaveLength(32)
+    expect(glasses[0]?.itemName).toHaveLength(48)
   })
 
   it('is a permutation of the selectable windows — the same objects', () => {

@@ -25,7 +25,7 @@ import {
   windows,
   winRecent,
 } from './menu.ts'
-import { MENU_MAX_APPS, mruOrderWindows } from './menuModel.ts'
+import { MENU_MAX_APPS, mruOrderWindows, windowAppName } from './menuModel.ts'
 import { INSTANCE_ID } from './overlay.ts'
 import { appsBtn, appsCountEl, taskBtn, windowBtn } from './phoneUi.ts'
 import { apiGet } from './serverLink.ts'
@@ -726,7 +726,7 @@ export function openTaskPalette(): void {
       // The dim column carries the class, which tells two windows with the same title apart.
       const clsEl = document.createElement('span')
       clsEl.className = 'ew-cmd'
-      clsEl.textContent = w.cls || w.app || ''
+      clsEl.textContent = windowAppName(w)
       row.append(nameEl, clsEl)
       row.setAttribute(
         'aria-label',
