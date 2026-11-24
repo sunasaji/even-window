@@ -91,8 +91,9 @@ export function renderStatus(): void {
 //
 // An approximation, labelled as one in the corner. The string is the one container 6 is sent
 // (`interactiveOverlay`); the firmware's bitmap font is not available here. Lines are folded by
-// the same width model that budgets the dialog (`wrapGlassLines`), so a break can be a few
-// narrow glyphs off. Nothing is sent from this copy.
+// the same width model that budgets the menu rows and the dialog (`wrapGlassLines`), so a row
+// that is budgeted to fit the lens does not fold here; a break can be a few narrow glyphs off.
+// Nothing is sent from this copy.
 //
 // Only the two surfaces a person acts on: `X unavailable` and `mirror paused` stay lens-only,
 // because the preview keeps working while the lens is paused.

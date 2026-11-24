@@ -34,28 +34,47 @@ const STAGES: VoiceStage[] = ['opening', 'listening', 'recognizing', 'confirm', 
 const LONG_JA = 'このファイルのバグを直してテストを追加してください。'.repeat(20)
 const LONG_EN = 'fix the bug in this file and add a test for it, then run the suite '.repeat(20)
 
-describe('the width model (wide 2 / narrow 1, 56 units a line)', () => {
+describe('the width model (six classes, 63 units a line)', () => {
   it('reproduces the three lines that were measured on the glasses', () => {
-    // 28 pure CJK characters = 56 units, the capacity.
-    const measured = '音声入力の折り返しを調べるための長い一文です。ここで切れ'
-    expect([...measured].length).toBe(28)
-    expect(glassWidth(measured)).toBe(56)
-    // kana + digits: 23 wide + 9 narrow = 55, just inside.
-    expect(glassWidth('あいうえ5あいうえ10あいうえ15あいうえ20あいうえ25あいう')).toBe(55)
-    // hyphens and digits: 53 narrow glyphs = 53, also inside.
-    expect(glassWidth('----5---10---15---20---25---30---35---40---45---50---')).toBe(53)
+    // Each of these filled a line on a G2, and one more character wrapped.
+    const cjk = '音声入力の折り返しを調べるための長い一文です。ここで切れ'
+    expect([...cjk].length).toBe(28)
+    const mixed = 'あいうえ5あいうえ10あいうえ15あいうえ20あいうえ25あいう'
+    const ascii = '----5---10---15---20---25---30---35---40---45---50---'
+    expect(ascii.length).toBe(53)
+    // A window title in lower case: the line took `*` and 57 letters, and wrapped the 58th.
+    const title = '*Taumatawhakatangihangakoauauotamateaturipukakapikimaungah'
+    expect(title.length).toBe(58)
+    expect(estimateLines(title + 'o')).toBe(2)
+    for (const s of [cjk, mixed, ascii, title]) {
+      expect(glassWidth(s), s).toBeLessThanOrEqual(LINE_UNITS)
+      expect(glassWidth(s), s).toBeGreaterThan(LINE_UNITS - 2.25)
+    }
+    expect(estimateLines(cjk + 'あ')).toBe(2)
+    expect(estimateLines(ascii + '-')).toBe(2)
+  })
+
+  // One width for every narrow character is off by a fifth between an index row and a title
+  // in capitals; these are the classes that close the gap.
+  it('tells a narrow glyph from a letter from a capital', () => {
+    expect(glassWidth('||il')).toBe(2)
+    expect(glassWidth('ftr')).toBeCloseTo(1.95)
+    expect(glassWidth('abcd')).toBeCloseTo(4.6)
+    expect(glassWidth('1-2-')).toBeCloseTo(4.72)
+    expect(glassWidth('ABCD')).toBeCloseTo(5.4)
+    expect(glassWidth('mw')).toBe(3)
   })
 
   it('counts the punctuation a transcript contains as wide', () => {
     for (const ch of ['、', '。', '「', '」', '～', '？', '・', 'ー', 'Ａ', '１']) {
-      expect(glassWidth(ch), ch).toBe(2)
+      expect(glassWidth(ch), ch).toBe(2.25)
     }
   })
 
   it('counts a surrogate pair once, not twice', () => {
     // The panel draws nothing for it, but a missing glyph is not a narrow glyph.
     expect([...'𠮷'].length).toBe(1)
-    expect(glassWidth('𠮷')).toBe(2)
+    expect(glassWidth('𠮷')).toBe(2.25)
   })
 
   it('an empty string still occupies a line', () => {
@@ -74,10 +93,10 @@ describe('the width model (wide 2 / narrow 1, 56 units a line)', () => {
 })
 
 describe("wrapGlassLines: the phone's copy of the lens text", () => {
-  it('folds at the measured capacities: 28 CJK, 56 narrow', () => {
+  it('folds at the measured capacities: 28 CJK, 53 hyphens', () => {
     const ja = 'あ'.repeat(30)
     expect(wrapGlassLines(ja)).toEqual(['あ'.repeat(28), 'あ'.repeat(2)])
-    expect(wrapGlassLines('-'.repeat(57)).map(l => l.length)).toEqual([56, 1])
+    expect(wrapGlassLines('-'.repeat(54)).map(l => l.length)).toEqual([53, 1])
   })
 
   it('keeps every character, in order: the copy may break differently, never drop', () => {
@@ -89,6 +108,12 @@ describe("wrapGlassLines: the phone's copy of the lens text", () => {
   it('a newline is a line of its own, and an empty line still takes one', () => {
     expect(wrapGlassLines('a\n\nb')).toEqual(['a', '', 'b'])
     expect(wrapGlassLines('')).toEqual([''])
+  })
+
+  // The widest row the menu budgets must not fold on the phone when it does not on the lens.
+  it('keeps a row of the menu budget on one line', () => {
+    const row = `> xc-xg (${Array.from({ length: 9 }, () => 'xfilili').join('|')})`
+    expect(wrapGlassLines(row)).toEqual([row])
   })
 
   it('agrees with estimateLines, except it may run longer where a wide glyph straddles', () => {

@@ -195,8 +195,8 @@ Background: [decisions/voice-dialog-design.md](decisions/voice-dialog-design.md)
 ### Layout
 
 The panel shows 10 lines and the firmware wraps long lines itself. The module only estimates
-how many lines a string takes (56 units per line; East Asian wide characters count 2, others
-1) and elides the transcript with `…` to the lines left after the header and the rows: 6 in
+how many lines a string takes, by the width model in
+[glasses.md](glasses.md#row-width) (63 units per line), and elides the transcript with `…` to the lines left after the header and the rows: 6 in
 `confirm`. The full text stays in the phone's box. Glyphs the lens font lacks (half-width
 kana, characters outside the Basic Multilingual Plane) are dropped silently by the firmware.
 Background: [notes/2026-10-voice-text-typing-and-lens-text.md](notes/2026-10-voice-text-typing-and-lens-text.md).

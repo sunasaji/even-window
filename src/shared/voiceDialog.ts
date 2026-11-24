@@ -75,10 +75,27 @@ export function voiceNoAudioError(mic: VoiceMic): string {
 
 // ── the width model ────────────────────────────────────────────────────────────────────────
 //
-// One line holds 28 pure-CJK characters or 53 hyphens-and-digits; at wide 2 / narrow 1 the
-// capacity is 56 units. It is an estimate: the font is proportional and the firmware does the
-// wrapping, so an error costs a line of layout, never a character of content.
-export const LINE_UNITS = 56
+// The panel font is proportional and the firmware does the wrapping, so this is an estimate.
+// Widths are in six classes, and a line holds 63 units.
+//
+//   CJK and full width           2.25   28 to a line
+//   capitals                     1.35
+//   `m` `w` `@` `%`              1.5
+//   digits and `-`               1.18   a 53-character ruler of them filled a line
+//   `f` `t` `r`                  0.65
+//   `|` `i` `l` brackets, space  0.5
+//   anything else                1.15   lower case
+//
+// Three lines measured on a G2 fix the scale: 28 CJK characters, the ruler, and a window title
+// of 58 lower-case letters that filled the line at its 58th (`*Taumata...maungah`, one more
+// wrapped). The classes between them are fitted so that those three come out at a full line
+// and the rows seen to fit come out under one. One width for every narrow character is off
+// by a fifth from one ASCII line to the next.
+//
+// An error costs layout, never content, but not evenly: a row that overflows breaks at its
+// first space, which strands the cursor on a line of its own. So a row is budgeted short of
+// the line (`ROW_LABEL_UNITS` in glassMenu.ts).
+export const LINE_UNITS = 63
 /** Lines the panel shows before the bottom edge clips. */
 export const PANEL_LINES = 10
 
@@ -101,11 +118,47 @@ export function isWideChar(cp: number): boolean {
   )
 }
 
+const NARROW_CHARS: ReadonlySet<string> = new Set("|!.,:;'`()[]{} iljI")
+const SLIM_CHARS: ReadonlySet<string> = new Set('ftr')
+const BROAD_CHARS: ReadonlySet<string> = new Set('mw@%')
+
+/** Characters a page title can carry that are not meant to be seen: the soft hyphen, the
+ *  zero-width space and joiners, direction marks, the byte order mark, control characters.
+ *  The panel does not treat them as invisible: on a G2 a soft hyphen is drawn as `-`, which
+ *  made a row that was budgeted without it wrap. So a label drops them (`plainText`) instead
+ *  of guessing a width; `glassWidth` counts any that remain as an ordinary character. */
+function isUnseen(cp: number): boolean {
+  return (
+    cp <= 0x1f || // C0 controls, newline and tab among them
+    (cp >= 0x7f && cp <= 0x9f) || // DEL and the C1 controls
+    cp === 0xad || // soft hyphen
+    (cp >= 0x200b && cp <= 0x200f) || // zero-width space and joiners, direction marks
+    (cp >= 0x2028 && cp <= 0x202e) || // line and paragraph separators, embeddings
+    cp === 0x2060 || // word joiner
+    cp === 0xfeff // byte order mark
+  )
+}
+
+/** `s` without the characters above. For one-line labels; a control character (a newline in
+ *  a window title) becomes nothing rather than a line break. */
+export function plainText(s: string): string {
+  let out = ''
+  for (const ch of s) if (!isUnseen(ch.codePointAt(0) ?? 0)) out += ch
+  return out
+}
+
 /** A string's width in the units above. Code points, not UTF-16 units, so a surrogate pair
  *  counts once. */
 export function glassWidth(s: string): number {
   let w = 0
-  for (const ch of s) w += isWideChar(ch.codePointAt(0) ?? 0) ? 2 : 1
+  for (const ch of s) {
+    if (NARROW_CHARS.has(ch)) w += 0.5
+    else if (SLIM_CHARS.has(ch)) w += 0.65
+    else if (ch === '-' || (ch >= '0' && ch <= '9')) w += 1.18
+    else if (BROAD_CHARS.has(ch)) w += 1.5
+    else if (ch >= 'A' && ch <= 'Z') w += 1.35
+    else w += isWideChar(ch.codePointAt(0) ?? 0) ? 2.25 : 1.15
+  }
   return w
 }
 

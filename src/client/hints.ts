@@ -54,8 +54,8 @@ export function retireHint(id: HintId): void {
   }
 }
 
-/** Pure: the lens text of the startup hint. Lines stay well under the panel's ~50 Latin
- *  characters (`LINE_UNITS`), so the firmware never folds one. No space-aligned columns: the
+/** Pure: the lens text of the startup hint. Lines stay well under the panel's width
+ *  (`LINE_UNITS`), so the firmware never folds one. No space-aligned columns: the
  *  lens font is proportional, so each row is `gesture: effect` instead. The voice row appears
  *  only when the server has a recogniser, because a long press does nothing otherwise. */
 export function startupHintText(voice: boolean): string {
