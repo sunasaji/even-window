@@ -52,8 +52,9 @@ export let windows: WinInfo[] = []
 /** Focus recency (window ids, most recent first) from `{t:'windows'}`. Only the root list's display
  *  order reads it; see `mruOrderItems`. */
 export let winRecent: string[] = []
-/** The launchable set and the recency order, from `{t:'apps'}` (docs/protocol.md). The full
- *  list is the phone panel's; only the head of `appRecent` reaches the glasses. */
+/** The launchable set and the recency order, from `{t:'apps'}` (docs/protocol.md). The head of
+ *  `appRecent` is the root list's `+` rows; the full list is the phone's `apps` palette and
+ *  the glasses' `Launch...` level. */
 export let apps: LauncherEntry[] = []
 let appRecent: string[] = []
 
@@ -178,6 +179,7 @@ export function menuState(): MenuState {
     invert,
     hasWindow: activeWindow() !== null,
     rootPaged: rootPageCount() > 1,
+    apps,
   }
 }
 
@@ -359,7 +361,7 @@ async function activateRow(row: MenuRow): Promise<void> {
     // Navigation stays here: the path stack is this presenter's state. Everything below the
     // `mod` case is the row's effect, which is the same wherever it was picked (`runRowToken`).
     case 'sub':
-      pushLevel(t.id, row.label)
+      pushLevel(t.id, row.crumb ?? row.label)
       return
     case 'back':
       popLevel()
@@ -447,6 +449,10 @@ export async function runRowToken(
       log(`${where} ratpoison ${t.key} => ${r?.ok ? 'ok' : (r?.msg ?? 'failed')}`)
       return
     }
+    // A `Launch...` row. The name is looked up for the toast; only the id is posted.
+    case 'app':
+      await launchApp(t.id, apps.find(a => a.id === t.id)?.name ?? t.id)
+      return
     // On the glasses this also closes the menu (`rowMenuEffect`), since the menu covers the
     // mirror whose derivation it changes. On the phone the palette stays up.
     case 'invert':

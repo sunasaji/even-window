@@ -18,7 +18,10 @@ import {
   balancedChunk,
   CONFIRM_LABEL,
   clickInput,
+  fitUnits,
+  indexLabel,
   isRatpoisonKey,
+  LAUNCH_ID,
   LEVEL_MAX_CONTENT,
   LEVEL_MAX_ROWS,
   levelRows,
@@ -29,6 +32,7 @@ import {
   pageLabel,
   parseToken,
   pathHeader,
+  ROW_LABEL_UNITS,
   RP_KEYS,
   RP_LEVEL_LABEL,
   RP_PREFIX,
@@ -39,11 +43,10 @@ import {
   windowPanelRows,
 } from '../src/shared/glassMenu.ts'
 import { KEYS } from '../src/shared/keys.ts'
+import { glassWidth } from '../src/shared/voiceDialog.ts'
 
 /** The ordinary case: a window is focused, nothing armed. */
 const ST: MenuState = { mods: [], invert: false, hasWindow: true }
-
-const utf8 = (s: string) => new TextEncoder().encode(s).length
 
 describe('the row budget', () => {
   // The panel's capacity (10 full lines = header + 9 rows) is the limit that binds, for a
@@ -51,17 +54,18 @@ describe('the row budget', () => {
   it('fits the overlay panel, and the root list has the same budget', () => {
     expect(LEVEL_MAX_ROWS).toBe(9)
     expect(ROOT_MAX_ROWS).toBe(LEVEL_MAX_ROWS)
-    expect(LEVEL_MAX_CONTENT).toBe(LEVEL_MAX_ROWS - 1)
+    // No level spends a row on `< Back`: a double-tap ascends.
+    expect(LEVEL_MAX_CONTENT).toBe(LEVEL_MAX_ROWS)
   })
 
-  it('is spent by every reachable level, Back included', () => {
+  it('is spent by every reachable level', () => {
     for (const id of reachableLevels(ST)) {
       const rows = levelRows(id, ST)
       expect(rows, id).not.toBeNull()
       expect(rows!.length, `${id} has ${String(rows!.length)} rows`).toBeLessThanOrEqual(
         LEVEL_MAX_ROWS,
       )
-      expect(rows!.length, id).toBeGreaterThan(1) // content + Back; a Back-only level is a dead end
+      expect(rows!.filter(r => r.token !== BACK_TOKEN).length, id).toBeGreaterThan(0) // no dead end
     }
   })
 })
@@ -81,11 +85,19 @@ describe('the tree', () => {
     }
   })
 
-  it('ends every level with exactly one Back row', () => {
+  // A double-tap ascends, and the header says so, so a level spends no row on it. A
+  // confirmation keeps the row: its only other row is the action, and the cursor needs
+  // somewhere to rest that does nothing.
+  it('gives a Back row to the confirmation levels and to no other', () => {
     for (const id of reachableLevels(ST)) {
       const rows = levelRows(id, ST)!
-      expect(rows[rows.length - 1], id).toEqual({ label: BACK_LABEL, token: BACK_TOKEN })
-      expect(rows.filter(r => r.token === BACK_TOKEN).length, id).toBe(1)
+      const backs = rows.filter(r => r.token === BACK_TOKEN)
+      if (id === 'cexit' || id === 'rpkill') {
+        expect(rows[rows.length - 1], id).toEqual({ label: BACK_LABEL, token: BACK_TOKEN })
+        expect(backs.length, id).toBe(1)
+      } else {
+        expect(backs.length, id).toBe(0)
+      }
     }
   })
 
@@ -97,12 +109,12 @@ describe('the tree', () => {
   })
 
   // ASCII only: the firmware font's coverage is unknown, and tofu is indistinguishable from a
-  // broken menu. The 32-byte cap is the root list's label limit.
-  it('labels in plain ASCII, within the label cap', () => {
+  // broken menu. The cap is the width of a row.
+  it('labels in plain ASCII, within the row width', () => {
     for (const id of reachableLevels(ST)) {
       for (const r of levelRows(id, ST)!) {
         expect(r.label, `${id}: ${r.label}`).toMatch(/^[\x20-\x7e]+$/)
-        expect(utf8(r.label), `${id}: ${r.label}`).toBeLessThanOrEqual(32)
+        expect(glassWidth(r.label), `${id}: ${r.label}`).toBeLessThanOrEqual(ROW_LABEL_UNITS)
       }
     }
   })
@@ -169,38 +181,22 @@ describe('the Keys levels', () => {
       'PgDn',
       'Home',
       'End',
-      BACK_LABEL,
     ])
     // 12 function keys page 6+6 rather than 9+3, and the row spells both pages out.
     expect(levelRows('kfn', ST)!.map(r => r.label)).toEqual([
       'F1 F2 F3 F4 F5 F6',
       'F7 F8 F9 F10 F11 F12',
-      BACK_LABEL,
     ])
-    expect(levelRows('kfn/0', ST)!.map(r => r.label)).toEqual([
-      'F1',
-      'F2',
-      'F3',
-      'F4',
-      'F5',
-      'F6',
-      BACK_LABEL,
-    ])
-    // 26 letters page 7+7+7+5; 10 digits page 5+5 (not 8+2). Single-character pages are
+    expect(levelRows('kfn/0', ST)!.map(r => r.label)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6'])
+    // 26 letters page 9+9+8; 10 digits page 5+5 (not 9+1). Single-character pages are
     // enumerated, spaced (the panel font is proportional) and carry no `...`: on the
     // punctuation page `.` is itself a selectable character.
     expect(levelRows('kletters', ST)!.map(r => r.label)).toEqual([
-      'a b c d e f g',
-      'h i j k l m n',
-      'o p q r s t u',
-      'v w x y z',
-      BACK_LABEL,
+      'a b c d e f g h i',
+      'j k l m n o p q r',
+      's t u v w x y z',
     ])
-    expect(levelRows('kdigits', ST)!.map(r => r.label)).toEqual([
-      '0 1 2 3 4',
-      '5 6 7 8 9',
-      BACK_LABEL,
-    ])
+    expect(levelRows('kdigits', ST)!.map(r => r.label)).toEqual(['0 1 2 3 4', '5 6 7 8 9'])
     expect(levelRows('kpunct', ST)!.map(r => r.label)[0]).toBe('- = [ ] \\ ;')
   })
 
@@ -211,18 +207,12 @@ describe('the Keys levels', () => {
   })
 
   it('shows the sticky modifiers armed', () => {
-    expect(levelRows('kmods', ST)!.map(r => r.label)).toEqual([
-      '[ ] Ctrl',
-      '[ ] Alt',
-      '[ ] Shift',
-      BACK_LABEL,
-    ])
+    expect(levelRows('kmods', ST)!.map(r => r.label)).toEqual(['[ ] Ctrl', '[ ] Alt', '[ ] Shift'])
     const armed: MenuState = { ...ST, mods: ['ctrl', 'shift'] }
     expect(levelRows('kmods', armed)!.map(r => r.label)).toEqual([
       '[x] Ctrl',
       '[ ] Alt',
       '[x] Shift',
-      BACK_LABEL,
     ])
   })
 
@@ -510,7 +500,7 @@ describe('windowPanelRows: the same rows, minus what is glasses-specific', () =>
   it('is ASCII and within the label cap, like every row in this file', () => {
     for (const r of [...windowPanelRows(ST), { label: CONFIRM_LABEL }]) {
       expect(r.label).toMatch(/^[\x20-\x7e]+$/)
-      expect(utf8(r.label)).toBeLessThanOrEqual(32)
+      expect(glassWidth(r.label)).toBeLessThanOrEqual(ROW_LABEL_UNITS)
     }
   })
 
@@ -548,15 +538,17 @@ describe('the level is called `Window...`, never `Ratpoison...`', () => {
 describe('Menu... level — the root list page turns', () => {
   const ST2: MenuState = { mods: [], invert: false, hasWindow: true }
 
-  it('adds Prev Page / Next Page under < Back only while the root list is paged', () => {
+  it('ends with Prev Page / Next Page only while the root list is paged', () => {
     const one = levelRows(MENU_ROOT_ID, ST2)!.map(r => r.label)
-    expect(one.at(-1)).toBe(BACK_LABEL)
+    expect(one.at(-1)).toBe('Exit...')
     expect(one).not.toContain('Next Page')
-    const paged = levelRows(MENU_ROOT_ID, { ...ST2, rootPaged: true })!
-    expect(paged.slice(-3).map(r => r.label)).toEqual([BACK_LABEL, 'Prev Page', 'Next Page'])
+    // The fullest it gets: every optional row present.
+    const full: MenuState = { ...ST2, rootPaged: true, apps: [{ id: 'a', name: 'a' }] }
+    const paged = levelRows(MENU_ROOT_ID, full)!
+    expect(paged.slice(-3).map(r => r.label)).toEqual(['Exit...', 'Prev Page', 'Next Page'])
     expect(paged.length).toBeLessThanOrEqual(LEVEL_MAX_ROWS)
-    // Only the Menu... level: a deeper level keeps < Back last.
-    expect(levelRows('keys', { ...ST2, rootPaged: true })!.at(-1)!.label).toBe(BACK_LABEL)
+    // Only the Menu... level.
+    expect(levelRows('keys', full)!.map(r => r.label)).not.toContain('Next Page')
   })
 
   it('parses the page tokens as navigation that keeps the menu up', () => {
@@ -564,5 +556,162 @@ describe('Menu... level — the root list page turns', () => {
     expect(parseToken('page:next')).toEqual({ kind: 'page', dir: 1 })
     expect(parseToken('page:up')).toBeNull()
     expect(rowMenuEffect('page:next')).toBe('stay')
+  })
+})
+
+describe('Launch... — every application, whatever the count', () => {
+  const pad = (i: number) => String(i).padStart(3, '0')
+  const many = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ id: `x11:app${pad(i)}`, name: `App ${pad(i)}` }))
+  const st = (n: number): MenuState => ({ ...ST, apps: many(n) })
+  /** Every `app:` id reachable from `Launch...`, in the order the rows are met. */
+  const leaves = (s: MenuState): string[] => {
+    const out: string[] = []
+    const walk = (id: string) => {
+      const rows = levelRows(id, s)
+      expect(rows, id).not.toBeNull()
+      expect(rows!.length, id).toBeLessThanOrEqual(LEVEL_MAX_ROWS)
+      for (const r of rows!) {
+        expect(glassWidth(r.label), `${id}: ${r.label}`).toBeLessThanOrEqual(ROW_LABEL_UNITS)
+        const t = parseToken(r.token)
+        if (t?.kind === 'sub') walk(t.id)
+        else if (t?.kind === 'app') out.push(t.id)
+        else throw new Error(`${id}: unexpected ${r.token}`)
+      }
+    }
+    walk(LAUNCH_ID)
+    return out
+  }
+
+  it('sits under Window... and only when there is something to launch', () => {
+    expect(levelRows(MENU_ROOT_ID, ST)!.map(r => r.label)).not.toContain('Launch...')
+    expect(levelRows(LAUNCH_ID, ST)).toBeNull()
+    const labels = levelRows(MENU_ROOT_ID, st(1))!.map(r => r.label)
+    expect(labels.indexOf('Launch...')).toBe(labels.indexOf('Window...') + 1)
+  })
+
+  it('lists up to nine applications directly, in name order whatever the case', () => {
+    const s: MenuState = {
+      ...ST,
+      apps: [
+        { id: 'c', name: 'xterm' },
+        { id: 'a', name: 'Firefox' },
+        { id: 'b', name: 'gedit' },
+      ],
+    }
+    expect(levelRows(LAUNCH_ID, s)).toEqual([
+      { label: 'Firefox', token: 'app:a' },
+      { label: 'gedit', token: 'app:b' },
+      { label: 'xterm', token: 'app:c' },
+    ])
+  })
+
+  // The count is whatever the machine has installed, so no count may overflow a level or
+  // lose an application: 81 fills two levels exactly, 82 needs a third.
+  it.each([1, 9, 10, 81, 82, 300, 800])('reaches each of %i applications once', n => {
+    expect(leaves(st(n))).toEqual(many(n).map(a => a.id))
+  })
+
+  it('adds a level only when the pages no longer fit in one', () => {
+    const depth = (s: MenuState): number => {
+      let id = LAUNCH_ID
+      for (let d = 1; ; d++) {
+        const t = parseToken(levelRows(id, s)![0]!.token)
+        if (t?.kind !== 'sub') return d
+        id = t.id
+      }
+    }
+    expect([9, 10, 81, 82].map(n => depth(st(n)))).toEqual([1, 2, 2, 3])
+  })
+
+  it('names a page by its range and the start of each name in it', () => {
+    const names = ['Files', 'Firefox', 'Firefox ESR', 'GIMP', 'Gnome Terminal']
+    expect(indexLabel('Files', 'Gnome Terminal', names)).toEqual({
+      // As much of each name as lets them all fit; neighbours that start alike are listed once.
+      label: 'Fi-Gn (Files|Firefox|GIMP|Gnome Te)',
+      crumb: 'Fi-Gn',
+    })
+    // Alike whatever the case, which is how the names are ordered.
+    expect(indexLabel('Rofi', 'rxvt', ['Rofi', 'rofi theme', 'Rofi Theme', 'rxvt']).label).toBe(
+      'Ro-rx (Rofi|rofi the|rxvt)',
+    )
+    const row = levelRows(LAUNCH_ID, st(10))![0]!
+    expect(row.label).toBe('Ap-Ap (App 000|App 001|App 002|App 003|App 004)')
+    expect(row.crumb).toBe('Ap-Ap')
+  })
+
+  const listed = (label: string) => label.slice(label.indexOf('(') + 1, -1).split('|')
+
+  it('shortens every entry before it leaves one out', () => {
+    const names = Array.from({ length: 9 }, (_, i) => `${'abcdefgh'[i]}oooooooo`)
+    const { label } = indexLabel(names[0]!, names[8]!, names)
+    const parts = listed(label)
+    expect(parts).toHaveLength(9)
+    expect(parts[0]).toMatch(/^ao{3,6}$/) // shorter than the eight it would take alone
+    expect(indexLabel('aoooooooo', 'boooooooo', names.slice(0, 2)).label).toBe(
+      'ao-bo (aooooooo|booooooo)',
+    )
+    expect(glassWidth(label)).toBeLessThanOrEqual(ROW_LABEL_UNITS)
+  })
+
+  it('cuts the list at the width budget and says so', () => {
+    const names = Array.from({ length: 9 }, (_, i) => `${'ABCDEFGH J'[i === 8 ? 9 : i]}WWWWWWW`)
+    const { label } = indexLabel(names[0]!, names[8]!, names)
+    const parts = listed(label)
+    expect(parts.at(-1)).toBe('...')
+    expect(parts.length).toBeLessThan(10)
+    expect(parts[0]).toBe('AWWW') // the shortest an entry gets
+    expect(glassWidth(label)).toBeLessThanOrEqual(ROW_LABEL_UNITS)
+  })
+
+  // An index row is mostly `|` and lower case; a row of capitals is far wider per character.
+  it('weighs narrow glyphs and capitals, so the budget is a width and not a count', () => {
+    expect(fitUnits('W'.repeat(80), ROW_LABEL_UNITS).length).toBeLessThan(
+      fitUnits('i'.repeat(200), ROW_LABEL_UNITS).length / 2,
+    )
+  })
+
+  it('counts a CJK name as wide, and never splits a character', () => {
+    const jp = [
+      'ファイル',
+      'テキストエディター',
+      '端末',
+      '設定',
+      '電卓',
+      '画像ビューアー',
+      '文書',
+      '表計算',
+    ]
+    const { label, crumb } = indexLabel('テキストエディター', '表計算', jp)
+    expect(crumb).toBe('テキ-表計')
+    expect(label.endsWith('...)')).toBe(true)
+    expect(glassWidth(label)).toBeLessThanOrEqual(ROW_LABEL_UNITS)
+    expect(fitUnits('あいう', 5)).toBe('あい')
+    const long: MenuState = { ...ST, apps: [{ id: 'j', name: 'あ'.repeat(40) }] }
+    expect(levelRows(LAUNCH_ID, long)![0]!.label).toBe(
+      'あ'.repeat(Math.floor(ROW_LABEL_UNITS / 2.25)),
+    )
+  })
+
+  it('falls back to the id for a nameless entry and drops one with no id', () => {
+    const s: MenuState = {
+      ...ST,
+      apps: [
+        { id: 'x11:foo', name: ' ' },
+        { id: '', name: 'ghost' },
+      ],
+    }
+    expect(levelRows(LAUNCH_ID, s)).toEqual([{ label: 'x11:foo', token: 'app:x11:foo' }])
+  })
+
+  it('launches and returns to the root list, and forgets a path the list no longer has', () => {
+    expect(parseToken('app:x11:foo')).toEqual({ kind: 'app', id: 'x11:foo' })
+    expect(parseToken('app:')).toBeNull()
+    expect(rowMenuEffect('app:x11:foo')).toBe('reset')
+    const path = [MENU_ROOT_ID, LAUNCH_ID, 'launch/1']
+    expect(resumablePath(path, st(20))).toEqual(path)
+    expect(resumablePath(path, st(5))).toEqual([MENU_ROOT_ID, LAUNCH_ID])
+    expect(levelRows('launch/x', st(20))).toBeNull()
+    expect(levelRows('launch/0/0', st(20))).toBeNull()
   })
 })

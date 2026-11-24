@@ -6,11 +6,14 @@
 // stack, which is client state. The client draws every level into the overlay container
 // (docs/decisions/client-drawn-glasses-menu.md).
 //
-// Labels are ASCII only: the firmware font's coverage is unknown, and a label rendered as
-// tofu is indistinguishable from a broken menu. Toggle markers are part of the label.
+// Labels written here are ASCII only: the firmware font's coverage is unknown, and a label
+// rendered as tofu is indistinguishable from a broken menu. Toggle markers are part of the
+// label. The exception is `Launch...`, whose labels are application names, as arbitrary as the
+// window titles of the root list.
 
 import type { Mod } from './keys.ts'
 import { isBindableKey, KEYS, MODS } from './keys.ts'
+import { glassWidth, plainText } from './voiceDialog.ts'
 
 // ── the root list's label limit ────────────────────────────────────────────────────────────
 // Defined once here; src/client/menuModel.ts re-exports it.
@@ -20,26 +23,44 @@ export const MENU_ITEM_MAX_BYTES = 32
 // ── the row budget ─────────────────────────────────────────────────────────────────────────
 //
 // The panel shows ten full text lines (an eleventh is clipped at the bottom edge), which a
-// level spends as 1 header + 8 content rows + 1 `< Back`. Counted off the simulator's
-// framebuffer and confirmed on a G2. The root list spends the same nine rows under its own
-// header (`rootPages` in src/client/menuModel.ts).
+// level spends as 1 header + 9 rows. Counted off the simulator's framebuffer and confirmed on
+// a G2. The root list spends the same nine rows under its own header (`rootPages` in
+// src/client/menuModel.ts).
 export const LEVEL_MAX_ROWS = 9
-/** Rows a level may fill with content: the budget minus the `< Back` row every level carries. */
-export const LEVEL_MAX_CONTENT = LEVEL_MAX_ROWS - 1
+/** Rows a level may fill with content: all of them. A level has no `< Back` row, because a
+ *  double-tap ascends and the header says so; only a confirmation level carries one. */
+export const LEVEL_MAX_CONTENT = LEVEL_MAX_ROWS
 
 /** The `< Back` row's label. ASCII `<`, per the ASCII-only rule. */
 export const BACK_LABEL = '< Back'
-/** The token every level's ascend row carries. */
+/** The token a confirmation level's ascend row carries. */
 export const BACK_TOKEN = 'back'
+
+/** The width a row label of arbitrary text may take (a window title, an application name, an
+ *  index row), in the units of `glassWidth`. A line holds `LINE_UNITS` = 63; the cursor column
+ *  and the focus mark take up to 2.8 more, so a full row is 95 % of it. The rest is margin,
+ *  and it is needed: a row that overflows breaks at its first space, which leaves the cursor
+ *  alone on a line, puts the label on the next two, and pushes the last row off the panel. */
+export const ROW_LABEL_UNITS = 57
 
 /** Suffix marking a row that descends rather than acts. Three dots, not `…`: ASCII only. */
 const SUB = '...'
 
 export interface MenuRow {
-  /** ASCII, <= 32 UTF-8 bytes. Carries its own marker for a toggle (`[x]` / `[ ]`). */
+  /** ASCII when written here; under `Launch...`, any text. At most `ROW_LABEL_UNITS` wide.
+   *  Carries its own marker for a toggle (`[x]` / `[ ]`). */
   label: string
   /** What the row does. Parse with `parseToken`, never with a bare `startsWith`. */
   token: string
+  /** What the breadcrumb header shows for the level this row enters, when the label is too
+   *  long for it. Absent = the label. */
+  crumb?: string
+}
+
+/** One launchable application, as much of it as a level needs. */
+export interface MenuAppRef {
+  id: string
+  name: string
 }
 
 /** The live state every level is a pure function of. */
@@ -51,9 +72,11 @@ export interface MenuState {
   /** Is there a focused window? Rows that act on one (`Close Window`, `Kill`) are omitted
    *  when there is not. */
   hasWindow: boolean
-  /** Is the root list split into pages? Then the `Menu...` level carries `Prev Page` /
-   *  `Next Page` under `< Back`. Absent = one page. */
+  /** Is the root list split into pages? Then the `Menu...` level ends with `Prev Page` /
+   *  `Next Page`. Absent = one page. */
   rootPaged?: boolean
+  /** Every launchable application, in any order. Absent or empty = no `Launch...` row. */
+  apps?: readonly MenuAppRef[]
 }
 
 // ── gestures while a level is open ─────────────────────────────────────────────────────────
@@ -113,7 +136,7 @@ export const RP_LEVEL_LABEL = 'Window' + SUB
 export interface RatpoisonKey {
   /** The keysequence sent after the prefix, in xdotool spelling (`question`, `K`, `ctrl+t`). */
   key: string
-  /** ASCII, <= 32 bytes. */
+  /** ASCII, within `ROW_LABEL_UNITS`. */
   label: string
   /** True when picking it must pass through a confirmation level. */
   destructive?: true
@@ -190,6 +213,7 @@ export type MenuToken =
   | { kind: 'mod'; mod: Mod }
   | { kind: 'click'; action: ClickAction }
   | { kind: 'rp'; key: string }
+  | { kind: 'app'; id: string }
   | { kind: 'close' }
   | { kind: 'exit' }
   | { kind: 'invert' }
@@ -211,6 +235,8 @@ export function parseToken(token: string): MenuToken | null {
   if (head === 'sub') return { kind: 'sub', id: arg }
   if (head === 'key') return isBindableKey(arg) ? { kind: 'key', key: arg } : null
   if (head === 'rp') return isRatpoisonKey(arg) ? { kind: 'rp', key: arg } : null
+  // The id is opaque here and resolved by the server, which owns the argv.
+  if (head === 'app') return { kind: 'app', id: arg }
   if (head === 'mod')
     return (MODS as readonly string[]).includes(arg) ? { kind: 'mod', mod: arg as Mod } : null
   if (head === 'click') {
@@ -264,9 +290,9 @@ export const MENU_ROOT_LABEL = 'Menu' + SUB
 export const MENU_ROOT_PAGED_LABEL = 'Menu/Prev/Next' + SUB
 export const MENU_ROOT_TOKEN = 'sub:' + MENU_ROOT_ID
 
-/** The rows under `< Back` in the `Menu...` level that turn the root list's page, present only
- *  while it has several (`MenuState.rootPaged`). Below `< Back` so the ordinary rows keep their
- *  places, and `Next Page` is one wrapping swipe-up from the cursor's opening row. */
+/** The last rows of the `Menu...` level, which turn the root list's page; present only while it
+ *  has several (`MenuState.rootPaged`). Last so the ordinary rows keep their places, and
+ *  `Next Page` is one wrapping swipe-up from the cursor's opening row. */
 export const PAGE_PREV_LABEL = 'Prev Page'
 export const PAGE_NEXT_LABEL = 'Next Page'
 export const PAGE_PREV_TOKEN = 'page:prev'
@@ -322,7 +348,7 @@ function mark(on: boolean): string {
   return on ? '[x] ' : '[ ] '
 }
 
-/** The content rows of one level, without the `< Back` row that `levelRows` appends.
+/** The content rows of one level, without the rows `levelRows` appends.
  *  `null` = no such level; the caller drops the token. */
 function levelContent(id: string, s: MenuState): MenuRow[] | null {
   // The level the root list descends into. Destructive rows are last and behind a confirm.
@@ -330,8 +356,9 @@ function levelContent(id: string, s: MenuState): MenuRow[] | null {
     const out: MenuRow[] = [
       { label: 'Keys' + SUB, token: 'sub:keys' },
       { label: RP_LEVEL_LABEL, token: 'sub:rp' },
-      { label: mark(s.invert) + 'Invert', token: 'invert' },
     ]
+    if (s.apps?.length) out.push({ label: 'Launch' + SUB, token: 'sub:' + LAUNCH_ID })
+    out.push({ label: mark(s.invert) + 'Invert', token: 'invert' })
     if (s.hasWindow) out.push({ label: 'Close Window', token: 'close' })
     out.push({ label: 'Exit' + SUB, token: 'sub:cexit' })
     return out
@@ -381,8 +408,8 @@ function levelContent(id: string, s: MenuState): MenuRow[] | null {
         : { label: k.label, token: 'rp:' + k.key },
     )
   }
-  // The two confirmations: ordinary levels whose only content row is the action, so `< Back`
-  // or a double-tap cancels.
+  // The two confirmations: levels whose only content row is the action, so `< Back` or a
+  // double-tap cancels (`CONFIRM_LEVELS`).
   if (id === 'rpkill') {
     // Gated on `hasWindow` like the row that leads here, so a remembered path
     // (`resumablePath`) cannot resume on a kill with nothing to kill.
@@ -391,6 +418,7 @@ function levelContent(id: string, s: MenuState): MenuRow[] | null {
     return k ? [{ label: CONFIRM_LABEL, token: 'rp:' + k.key }] : null
   }
   if (id === 'cexit') return [{ label: 'Exit the app - confirm', token: 'exit' }]
+  if (id === LAUNCH_ID || id.startsWith(LAUNCH_ID + '/')) return launchRows(id, s.apps ?? [])
   // Paged children: `<id>/N`.
   const slash = id.lastIndexOf('/')
   if (slash > 0) {
@@ -405,6 +433,133 @@ function levelContent(id: string, s: MenuState): MenuRow[] | null {
     if (base === 'kkeypad') return pageOf(keyRows('keypad'), n)
   }
   return null
+}
+
+// ── Launch...: every application, as an index ──────────────────────────────────────────────
+//
+// The applications in name order. Up to nine are the level itself. More are split into pages
+// of at most nine, and the level lists the pages; more than nine pages are grouped again, as
+// often as it takes, so no level exceeds the row budget whatever the count. A level below the
+// first is `launch/I/J...`, the path of indices from the top.
+//
+// A row that leads to a page names its range and then the start of each name in it:
+// `Fi-Gn (Files|Firefox|GIMP|Gnome Te)`. A row that leads to a group of pages lists where each page starts.
+
+/** The level `Launch...` descends into. */
+export const LAUNCH_ID = 'launch'
+/** Characters of a name that stand for it in a range and in the list after it. */
+const RANGE_CHARS = 2
+const HEAD_MIN_CHARS = 4
+const HEAD_MAX_CHARS = 8
+
+interface LaunchNode {
+  /** The first and last application names under this node. */
+  first: string
+  last: string
+  /** What the row lists: a page's names, or the first name of each page of a group. */
+  heads: readonly string[]
+  /** The leaf row, for a node that is one application. */
+  row?: MenuRow
+  kids?: readonly LaunchNode[]
+}
+
+/** Cut to `units` of panel width without splitting a code point, as one line of plain text
+ *  (`plainText`): the result is what the panel is sent, so it holds nothing unseen. */
+export function fitUnits(s: string, units: number): string {
+  let used = 0
+  let out = ''
+  for (const ch of plainText(s)) {
+    const w = glassWidth(ch)
+    if (used + w > units) break
+    used += w
+    out += ch
+  }
+  return out
+}
+
+/** The first `n` characters of a name, trimmed: its stand-in in an index row. */
+function nameHead(name: string, n: number): string {
+  return [...plainText(name).trim()].slice(0, n).join('').trim()
+}
+
+/** An index row's label and breadcrumb. Each entry is the start of a name, as long as lets
+ *  every entry fit, from `HEAD_MAX_CHARS` down to `HEAD_MIN_CHARS`; at the minimum the list
+ *  takes what fits and ends with `...`. Neighbours that start alike are listed once. */
+export function indexLabel(
+  first: string,
+  last: string,
+  heads: readonly string[],
+): { label: string; crumb: string } {
+  const crumb = `${nameHead(first, RANGE_CHARS)}-${nameHead(last, RANGE_CHARS)}`
+  let parts: string[] = []
+  for (let n = HEAD_MAX_CHARS; n >= HEAD_MIN_CHARS; n--) {
+    parts = []
+    for (const h of heads) {
+      const head = nameHead(h, n)
+      // Whatever the case, as the order is: `Rofi|rofi|Rofi` says one thing three times.
+      if (head && parts[parts.length - 1]?.toLowerCase() !== head.toLowerCase()) parts.push(head)
+    }
+    const whole = `${crumb} (${parts.join('|')})`
+    if (glassWidth(whole) <= ROW_LABEL_UNITS) return { label: whole, crumb }
+  }
+  let list = ''
+  for (const p of parts) {
+    const next = `${list}${p}|`
+    if (glassWidth(`${crumb} (${next}...)`) > ROW_LABEL_UNITS) break
+    list = next
+  }
+  return { label: `${crumb} (${list}...)`, crumb }
+}
+
+/** Name order, case-insensitive, by code point so it is the same on every device; the id
+ *  settles a tie. */
+function byName(a: MenuAppRef, b: MenuAppRef): number {
+  const x = a.name.toLowerCase()
+  const y = b.name.toLowerCase()
+  return x < y ? -1 : x > y ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+}
+
+/** The nodes of the top level: at most `LEVEL_MAX_CONTENT`, each a leaf or a group. */
+function launchTree(apps: readonly MenuAppRef[]): LaunchNode[] {
+  let nodes: LaunchNode[] = apps
+    .filter(a => a.id)
+    .map(a => ({ id: a.id, name: a.name.trim() || a.id }))
+    .sort(byName)
+    .map(a => ({
+      first: a.name,
+      last: a.name,
+      heads: [a.name],
+      row: { label: fitUnits(a.name, ROW_LABEL_UNITS), token: 'app:' + a.id },
+    }))
+  while (nodes.length > LEVEL_MAX_CONTENT) {
+    nodes = balancedChunk(nodes, LEVEL_MAX_CONTENT).map(kids => ({
+      first: kids[0]?.first ?? '',
+      last: kids[kids.length - 1]?.last ?? '',
+      // A page lists its names; a group lists where each of its pages starts.
+      heads: kids.map(k => k.first),
+      kids,
+    }))
+  }
+  return nodes
+}
+
+/** The rows of `launch` or `launch/I/J...`; null when the path leads nowhere, which is what a
+ *  remembered path does after the application list changes. */
+function launchRows(id: string, apps: readonly MenuAppRef[]): MenuRow[] | null {
+  let nodes: readonly LaunchNode[] = launchTree(apps)
+  if (nodes.length === 0) return null
+  for (const part of id.split('/').slice(1)) {
+    const i = Number(part)
+    const kids = Number.isInteger(i) && i >= 0 ? nodes[i]?.kids : undefined
+    if (!kids) return null
+    nodes = kids
+  }
+  const base = id + '/'
+  return nodes.map((n, i) =>
+    n.row
+      ? { ...n.row }
+      : { ...indexLabel(n.first, n.last, n.heads), token: `sub:${base}${String(i)}` },
+  )
 }
 
 /** What a destructive row says once armed: a confirm level on the glasses, the row itself
@@ -432,13 +587,18 @@ export function windowPanelRows(s: MenuState): PanelRow[] {
   return out
 }
 
-/** The rows of one level, `< Back` last (in `Menu...` while the root list is paged, followed
- *  by `Prev Page` / `Next Page`); `null` = no such level. The cursor opens on row 1,
- *  so the useful rows come first and `< Back` is one wrapping swipe-up away. */
+/** The levels that end with `< Back`: the confirmations, whose only other row is the action.
+ *  There the row is somewhere to put the cursor that does nothing. */
+const CONFIRM_LEVELS: ReadonlySet<string> = new Set(['rpkill', 'cexit'])
+
+/** The rows of one level; `null` = no such level. A confirmation level ends with `< Back`, and
+ *  `Menu...` ends with `Prev Page` / `Next Page` while the root list is paged. Every other
+ *  level is its content: a double-tap ascends. The cursor opens on row 1. */
 export function levelRows(id: string, s: MenuState): MenuRow[] | null {
   const content = levelContent(id, s)
   if (!content) return null
-  const out = [...content, { label: BACK_LABEL, token: BACK_TOKEN }]
+  const out = [...content]
+  if (CONFIRM_LEVELS.has(id)) out.push({ label: BACK_LABEL, token: BACK_TOKEN })
   if (id === MENU_ROOT_ID && s.rootPaged) {
     out.push(
       { label: PAGE_PREV_LABEL, token: PAGE_PREV_TOKEN },

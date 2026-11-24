@@ -126,7 +126,7 @@ describe('runRowToken is the one place a row becomes an action', () => {
     const body = fnBody('activateRow')
     expect(body.has("runRowToken(t, modsAtPick, 'menu')")).toBe(true)
     // Navigation stays with the presenter that owns a path stack; the effects do not.
-    expect(body.has("case 'sub': pushLevel(t.id, row.label); return")).toBe(true)
+    expect(body.has("case 'sub': pushLevel(t.id, row.crumb ?? row.label); return")).toBe(true)
     // Asks about the call rather than the string, so prose naming `/api/wm/key` cannot match.
     expect(body.has('apiPost')).toBe(false)
   })
@@ -143,7 +143,7 @@ describe('the task palette switches by wid, through the one route', () => {
   it('orders the raw window list, not the glasses builder, which caps and truncates', () => {
     expect(body.has('mruOrderWindows(windows, winRecent)')).toBe(true)
     expect(body.has('buildMenuItems')).toBe(false)
-    expect(body.has('truncateUtf8')).toBe(false)
+    expect(body.has('fitUnits')).toBe(false)
     expect(body.has('menuItems')).toBe(false)
   })
 
