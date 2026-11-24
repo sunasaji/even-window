@@ -92,7 +92,7 @@ describe("wrapGlassLines: the phone's copy of the lens text", () => {
   })
 
   it('agrees with estimateLines, except it may run longer where a wide glyph straddles', () => {
-    for (const s of [LONG_JA, LONG_EN, 'a' + 'あ'.repeat(60), 'Windows + apps\n> *bash\n  vim']) {
+    for (const s of [LONG_JA, LONG_EN, 'a' + 'あ'.repeat(60), 'Tasks\n> Menu...\n  *bash']) {
       const n = wrapGlassLines(s).length
       expect(n, s.slice(0, 20)).toBeGreaterThanOrEqual(estimateLines(s))
       expect(n, s.slice(0, 20)).toBeLessThanOrEqual(estimateLines(s) * 2)

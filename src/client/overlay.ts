@@ -430,13 +430,12 @@ export function interactiveOverlay(): string | null {
       const rows = menuLevelRows.map((r, i) => `${i === menuSel ? '>' : ' '} ${r.label}`)
       return [head, ...rows].join('\n')
     }
-    // The root list holds windows and `+ launcher` rows, so the header cannot say "Windows".
+    // The root list holds windows and `+ launcher` rows: "Tasks" covers both.
     // One short line: it is drawn by the firmware's text metrics on a 576px panel.
     // The page number appears only when there is more than one page.
     const pages = rootPageCount()
     const page = pages > 1 ? ` ${String(menuPage + 1)}/${String(pages)}` : ''
-    const head =
-      menuItems.length > 1 ? `Windows + apps${page}  (tap=go  dbl=close)` : 'Nothing to show'
+    const head = menuItems.length > 1 ? `Tasks${page}  (tap=go  dbl=close)` : 'Nothing to show'
     // `rootRows()`, not `menuItems`: the window rows are drawn most-recently-focused first
     // (`mruOrderItems`), and `chooseMenu` indexes the same array.
     const rows = rootRows().map(

@@ -2,12 +2,17 @@
 //
 // A leaf: it imports no other client module, so anything may use it at load time.
 
-import { LEVEL_MAX_ROWS, MENU_ITEM_MAX_BYTES, MENU_ROOT_LABEL } from '../shared/glassMenu.ts'
+import {
+  LEVEL_MAX_ROWS,
+  MENU_ITEM_MAX_BYTES,
+  MENU_ROOT_LABEL,
+  MENU_ROOT_PAGED_LABEL,
+} from '../shared/glassMenu.ts'
 import type { WinInfo } from '../shared/types.ts'
 
 // ── window switcher ────────────────────────────────────────────────────────────────────────
 //
-// The root list — windows, then the curated launcher rows, then `Menu...` — is drawn by the
+// The root list — `Menu...`, then windows, then the curated launcher rows — is drawn by the
 // client into container 6 with `textContainerUpgrade` (a differential push, never a rebuild)
 // and opened by a double-tap. Everything below it is the hierarchy in src/shared/glassMenu.ts.
 // The firmware's `menuObject` is not used: a page may carry a z plan or that menu, never both
@@ -17,23 +22,16 @@ import type { WinInfo } from '../shared/types.ts'
 // Re-exported so the menu tests can assert the client has no copy of its own.
 export { MENU_ITEM_MAX_BYTES }
 
-/** Reserved `itemID` for the root's last row, `Menu...`. Fixed rather than positional so it
+/** Reserved `itemID` for the root's first row, `Menu...`. Fixed rather than positional so it
  *  never collides with a window item and never moves when the window set changes. Window items
  *  start at 2. */
 export const MENU_ENTRY_ID = 1
 
-/** `itemID` of a page's `More...` row. Zero because it is not an item of the list: `rootPages`
- *  adds it to a page, and `buildMenuItems` never allocates it. */
-export const MENU_MORE_ID = 0
-/** The row that turns to the next page of the root list. ASCII, like every label. */
-export const MENU_MORE_LABEL = 'More...'
-
 /** Rows under the root list's header: the same budget a level has. */
 export const ROOT_MAX_ROWS = LEVEL_MAX_ROWS
-/** Windows and apps on the only page: every row but `Menu...`. */
-export const ROOT_PAGE_SINGLE = ROOT_MAX_ROWS - 1
-/** Windows and apps on each page of several: every row but `More...` and `Menu...`. */
-export const ROOT_PAGE_PAGED = ROOT_MAX_ROWS - 2
+/** Windows and apps on each page: every row but `Menu...`. Pages are turned from inside the
+ *  `Menu...` level (`Prev Page` / `Next Page`), so a page spends no row on it. */
+export const ROOT_PAGE_SIZE = ROOT_MAX_ROWS - 1
 
 // ── the curated launcher slots ─────────────────────────────────────────────────────────────
 //
@@ -71,16 +69,14 @@ export function truncateUtf8(s: string, maxBytes = MENU_ITEM_MAX_BYTES): string 
 // go stale silently. `wid` is stable for the window's lifetime, so `WinInfo.id` is never
 // retained here.
 export interface MenuItem {
-  /** Non-zero and unique within a built list. `MENU_MORE_ID` (0) is the `More...` row, which
-   *  exists only on a page. */
+  /** Non-zero and unique within a built list. */
   itemID: number
   /** <= 32 UTF-8 bytes. Never carries the active marker: the overlay adds its own at render
    *  time, from `active`, which keeps focus out of `menuSignature`. */
   itemName: string
   /** `window` = switch to `wid`; `app` = launch `appId`; `menu` = descend into the hierarchy
-   *  (Exit lives inside it, behind a confirm level — it is not a root row); `more` = turn to
-   *  the next page of the root list. */
-  kind: 'window' | 'app' | 'menu' | 'more'
+   *  (Exit and the page turns live inside it — they are not root rows). */
+  kind: 'window' | 'app' | 'menu'
   /** X window id, the only selector ever posted. `null` (not `''`) for anything that is not a
    *  window. */
   wid: string | null
@@ -98,11 +94,9 @@ export interface MenuApp {
   name: string
 }
 
-/** Build the root list: every window, then the curated launcher rows, then `Menu...`. Nothing
- *  is dropped for space here; `rootPages` lays the list out on the panel.
- *
- *  The entry row is last in display order but holds the fixed id 1. Last rather than first
- *  because the cursor opens on a window and the list wraps, so one swipe-up reaches it.
+/** Build the root list's items: every window, then the curated launcher rows, then `Menu...`.
+ *  Nothing is dropped for space here; `rootPages` lays the list out on the panel, and puts
+ *  `Menu...` first: it is used more than a window switch, and the cursor opens on it.
  *
  *  ids are allocated sequentially from 2 and never reused within a list. They identify a row
  *  for the debug surface (`ewMenu.items`) and `mruOrderItems`; the drawn order is `rootRows`. */
@@ -208,39 +202,29 @@ export function mruOrderItems(
 
 // ── pages: the root list on a ten-line panel ───────────────────────────────────────────────
 //
-// The panel shows a header and nine rows. A list that fits is one page: up to eight windows
-// and apps, then `Menu...`. A longer one is split into pages of seven, each ending in
-// `More...` and `Menu...`, so the way into the hierarchy (and from there to Exit) is on every
-// page and no window is out of reach.
+// The panel shows a header and nine rows. Every page opens with `Menu...` and holds up to
+// eight windows and apps under it. With several pages the row reads `Menu/Prev/Next...`: the
+// page turns are the last two rows of the level it enters, so a page spends no row on them,
+// and the way into the hierarchy (and from there to Exit) is on every page.
 //
 // Windows are never split unevenly to make room for an app: apps take what the last page has
 // left, at most `MENU_MAX_APPS`.
 
 /** Pure: lay the display-ordered items (`mruOrderItems`) out as pages. Always at least one
- *  page, and every page ends in the `Menu...` row when the list has one. */
+ *  page, and every page starts with the `Menu...` row when the list has one. */
 export function rootPages(ordered: readonly MenuItem[]): MenuItem[][] {
   const wins = ordered.filter(it => it.kind === 'window')
   const apps = ordered.filter(it => it.kind === 'app')
-  const tail = ordered.filter(it => it.kind === 'menu')
-  if (wins.length <= ROOT_PAGE_SINGLE) {
-    return [[...wins, ...apps.slice(0, ROOT_PAGE_SINGLE - wins.length), ...tail]]
-  }
-  const more: MenuItem = {
-    itemID: MENU_MORE_ID,
-    itemName: MENU_MORE_LABEL,
-    kind: 'more',
-    wid: null,
-    appId: null,
-    active: false,
-  }
+  const head = ordered.filter(it => it.kind === 'menu')
   const pages: MenuItem[][] = []
-  for (let i = 0; i < wins.length; i += ROOT_PAGE_PAGED) {
-    const chunk = wins.slice(i, i + ROOT_PAGE_PAGED)
-    const last = i + ROOT_PAGE_PAGED >= wins.length
-    const fill = last ? apps.slice(0, ROOT_PAGE_PAGED - chunk.length) : []
-    pages.push([...chunk, ...fill, { ...more }, ...tail])
+  for (let i = 0; i === 0 || i < wins.length; i += ROOT_PAGE_SIZE) {
+    const chunk = wins.slice(i, i + ROOT_PAGE_SIZE)
+    const last = i + ROOT_PAGE_SIZE >= wins.length
+    const fill = last ? apps.slice(0, ROOT_PAGE_SIZE - chunk.length) : []
+    pages.push([...chunk, ...fill])
   }
-  return pages
+  const label = pages.length > 1 ? MENU_ROOT_PAGED_LABEL : MENU_ROOT_LABEL
+  return pages.map(p => [...head.map(it => ({ ...it, itemName: label })), ...p])
 }
 
 /** Stable signature of the item list, so a real change can be told from a restatement; it

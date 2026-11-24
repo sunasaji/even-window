@@ -25,19 +25,20 @@ five swipes arrives as five key presses.
 Double tap to open it. While the menu is shown the mirror is hidden; it comes back
 when the menu closes.
 
-The first level lists, in this order:
+The first level, headed `Tasks`, lists, in this order:
 
+- `Menu...`, which leads to everything else — the cursor is on it when the menu opens;
 - the open windows, most recently focused first — tap one to switch to it;
 - rows starting with `+`: up to three recently launched applications — tap one to
-  launch it;
-- `Menu...`, which leads to everything else.
+  launch it.
 
 The panel shows a header and nine rows. Windows take priority, so with many windows open
 there are fewer or no `+` rows; the phone's **apps** palette always has the full list.
 
-With more than eight windows the list is split into pages of seven, and the header shows the
-page (`1/2`). `More...` turns to the next page and wraps from the last to the first; `Menu...`
-is on every page.
+With more than eight windows the list is split into pages of eight, and the header shows the
+page (`Tasks 1/2`). The first row then reads `Menu/Prev/Next...`, and under it, below
+`< Back`, are `Prev Page` and `Next Page`. They return to the list on the neighbouring page,
+wrapping, with the cursor on the first row again: tap, swipe up, tap turns to the next page.
 
 Under `Menu...`:
 
@@ -48,6 +49,7 @@ Under `Menu...`:
 | `Invert` | Flip light and dark |
 | `Close Window` | Ask the focused window to close |
 | `Exit...` | Quit the app on the glasses, after a confirmation row |
+| `Prev Page` / `Next Page` | Only with several pages, below `< Back`: turn the first level's page |
 
 Choosing an action closes the menu so that you can see its result. After a row
 under `Keys...`, the next double tap reopens the menu at the same place, which makes

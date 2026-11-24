@@ -8,7 +8,6 @@ import {
   buildMenuItems,
   MENU_ENTRY_ID,
   MENU_MAX_APPS,
-  MENU_MORE_ID,
   type MenuApp,
   type MenuItem,
   menuSignature,
@@ -444,21 +443,25 @@ describe('rootPages — the root list on a ten-line panel', () => {
     }
   })
 
-  it('is one page while the windows fit, apps taking only the slack', () => {
-    expect(pagesOf(0).map(kinds)).toEqual(['aaam'])
-    expect(pagesOf(1).map(kinds)).toEqual(['waaam']) // the ordinary case: the boot terminal
-    expect(pagesOf(5).map(kinds)).toEqual(['wwwwwaaam'])
-    expect(pagesOf(6).map(kinds)).toEqual(['wwwwwwaam'])
-    expect(pagesOf(8).map(kinds)).toEqual(['wwwwwwwwm']) // a window never loses a row to an app
+  it('is one page while the windows fit, Menu first and apps taking only the slack', () => {
+    expect(pagesOf(0).map(kinds)).toEqual(['maaa'])
+    expect(pagesOf(1).map(kinds)).toEqual(['mwaaa']) // the ordinary case: the boot terminal
+    expect(pagesOf(5).map(kinds)).toEqual(['mwwwwwaaa'])
+    expect(pagesOf(6).map(kinds)).toEqual(['mwwwwwwaa'])
+    expect(pagesOf(8).map(kinds)).toEqual(['mwwwwwwww']) // a window never loses a row to an app
+    expect(pagesOf(8)[0]![0]).toMatchObject({ kind: 'menu', itemName: 'Menu...' })
   })
 
-  it('pages past eight windows, with More and Menu on every page', () => {
-    expect(pagesOf(9).map(kinds)).toEqual(['wwwwwwwmm', 'wwaaamm'])
-    expect(pagesOf(14).map(kinds)).toEqual(['wwwwwwwmm', 'wwwwwwwmm'])
-    expect(pagesOf(15).map(kinds)).toEqual(['wwwwwwwmm', 'wwwwwwwmm', 'waaamm'])
-    for (const p of pagesOf(15)) {
-      expect(p.at(-2)).toMatchObject({ kind: 'more', itemID: MENU_MORE_ID, itemName: 'More...' })
-      expect(p.at(-1)).toMatchObject({ kind: 'menu', itemID: MENU_ENTRY_ID })
+  it('pages past eight windows, Menu/Prev/Next... heading every page and no More row', () => {
+    expect(pagesOf(9).map(kinds)).toEqual(['mwwwwwwww', 'mwaaa'])
+    expect(pagesOf(16).map(kinds)).toEqual(['mwwwwwwww', 'mwwwwwwww'])
+    expect(pagesOf(17).map(kinds)).toEqual(['mwwwwwwww', 'mwwwwwwww', 'mwaaa'])
+    for (const p of pagesOf(17)) {
+      expect(p[0]).toMatchObject({
+        kind: 'menu',
+        itemID: MENU_ENTRY_ID,
+        itemName: 'Menu/Prev/Next...',
+      })
     }
   })
 

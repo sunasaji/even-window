@@ -7,6 +7,7 @@ import {
   clickInput,
   levelRows,
   MENU_ROOT_ID,
+  MENU_ROOT_LABEL,
   type MenuRow,
   type MenuState,
   type MenuToken,
@@ -138,7 +139,7 @@ function rebuildMenu(why: 'windows' | 'apps'): void {
 
 // ── the hierarchy (src/shared/glassMenu.ts), as the client drives it ───────────────────────
 //
-// `menuPath` is the whole state machine. Empty means the root list (windows + apps); one entry
+// `menuPath` is the whole state machine. Empty means the root list (tasks); one entry
 // per level descended, each carrying the row label it was entered by (for the header) and the
 // cursor position to restore when it is popped.
 //
@@ -164,7 +165,12 @@ export let keyMods: Mod[] = []
 
 /** The snapshot every level is a pure function of. */
 export function menuState(): MenuState {
-  return { mods: keyMods, invert, hasWindow: activeWindow() !== null }
+  return {
+    mods: keyMods,
+    invert,
+    hasWindow: activeWindow() !== null,
+    rootPaged: rootPageCount() > 1,
+  }
 }
 
 /** The focused window, or null. The one place the menu resolves "this window": rows that act
@@ -184,7 +190,8 @@ export function menuRowCount(): number {
  *  the live `winRecent` instead. */
 export let menuRootOrder: string[] = []
 
-/** Which page of the root list is up. Reset by `openMenu`, advanced by the `More...` row. */
+/** Which page of the root list is up. Reset by `openMenu`, turned by `Prev Page` / `Next Page`
+ *  in the `Menu...` level. */
 export let menuPage = 0
 
 /** The root list in display order, laid out as pages (`rootPages`): never empty. */
@@ -276,15 +283,10 @@ export function openMenu(): void {
       return
     }
   }
-  // The cursor opens on the focused window, which MRU puts at the top of the first page, so
-  // the previous window is one swipe away. Searched across the pages because a server that
-  // sends no recency leaves the focused window wherever the window order has it.
-  const isActive = (it: MenuItem) => it.kind === 'window' && it.active
-  menuPage = Math.max(
-    rootPagesNow().findIndex(p => p.some(isActive)),
-    0,
-  )
-  menuSel = Math.max(rootRows().findIndex(isActive), 0)
+  // The cursor opens on `Menu...`, the first row of the first page: it is used more than a
+  // window switch. MRU puts the focused window under it and the previous one next.
+  menuPage = 0
+  menuSel = 0
   syncOverlay()
 }
 
@@ -319,14 +321,6 @@ export async function chooseMenu(): Promise<void> {
     // The same array the overlay drew (display order), read before `closeMenu` releases the
     // frozen order.
     const it = rootRows()[menuSel]
-    // Turning the page is navigation: the menu stays up, on the next page's first row.
-    if (it?.kind === 'more') {
-      menuPage = (menuPage + 1) % rootPageCount()
-      menuSel = 0
-      log(`menu page ${String(menuPage + 1)}/${String(rootPageCount())}`)
-      syncOverlay()
-      return
-    }
     closeMenu()
     if (it) await activateMenuItem(it)
     return
@@ -362,6 +356,9 @@ async function activateRow(row: MenuRow): Promise<void> {
     case 'back':
       popLevel()
       return
+    case 'page':
+      turnRootPage(t.dir)
+      return
     case 'mod': {
       const on = keyMods.includes(t.mod)
       keyMods = MODS.filter(m => (m === t.mod ? !on : keyMods.includes(m)))
@@ -373,6 +370,18 @@ async function activateRow(row: MenuRow): Promise<void> {
       await runRowToken(t, modsAtPick, 'menu')
       return
   }
+}
+
+/** `Prev Page` / `Next Page`: back out to the root list on the neighbouring page, wrapping,
+ *  with the cursor on its `Menu...` row so the next turn is the same few gestures again. */
+function turnRootPage(dir: 1 | -1): void {
+  const n = rootPageCount()
+  menuPage = (((menuPage + dir) % n) + n) % n
+  menuPath = []
+  menuLevelRows = []
+  menuSel = 0
+  log(`menu page ${String(menuPage + 1)}/${String(n)}`)
+  syncOverlay()
 }
 
 /** Do what a row says: the half of a row's behaviour that is the same on every surface. The
@@ -392,6 +401,7 @@ export async function runRowToken(
     // the switch stays exhaustive and a future caller cannot pass one in silently.
     case 'sub':
     case 'back':
+    case 'page':
     case 'mod':
       log(`${where}: ${t.kind} is navigation, not an action — ignored`)
       return
@@ -501,10 +511,11 @@ export async function launchApp(
 
 /** Act on one root-list item selected from the overlay. */
 async function activateMenuItem(it: MenuItem): Promise<void> {
-  // The hierarchy's entrance: the last row of the root list. (Exit lives inside the hierarchy
-  // behind a confirm level, src/shared/glassMenu.ts.)
+  // The hierarchy's entrance: the first row of the root list. (Exit lives inside the hierarchy
+  // behind a confirm level, src/shared/glassMenu.ts.) The breadcrumb says `Menu` whatever the
+  // row read, since `Menu/Prev/Next...` is the same level.
   if (it.kind === 'menu') {
-    pushLevel(MENU_ROOT_ID, it.itemName)
+    pushLevel(MENU_ROOT_ID, MENU_ROOT_LABEL)
     return
   }
   // A launcher row posts nothing but the id; no command string is constructed here.

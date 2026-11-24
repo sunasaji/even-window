@@ -544,3 +544,25 @@ describe('the level is called `Window...`, never `Ratpoison...`', () => {
     )
   })
 })
+
+describe('Menu... level — the root list page turns', () => {
+  const ST2: MenuState = { mods: [], invert: false, hasWindow: true }
+
+  it('adds Prev Page / Next Page under < Back only while the root list is paged', () => {
+    const one = levelRows(MENU_ROOT_ID, ST2)!.map(r => r.label)
+    expect(one.at(-1)).toBe(BACK_LABEL)
+    expect(one).not.toContain('Next Page')
+    const paged = levelRows(MENU_ROOT_ID, { ...ST2, rootPaged: true })!
+    expect(paged.slice(-3).map(r => r.label)).toEqual([BACK_LABEL, 'Prev Page', 'Next Page'])
+    expect(paged.length).toBeLessThanOrEqual(LEVEL_MAX_ROWS)
+    // Only the Menu... level: a deeper level keeps < Back last.
+    expect(levelRows('keys', { ...ST2, rootPaged: true })!.at(-1)!.label).toBe(BACK_LABEL)
+  })
+
+  it('parses the page tokens as navigation that keeps the menu up', () => {
+    expect(parseToken('page:prev')).toEqual({ kind: 'page', dir: -1 })
+    expect(parseToken('page:next')).toEqual({ kind: 'page', dir: 1 })
+    expect(parseToken('page:up')).toBeNull()
+    expect(rowMenuEffect('page:next')).toBe('stay')
+  })
+})

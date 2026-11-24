@@ -2,7 +2,7 @@
 //
 // Here: the levels, their rows and tokens, paging, the row budget, the gesture→action rule,
 // the window-manager key catalogue and the token parser. Not here: the root list (windows,
-// apps and `Menu...`), built by `buildMenuItems` in src/client/menuModel.ts, and the path
+// apps and the `Menu...` row), built by `buildMenuItems` in src/client/menuModel.ts, and the path
 // stack, which is client state. The client draws every level into the overlay container
 // (docs/decisions/client-drawn-glasses-menu.md).
 //
@@ -51,6 +51,9 @@ export interface MenuState {
   /** Is there a focused window? Rows that act on one (`Close Window`, `Kill`) are omitted
    *  when there is not. */
   hasWindow: boolean
+  /** Is the root list split into pages? Then the `Menu...` level carries `Prev Page` /
+   *  `Next Page` under `< Back`. Absent = one page. */
+  rootPaged?: boolean
 }
 
 // ── gestures while a level is open ─────────────────────────────────────────────────────────
@@ -190,6 +193,7 @@ export type MenuToken =
   | { kind: 'close' }
   | { kind: 'exit' }
   | { kind: 'invert' }
+  | { kind: 'page'; dir: 1 | -1 }
 
 /** Parse a row's token. `null` for anything unrecognised, which the caller must log and drop. */
 export function parseToken(token: string): MenuToken | null {
@@ -197,6 +201,8 @@ export function parseToken(token: string): MenuToken | null {
   if (token === 'close') return { kind: 'close' }
   if (token === 'exit') return { kind: 'exit' }
   if (token === 'invert') return { kind: 'invert' }
+  if (token === PAGE_PREV_TOKEN) return { kind: 'page', dir: -1 }
+  if (token === PAGE_NEXT_TOKEN) return { kind: 'page', dir: 1 }
   const i = token.indexOf(':')
   if (i <= 0) return null
   const head = token.slice(0, i)
@@ -220,7 +226,7 @@ export function parseToken(token: string): MenuToken | null {
 // therefore closes the menu unless the row is navigation. The menu is for one-shot
 // operations; repetition belongs on a swipe binding.
 //
-//   'stay'    sub / back (navigation) and mod (arms a modifier for the next key).
+//   'stay'    sub / back / page (navigation) and mod (arms a modifier for the next key).
 //   'resume'  keys and pointer actions: the menu closes, but the level is remembered so the
 //             next open returns to it. Typing is a sequence, and Click-hold / Click-release
 //             are a pair.
@@ -232,7 +238,7 @@ export type RowEffect = 'stay' | 'resume' | 'reset'
 export function rowMenuEffect(token: string): RowEffect {
   const t = parseToken(token)
   if (!t) return 'stay' // unknown token: nothing happened, so nothing changes
-  if (t.kind === 'sub' || t.kind === 'back' || t.kind === 'mod') return 'stay'
+  if (t.kind === 'sub' || t.kind === 'back' || t.kind === 'page' || t.kind === 'mod') return 'stay'
   if (t.kind === 'key' || t.kind === 'click') return 'resume'
   return 'reset'
 }
@@ -252,9 +258,19 @@ export function resumablePath(path: readonly string[], s: MenuState): string[] {
 
 /** The level the root list's `Menu...` row descends into. */
 export const MENU_ROOT_ID = 'menu'
-/** The root list's row that enters the hierarchy, shown at the tail of the window list. */
+/** The root list's row that enters the hierarchy, its first row. */
 export const MENU_ROOT_LABEL = 'Menu' + SUB
+/** The same row while the root list has several pages: the level also turns them. */
+export const MENU_ROOT_PAGED_LABEL = 'Menu/Prev/Next' + SUB
 export const MENU_ROOT_TOKEN = 'sub:' + MENU_ROOT_ID
+
+/** The rows under `< Back` in the `Menu...` level that turn the root list's page, present only
+ *  while it has several (`MenuState.rootPaged`). Below `< Back` so the ordinary rows keep their
+ *  places, and `Next Page` is one wrapping swipe-up from the cursor's opening row. */
+export const PAGE_PREV_LABEL = 'Prev Page'
+export const PAGE_NEXT_LABEL = 'Next Page'
+export const PAGE_PREV_TOKEN = 'page:prev'
+export const PAGE_NEXT_TOKEN = 'page:next'
 
 // The key catalogue's labels are written for the phone. For the glasses, `−` `×` `÷` are folded
 // to ASCII operators, and any label that is still not ASCII falls back to its keysym.
@@ -416,12 +432,20 @@ export function windowPanelRows(s: MenuState): PanelRow[] {
   return out
 }
 
-/** The rows of one level, `< Back` last; `null` = no such level. The cursor opens on row 1,
+/** The rows of one level, `< Back` last (in `Menu...` while the root list is paged, followed
+ *  by `Prev Page` / `Next Page`); `null` = no such level. The cursor opens on row 1,
  *  so the useful rows come first and `< Back` is one wrapping swipe-up away. */
 export function levelRows(id: string, s: MenuState): MenuRow[] | null {
   const content = levelContent(id, s)
   if (!content) return null
-  return [...content, { label: BACK_LABEL, token: BACK_TOKEN }]
+  const out = [...content, { label: BACK_LABEL, token: BACK_TOKEN }]
+  if (id === MENU_ROOT_ID && s.rootPaged) {
+    out.push(
+      { label: PAGE_PREV_LABEL, token: PAGE_PREV_TOKEN },
+      { label: PAGE_NEXT_LABEL, token: PAGE_NEXT_TOKEN },
+    )
+  }
+  return out
 }
 
 /** Every level id reachable from `MENU_ROOT_ID`, in discovery order. Used by the test that
