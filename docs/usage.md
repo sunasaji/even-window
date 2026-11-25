@@ -81,7 +81,7 @@ the title row shows the tour again.
 | **▼ dn**, **▲ up**, **● tap**, **●● dbl** | The same four gestures as the glasses |
 | **font −**, **font +** | Make text smaller or larger in the focused application |
 | **keys** | An on-screen keyboard: modifiers, navigation keys and a QWERTY layout |
-| **vRing** | A full-screen gesture pad: swipe vertically anywhere, tap the left half for tap, the right half for double tap |
+| **vRing** | A full-screen gesture pad: swipe vertically anywhere, tap the left half for tap, the right half for double tap. With voice input available, tap the band along the bottom edge for long press |
 | **vPad** | A full-screen trackpad: drag to move, tap to click, hold to press and drag, two-finger drag or the right-edge strip for the wheel, and a left / middle / right button selector |
 | **inv** | Flip light and dark |
 | **color** / **green** | How the preview is drawn: the desktop's colours, or what the glasses show |

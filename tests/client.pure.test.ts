@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { parseMirrorMode } from '../src/client/flags.ts'
-import { ringGateAccept } from '../src/client/gestures.ts'
+import { ringGateAccept, VRING_LONG_BAND, vRingTapKind } from '../src/client/gestures.ts'
 import {
   ACTIVE_MARK,
   buildMenuItems,
@@ -752,6 +752,30 @@ describe('NavDebouncer — leading edge, accumulate, re-lead', () => {
 })
 
 // ── de-burst gate ──────────────────────────────────────────────────────────────────────────
+
+describe('vRingTapKind', () => {
+  const W = 400
+  const H = 800
+  const bandTop = H * (1 - VRING_LONG_BAND)
+
+  it('splits the pad into left = single and right = double', () => {
+    expect(vRingTapKind(10, 300, W, H, true)).toBe('single')
+    expect(vRingTapKind(199, 300, W, H, true)).toBe('single')
+    expect(vRingTapKind(200, 300, W, H, true)).toBe('double')
+    expect(vRingTapKind(390, 300, W, H, true)).toBe('double')
+  })
+
+  it('gives the bottom band to the long press on either side, when voice is on', () => {
+    expect(vRingTapKind(10, bandTop, W, H, true)).toBe('long')
+    expect(vRingTapKind(390, H - 1, W, H, true)).toBe('long')
+    expect(vRingTapKind(10, bandTop - 1, W, H, true)).toBe('single')
+  })
+
+  it('leaves no dead band without voice: the halves reach the bottom edge', () => {
+    expect(vRingTapKind(10, H - 1, W, H, false)).toBe('single')
+    expect(vRingTapKind(390, H - 1, W, H, false)).toBe('double')
+  })
+})
 
 describe('ringGateAccept', () => {
   it('swallows a same-kind burst inside the window', () => {

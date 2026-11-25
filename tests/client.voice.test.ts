@@ -145,16 +145,27 @@ describe('what is offered, and when', () => {
     const body = code
       .fn('onHubEvent')
       .between("if (g === 'long' || g === 'longRelease')", "if (g === 'double')")
-    expect(body.has('sttReady')).toBe(true)
-    expect(body.has('voiceStart()')).toBe(true)
+    expect(body.has("if (g === 'long') onLong(source)")).toBe(true)
+    const long = code.fn('onLong')
+    expect(long.has('if (sttReady && !voiceActive())')).toBe(true)
+    expect(long.has('voiceStart()')).toBe(true)
   })
 
   it('the release stays unbound, so a lost PB 10 cannot strand the mic', () => {
     const body = code
       .fn('onHubEvent')
       .between("if (g === 'long' || g === 'longRelease')", "if (g === 'double')")
-    expect(body.has("g === 'long' && sttReady")).toBe(true)
+    // The release reaches only the log line: nothing in the branch names it.
     expect(body.has("g === 'longRelease' &&")).toBe(false)
+    expect(body.has('voiceStart')).toBe(false)
+    expect(body.has('voiceMicOff')).toBe(false)
+  })
+
+  it("vRing's bottom band sends the same long press, by position and not by a timed hold", () => {
+    const ring = code.fn('openVRing')
+    expect(ring.has("onLong('vRing')")).toBe(true)
+    expect(ring.has('vRingTapKind(x, y, window.innerWidth, window.innerHeight, voice)')).toBe(true)
+    expect(ring.has('setTimeout')).toBe(false)
   })
 
   it('the phone pill is hidden until health says a recogniser is configured', () => {

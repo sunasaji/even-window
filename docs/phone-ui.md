@@ -168,11 +168,15 @@ at the phone.
 | Vertical swipe ≥ 40 px, anywhere | `onSwipe(∓1)` (finger up = ring up) |
 | Tap on the left half | `onTap()` |
 | Tap on the right half | `onDouble()` |
+| Tap in the bottom 12 % of the screen, when the server has a recogniser | `onLong()`: opens the voice dialog, as the ring's long press does |
 | `✕` (corner) | Close |
 
 - Single versus double is decided by position, not by time, and at `touchend` with no delay:
   timers are unreliable under frame-forwarding load. Zone labels name the gesture sent, not
   its outcome, which depends on the mode.
+- The long press is a tap on its own band for the same reason: a hold would have to be timed.
+  The band is drawn, and hit-tested, only when the server has a recogniser; without one the
+  two halves reach the bottom edge. A swipe may start or end in the band.
 - A module-scope guard drops a repeat of the same gesture within 140 ms (swipes) or 260 ms
   (taps) before `ringFire` applies the shared de-burst. It must stay at module scope so it
   holds across overlay instances.

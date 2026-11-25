@@ -12,14 +12,26 @@ import {
   suppressNativeTouchGestures,
 } from './chrome.ts'
 import { log } from './debugLog.ts'
-import { onDouble, onSwipe, onTap, ringFire } from './gestures.ts'
+import {
+  onDouble,
+  onLong,
+  onSwipe,
+  onTap,
+  ringFire,
+  VRING_LONG_BAND,
+  vRingTapKind,
+} from './gestures.ts'
 import { mirrorEl, vringBtn } from './phoneUi.ts'
+import { sttReady } from './stream.ts'
 import { closeVPad } from './vpad.ts'
 
 // One large gesture surface producing the same four actions as the row-1 pills: a vertical swipe
 // anywhere → onSwipe (finger up = ring up = -1), a left-half tap → onTap (Return), a right-half
 // tap → onDouble (opens the menu; inside it, goes up a level). Horizontal movement is ignored and
 // the corner ✕ is the only way out.
+//
+// When the server has a recogniser, a tap in the band along the bottom edge → onLong (opens the
+// voice dialog). It is a tap on its own zone, not a timed hold, for the reason below.
 //
 // Timer-free: setTimeout is unreliable under the frame-transfer load, so taps are split by
 // position and decided on touchend, never by time. That is why the two zones are drawn on screen.
@@ -56,8 +68,14 @@ export function openVRing(): void {
   setLit(vringBtn, true)
   log(
     'vRing OPEN — swipe up/down = Up/Down key · left tap = tap (Return) · right tap = ' +
-      'double-tap, which opens the menu (and inside it goes up one level)',
+      'double-tap, which opens the menu (and inside it goes up one level)' +
+      (sttReady ? ' · bottom tap = long press (voice)' : ''),
   )
+
+  // Read once: the band that is drawn and the band that is hit-tested must be the same one.
+  // A recogniser that turns up while the pad is open takes effect the next time it opens.
+  const voice = sttReady
+  const band = `${String(VRING_LONG_BAND * 100)}%`
 
   const ov = document.createElement('div')
   ov.id = 'vring'
@@ -70,10 +88,12 @@ export function openVRing(): void {
     'color:#9ecbff;font:14px/1.7 system-ui;' +
     OVERLAY_TOUCH_CSS
   ov.innerHTML =
-    '<div style="pointer-events:none;padding:24px;">' +
+    // With the band drawn, the hint stands above it.
+    `<div style="pointer-events:none;padding:24px;${voice ? `margin-bottom:${String(VRING_LONG_BAND * 100)}vh;` : ''}">` +
     '<div style="font-size:18px;color:#E5E5E5;margin-bottom:12px;">vRing — Virtual R1</div>' +
     '▲▼ Swipe up/down = the Up / Down key<br>' +
     'Left tap = tap (Return) · Right tap = double-tap<br>' +
+    (voice ? 'Bottom tap = long press (voice input)<br>' : '') +
     '<span style="color:#888;">Double-tap opens the menu; inside it, it goes up one ' +
     'level and closes at the top.</span><br>' +
     '<span style="color:#666;">Tap ✕ (top-right) to exit</span></div>'
@@ -116,11 +136,16 @@ export function openVRing(): void {
   const zone = document.createElement('div')
   zone.style.cssText = 'position:fixed;inset:0;pointer-events:none;'
   zone.innerHTML =
-    '<div style="position:absolute;left:50%;top:12%;bottom:12%;width:1px;background:rgba(255,255,255,0.18);"></div>' +
+    `<div style="position:absolute;left:50%;top:12%;bottom:${band};width:1px;background:rgba(255,255,255,0.18);"></div>` +
     // The zone labels name the gesture each half sends (matching the `● tap` / `●● dbl` pills in
     // row 1), not its outcome, which depends on whether the menu is open.
     '<div style="position:absolute;left:0;width:50%;top:44%;text-align:center;color:rgba(158,203,255,0.7);font:13px system-ui;">● Left: tap</div>' +
-    '<div style="position:absolute;right:0;width:50%;top:44%;text-align:center;color:rgba(255,180,120,0.8);font:13px system-ui;">Right: double-tap ●●</div>'
+    '<div style="position:absolute;right:0;width:50%;top:44%;text-align:center;color:rgba(255,180,120,0.8);font:13px system-ui;">Right: double-tap ●●</div>' +
+    // The long-press band: a rule across the divider's lower end, and its label centred below.
+    (voice
+      ? `<div style="position:absolute;left:0;right:0;bottom:${band};height:1px;background:rgba(255,255,255,0.18);"></div>` +
+        `<div style="position:absolute;left:0;right:0;bottom:0;height:${band};display:flex;align-items:center;justify-content:center;color:rgba(170,230,170,0.8);font:13px system-ui;">▬ Bottom: long press</div>`
+      : '')
   ov.appendChild(zone)
 
   // SWIPE_PX=40 cleanly splits taps (movement ~0) from swipes (|dy| >= 160 in practice);
@@ -163,7 +188,12 @@ export function openVRing(): void {
     }
     // moved too far / held too long → not a tap
     if (dt > TAP_MS || Math.abs(dx) >= SWIPE_PX || Math.abs(dy) >= SWIPE_PX) return
-    if (x >= window.innerWidth / 2)
+    const kind = vRingTapKind(x, y, window.innerWidth, window.innerHeight, voice)
+    if (kind === 'long')
+      fire('long', () => {
+        onLong('vRing')
+      }) // bottom band
+    else if (kind === 'double')
       fire('double', () => {
         void onDouble()
       }) // right half

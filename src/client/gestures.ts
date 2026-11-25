@@ -174,6 +174,36 @@ export function ringFire(kind: string, fn: () => void): void {
   fn()
 }
 
+/** A long press: opens the voice dialog when the server has a recogniser and no dialog is up;
+ *  otherwise it does nothing. `source` only labels the log line. Shared by the ring (PB 9) and
+ *  vRing's bottom band, so the two cannot drift apart. */
+export function onLong(source: string): void {
+  if (sttReady && !voiceActive()) {
+    log(`long press (${source}) — opening voice`)
+    void voiceStart()
+    return
+  }
+  log(`long (${source}) — not bound to an action`)
+}
+
+/** Share of the screen height, from the bottom edge, that vRing gives to the long press. The
+ *  left/right divider ends where this band begins. */
+export const VRING_LONG_BAND = 0.12
+
+/** Pure: which gesture a vRing tap at (`x`, `y`) on a `w` x `h` screen sends. The bottom band
+ *  is the long press when `voice` is on; without it the band belongs to the two halves, so no
+ *  part of the pad is dead. */
+export function vRingTapKind(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  voice: boolean,
+): 'single' | 'double' | 'long' {
+  if (voice && y >= h * (1 - VRING_LONG_BAND)) return 'long'
+  return x >= w / 2 ? 'double' : 'single'
+}
+
 export function onSwipe(dir: -1 | 1): void {
   if (voiceGestureRoute(dir < 0 ? 'swipe-up' : 'swipe-down')) return // the dialog is in front
   if (dismissStartupHint()) return // it only closes the hint: its key could not be seen landing
@@ -257,14 +287,11 @@ export function onHubEvent(event: EvenHubEvent): void {
   // Long press (PB 9) and its release (PB 10) are handled here, never sent to
   // `POST /api/input`, which routes four gestures and would answer 400 (docs/glasses.md).
   if (g === 'long' || g === 'longRelease') {
-    // PB 9 opens the voice dialog when the server has a recogniser. The release stays unbound:
-    // recording is stopped by a tap, so a lost PB 10 cannot leave the mic open (docs/voice.md).
-    if (g === 'long' && sttReady && !voiceActive()) {
-      log(`long press (source=${String(event.sysEvent?.eventSource ?? '?')}) — opening voice`)
-      void voiceStart()
-      return
-    }
-    log(`${g} (source=${String(event.sysEvent?.eventSource ?? '?')}) — not bound to an action`)
+    // The release stays unbound: recording is stopped by a tap, so a lost PB 10 cannot leave
+    // the mic open (docs/voice.md).
+    const source = `source=${String(event.sysEvent?.eventSource ?? '?')}`
+    if (g === 'long') onLong(source)
+    else log(`${g} (${source}) — not bound to an action`)
     return
   }
   if (g === 'double') {
