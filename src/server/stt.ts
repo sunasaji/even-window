@@ -94,17 +94,15 @@ export function sttKeyExposed(url: string, key: string): boolean {
   return !(host === 'localhost' || host === '[::1]' || /^127\./.test(host))
 }
 
-/** What `EW_STT_OPTIONS` is when unset. `chunking_strategy` is OpenAI's field: the recogniser
- *  splits the audio where its voice detector hears speech and recognises each region. Without
- *  it a long utterance goes in as one window, and a model trained on short clips returns only
- *  part of it (seen with reazonspeech-nemo-v2 on a 30 s recording); silence can also come back
- *  as a word. */
-export const STT_OPTIONS_DEFAULT = 'chunking_strategy=auto'
+/** What `EW_STT_OPTIONS` is when unset: nothing. Splitting the audio by voice detection was
+ *  the default for a day and made recognition worse
+ *  (docs/notes/2026-11-voice-detection-splitting.md). */
+export const STT_OPTIONS_DEFAULT = ''
 
 /** Extra form fields for the recogniser, from `EW_STT_OPTIONS`: `name=value` pairs joined by
  *  `&`, in URL query syntax, so a value may be percent-encoded. They are how a recogniser's
  *  own switches are reached without this module knowing them (`vad_filter=true`,
- *  `temperature=0`). Set to empty, nothing extra is sent. `file` is not theirs to set. */
+ *  `temperature=0`). Unset or empty, nothing extra is sent. `file` is not theirs to set. */
 export function sttOptions(): [string, string][] {
   const raw = (process.env.EW_STT_OPTIONS ?? STT_OPTIONS_DEFAULT).trim()
   const out: [string, string][] = []
@@ -244,10 +242,9 @@ export async function transcribe(pcm: Uint8Array, rate: number): Promise<SttResu
   let res: Response
   try {
     res = await post(true)
-    // The options are the part of the request a recogniser may not take: speech.cpp answers
-    // 400 to `chunking_strategy` when it was started without a voice detector, and another
-    // server may not know a field. The utterance is worth more than the options, so it is
-    // sent once more without them.
+    // The options are the part of the request a recogniser may not take: a server answers
+    // 400 to a field it does not know or cannot serve as it was started. The utterance is
+    // worth more than the options, so it is sent once more without them.
     if (res.status === 400 && options.length > 0) {
       const why = await res.text().catch(() => '')
       console.log(

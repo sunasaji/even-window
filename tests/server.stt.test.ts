@@ -238,15 +238,15 @@ describe('transcribe', () => {
     expect(up.lastBody).toContain('Claude Code')
   })
 
-  it('asks the recogniser to chunk by default, and sends nothing extra when the options are empty', async () => {
+  it('sends no extra field by default, and the ones EW_STT_OPTIONS names when it is set', async () => {
     process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(up.lastBody).not.toContain('name="chunking_strategy"')
+
+    process.env.EW_STT_OPTIONS = 'chunking_strategy=auto'
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastBody).toContain('name="chunking_strategy"')
     expect(up.lastBody).toContain('auto')
-
-    process.env.EW_STT_OPTIONS = ''
-    await transcribe(new Uint8Array([1, 2]), 16000)
-    expect(up.lastBody).not.toContain('name="chunking_strategy"')
   })
 
   it('sends the API key as a bearer token, on the retry too, and no header without one', async () => {
@@ -255,6 +255,7 @@ describe('transcribe', () => {
     expect(up.lastAuth).toBe('')
 
     process.env.EW_STT_API_KEY = ' sk-test-123 '
+    process.env.EW_STT_OPTIONS = 'chunking_strategy=auto'
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastAuth).toBe('Bearer sk-test-123')
     // The key is a header, never a form field.
@@ -305,7 +306,7 @@ describe('transcribe', () => {
     process.env.EW_STT_OPTIONS = 'chunking_strategy={"type":"server_vad"}'
     expect(sttOptions()).toEqual([['chunking_strategy', '{"type":"server_vad"}']])
     delete process.env.EW_STT_OPTIONS
-    expect(sttOptions()).toEqual([['chunking_strategy', 'auto']])
+    expect(sttOptions()).toEqual([])
   })
 
   it('lets an option replace the same field from its own setting', async () => {
@@ -318,6 +319,7 @@ describe('transcribe', () => {
 
   it('sends the utterance again without the options when the recogniser refuses them', async () => {
     process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.EW_STT_OPTIONS = 'chunking_strategy=auto'
     up.refuseChunking = true
     expect(await transcribe(new Uint8Array([1, 2]), 16000)).toEqual({
       ok: true,

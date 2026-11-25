@@ -56,8 +56,9 @@ even-window は `EW_*` 環境変数（env ファイルに置くこともでき�
 | `EW_STT_MODEL` | `Qwen3-ASR-0.6B` | 認識サービスに送るモデル ID。認識サービスの `/v1/models` が返す ID でなければなりません。 |
 | `EW_STT_LANG` | 未設定 | 言語のヒント。例: `en`。未設定なら送りません。 |
 | `EW_STT_PROMPT` | 未設定 | `prompt` として渡す語彙のヒント。言っていないときにその語が聞き取られやすくなる副作用もあります。 |
-| `EW_STT_OPTIONS` | `chunking_strategy=auto` | 認識サービスに追加で送るフォーム項目。`名前=値` を `&` でつなぎます（URL のクエリと同じ書式）。既定値は、長い発話を発話区間ごとに認識させる指定です。使える項目は認識サービスごとに違います（[voice.md](voice.md#recogniser-options)）。空にすると何も足しません。400 を返す認識サービスには、これらの項目なしで送り直します。 |
+| `EW_STT_OPTIONS` | 未設定 | 認識サービスに追加で送るフォーム項目。`名前=値` を `&` でつなぎます（URL のクエリと同じ書式）。既定では何も足しません。使える項目は認識サービスごとに違います（[voice.md](voice.md#recogniser-options)）。400 を返す認識サービスには、これらの項目なしで送り直します。 |
 | `EW_STT_API_KEY` | 未設定 | OpenAI などホスト型の認識サービスの API キー。`Authorization: Bearer` として送ります。ローカルの認識サービスには不要です。秘密情報なので env ファイル（モード 600）に置いてください。設定した場合、`EW_STT_URL` はこのマシン宛て以外では `https` でなければなりません。[voice.md](voice.md#a-hosted-recogniser) を参照。 |
+| `EW_STT_DUMP_DIR` | 未設定 | 調査用。発話ごとに、認識サービスへ送った WAV と、返ってきた文字列の `.txt` を置くディレクトリ。新しい 20 件だけ残します。自分の声の録音なので、普段は未設定のままにしてください。[voice.md](voice.md#keeping-the-audio-for-diagnosis) を参照。 |
 
 ### クライアントの開発サーバ（Vite）
 

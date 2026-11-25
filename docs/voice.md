@@ -86,8 +86,9 @@ another.
 | `EW_STT_MODEL` | `Qwen3-ASR-0.6B` | Sent as `model` |
 | `EW_STT_LANG` | empty | Sent as `language` when set |
 | `EW_STT_PROMPT` | empty | Sent as `prompt` when set (vocabulary bias) |
-| `EW_STT_OPTIONS` | `chunking_strategy=auto` | Extra form fields, as `name=value` pairs joined by `&`. Empty sends none. See [Recogniser options](#recogniser-options) |
+| `EW_STT_OPTIONS` | empty | Extra form fields, as `name=value` pairs joined by `&`. Empty sends none. See [Recogniser options](#recogniser-options) |
 | `EW_STT_API_KEY` | empty | Sent as `Authorization: Bearer` when set. For a hosted recogniser; see [A hosted recogniser](#a-hosted-recogniser) |
+| `EW_STT_DUMP_DIR` | empty | Keeps a copy of each utterance in this directory. For diagnosis; see [Keeping the audio for diagnosis](#keeping-the-audio-for-diagnosis) |
 
 The settings are read per request. See [configuration.md](configuration.md).
 
@@ -110,24 +111,20 @@ without a setting for each. The syntax is a URL query string: `name=value` pairs
 `&`, percent-encoded where a value needs it. An option with the name of `model`, `language`
 or `prompt` replaces that field; `file` cannot be set.
 
-The default, `chunking_strategy=auto`, is a field of OpenAI's transcription API: the
-recogniser splits the audio where its voice detector hears speech and recognises each region.
-It matters for a long utterance. Sent as one window, `reazonspeech-nemo-v2` returned a
-fraction of a 30 s recording, and two seconds of silence came back as a word. Other servers
-have the same idea under another name.
+Nothing extra is sent by default, and the shipped setup needs nothing here. Use it when
+your recogniser documents a field you want:
 
-| Recogniser | Setting | Status |
-| --- | --- | --- |
-| speech.cpp 0.8.8 started with a voice detector (`silero-vad`, as the shipped unit does), serving `Qwen3-ASR-0.6B` or `reazonspeech-nemo-v2` | `chunking_strategy=auto` (the default) | Tested: accepted |
-| speech.cpp 0.8.8 started without a voice detector | `EW_STT_OPTIONS=` | Tested: `chunking_strategy` is refused with 400 |
-| OpenAI's API with a model that supports chunking (`gpt-4o-transcribe`, `gpt-4o-mini-transcribe`) | `chunking_strategy=auto` (the default) | Not tested; the field is OpenAI's own. See [A hosted recogniser](#a-hosted-recogniser) |
-| faster-whisper servers (Speaches, formerly faster-whisper-server) | `EW_STT_OPTIONS=vad_filter=true` | Not tested; `vad_filter` is their name for the same thing |
-
-More than one field: `EW_STT_OPTIONS=vad_filter=true&temperature=0`.
+```
+EW_STT_OPTIONS=name=value
+EW_STT_OPTIONS=name=value&other=value
+```
 
 When the recogniser answers 400 to a request that carried options, the server logs it and
 sends the utterance once more without them, so recognition still works with a recogniser
-that does not know a field. Set `EW_STT_OPTIONS=` (empty) to skip that first attempt.
+that does not know a field.
+
+Background: a field that was tried as the default and withdrawn is in
+[notes/2026-11-voice-detection-splitting.md](notes/2026-11-voice-detection-splitting.md).
 
 ### A hosted recogniser
 
@@ -149,8 +146,29 @@ EW_STT_API_KEY=sk-...
 - With a key set, the server refuses a plain `http://` URL to another host, since the key
   would cross the network in the clear. `http://127.0.0.1`, `localhost` and `[::1]` are
   allowed.
-- `whisper-1` does not take `chunking_strategy`. If the API answers 400, the server retries
-  without the options (above); set `EW_STT_OPTIONS=` to skip that attempt.
+
+### Keeping the audio for diagnosis
+
+When a transcript comes back short or wrong, the question is whether the audio or the
+recogniser is at fault. `EW_STT_DUMP_DIR` names a directory; with it set, the server writes
+two files per utterance:
+
+- `utt-<date>-<time>-<ms>.wav`: the exact file sent to the recogniser, written before the
+  request, so it is kept when the recogniser fails too.
+- The same name with `.txt`: the text the recogniser answered.
+
+Play the WAV to hear what the glasses captured, and send it again by hand to compare
+models or settings:
+
+```sh
+curl http://127.0.0.1:8757/v1/audio/transcriptions -F file=@utt-….wav -F model=Qwen3-ASR-0.6B
+```
+
+The files are recordings of the wearer's voice. The directory is created with mode 700 and
+the files with 600, only the newest 20 utterances are kept, and the setting is off by
+default. Unset it when the diagnosis is done and delete the directory. A directory that
+cannot be written costs the copy, not the utterance: the reason is logged and recognition
+goes on.
 
 ### speech.cpp
 
@@ -168,13 +186,43 @@ without the other.
   | Unit (`STT_MODEL`) | `EW_STT_MODEL` | Languages |
   | --- | --- | --- |
   | `qwen3-asr-0.6b` (default) | `Qwen3-ASR-0.6B` (default) | 30, including English and Japanese |
-  | `reazonspeech-v2` | `reazonspeech-nemo-v2` | Japanese only; about 1.6 times faster |
 
-- Fetch the model before enabling the unit (`speech pull qwen3-asr-0.6b silero-vad`). The
+- Fetch the model before enabling the unit (`speech pull qwen3-asr-0.6b`). The
   unit runs with `ProtectSystem=strict` and cannot download into a model directory outside
   the home directory.
 - Do not pass `--threads`. The default, the physical core count, is correct.
 - The unit passes `--device auto`; the start-up log line names the device in use.
+- `reazonspeech-v2` (HTTP id `reazonspeech-nemo-v2`) is a Japanese-only alternative, about
+  1.6 times faster on a CPU. It made more errors on real recordings
+  ([notes](notes/2026-11-voice-detection-splitting.md)) and is not part of the default
+  setup. To use it, set `STT_MODEL` and `EW_STT_MODEL` and leave `EW_STT_LANG` unset.
+
+#### GPU, and WSL
+
+speech.cpp uses a GPU through Vulkan (Metal on macOS) and has no CUDA build. Its Linux
+installer picks the CPU-only build when the Vulkan loader (`libvulkan1` on Debian and Ubuntu)
+is missing, so install the loader and the GPU's Vulkan driver first; `speech devices` lists
+what it found.
+
+Under WSL2 that does not help with an NVIDIA GPU: WSL passes it through CUDA and Direct3D 12,
+not Vulkan, and `speech` inside WSL runs on the CPU. To use the GPU, run the Windows build of
+speech.cpp on the Windows host and point `EW_STT_URL` at it. The Windows host's models
+directory can be the same one WSL uses (`SPEECH_MODEL_DIR`).
+
+Measured on one machine (Quadro P5000, 4-core Xeon), `Qwen3-ASR-0.6B`, 30 s of audio: about
+11 s on the CPU inside WSL, about 1 s on the GPU from the Windows build.
+
+speech.exe listens on Windows' `127.0.0.1`, which WSL's default (NAT) networking cannot
+reach. Which way round that to take depends on the machine:
+
+| Way | Notes |
+| --- | --- |
+| WSL mirrored networking (`networkingMode=mirrored` in `.wslconfig`) | Windows' `127.0.0.1` becomes reachable as `127.0.0.1`. Not tested here. It changes networking for the whole distribution |
+| Listen on the host's WSL-facing address and allow the port in Windows Firewall | Needs an administrator. The address changes between restarts; `<windows-hostname>.mshome.net` resolves to it from WSL. Tested as far as the firewall refusing the connection without a rule |
+| An SSH port forward to the Windows host (`ssh -L`) | Tested. Needs an SSH server on Windows. Nothing is opened to the network. The WSL port and the Windows port must be different numbers: WSL's `localhostForwarding` mirrors WSL listeners onto Windows' `127.0.0.1`, and the same number on both sides forwards into itself |
+
+Whichever is used, speech.cpp has no authentication: do not let it listen on an address
+other machines can reach.
 - Override the unit's settings in `~/.config/speech.cpp/service.env`; move the models with
   `SPEECH_MODEL_DIR` there.
 
