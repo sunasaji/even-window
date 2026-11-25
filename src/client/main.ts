@@ -7,7 +7,7 @@
 //   * `shutDownPageContainer` exits the app; it is never used for page recovery.
 
 import type { EvenAppBridge } from '@evenrealities/even_hub_sdk'
-import { voiceOverlay, voiceRows } from '../shared/voiceDialog.ts'
+import { voiceOverlay, voiceRowsFor } from '../shared/voiceDialog.ts'
 import { clientId, isPaired, setDurableStore } from './authClient.ts'
 import { renderKeys } from './clients.ts'
 import { DEBUG_EVENTS, installErrorFunnel, log } from './debugLog.ts'
@@ -330,7 +330,7 @@ if (typeof document !== 'undefined') {
       voiceCancel('ewVoice')
     },
     state: () => (voice ? { ...voice } : null),
-    rows: () => (voice ? voiceRows(voice.stage).map(r => ({ ...r })) : []),
+    rows: () => (voice ? voiceRowsFor(voice).map(r => ({ ...r })) : []),
     sel: (i?: number) => {
       if (typeof i === 'number' && voice) setVoice({ ...voice, sel: i })
       return voice?.sel ?? 0

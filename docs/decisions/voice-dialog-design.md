@@ -39,5 +39,10 @@ left on the glasses stops the mirror.
 - A `Submit` on the phone resolves the glasses dialog, including during recording, and must
   close the microphone.
 - Rows are limited to three so that six lines remain for the transcript; longer text is
-  elided with `…` on the glasses and stays complete on the phone.
+  shown in pages on the glasses, turned by the swipe that moves the cursor, and stays
+  complete on the phone. The rows are on the last page only: a tap on an earlier page turns
+  it, so text that has not been shown cannot be sent from the glasses. Arriving on the last
+  page selects no row, at the cost of one more step before `Send`, so that the tap meant to
+  turn one more page does not send. It was elided with `…` at first, which meant sending text that
+  could not be read on the glasses.
 - Swipes are swallowed while the dialog is up; empty text and error strings are never typed.

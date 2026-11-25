@@ -5,16 +5,17 @@
 
 import {
   injectable,
-  moveVoiceSel,
+  moveVoice,
   newVoiceState,
   type VoiceGesture,
   type VoiceState,
   voiceActionFor,
+  voiceAtPage,
   voiceButtonFor,
   voiceChoice,
+  voiceConfirm,
   voiceMicFor,
   voiceNoAudioError,
-  voiceRows,
 } from '../shared/voiceDialog.ts'
 import { setLit } from './chrome.ts'
 import { log } from './debugLog.ts'
@@ -312,7 +313,7 @@ export async function voiceStop(why: string): Promise<void> {
   // transcript. Not focused: focusing pops the soft keyboard, which fights the keyboard-shrink
   // detection the apps palette depends on.
   if (textBox) textBox.value = text
-  setVoice({ ...newVoiceState('confirm'), text })
+  setVoice(voiceConfirm(text, voice?.mic))
   voiceArmIdle()
 }
 
@@ -396,8 +397,17 @@ export function voiceGestureRoute(g: VoiceGesture): boolean {
     return true
   }
   if (act === 'up' || act === 'down') {
-    const rows = voiceRows(voice.stage).length
-    setVoice({ ...voice, sel: moveVoiceSel(voice.sel, act === 'up' ? -1 : 1, rows) })
+    setVoice({ ...voice, ...moveVoice(voice, act === 'up' ? -1 : 1) })
+    // Reading several pages takes longer than the idle limit allows a dialog nobody answers,
+    // so a swipe counts as an answer and starts the limit again.
+    voiceArmIdle()
+    return true
+  }
+  // A page of a long transcript is selected, not a row: the tap moves on, to the next page or
+  // from the last page onto `Send`.
+  if (voiceAtPage(voice)) {
+    setVoice({ ...voice, ...moveVoice(voice, 1) })
+    voiceArmIdle()
     return true
   }
   const tok = voiceChoice(voice)

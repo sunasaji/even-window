@@ -1,7 +1,7 @@
 // The voice dialog as pure data (docs/voice.md, docs/decisions/voice-dialog-design.md).
 //
-// Here: the stages, their rows, the gesture rule, the width model, the line budget and the
-// elision. Not here: the microphone, the HTTP call, the text box and when a stage changes,
+// Here: the stages, their rows, the gesture rule, the width model, the line budget, the
+// transcript's pages and the elision. Not here: the microphone, the HTTP call, the text box and when a stage changes,
 // which are client side effects.
 //
 // The panel holds ten lines and the firmware wraps text itself, so this module only estimates
@@ -42,6 +42,8 @@ export interface VoiceState {
   seconds: number
   /** Cursor position among the rows. */
   sel: number
+  /** Which page of the transcript is shown, in `confirm` (`voicePages`). 0 when it fits. */
+  page: number
   /** Whose microphone this recording is from (`voiceMicFor`); the header names the phone's. */
   mic: VoiceMic
 }
@@ -50,7 +52,7 @@ export function newVoiceState(
   stage: VoiceStage = 'opening',
   mic: VoiceMic = 'glasses',
 ): VoiceState {
-  return { stage, text: '', error: '', seconds: 0, sel: 0, mic }
+  return { stage, text: '', error: '', seconds: 0, sel: 0, page: 0, mic }
 }
 
 // ── which microphone ───────────────────────────────────────────────────────────────────────
@@ -194,6 +196,94 @@ export function wrapGlassLines(s: string, unitsPerLine = LINE_UNITS): string[] {
   return out
 }
 
+// ── the transcript's pages ─────────────────────────────────────────────────────────────────
+//
+// The panel does not scroll, so a transcript longer than the body is shown a page at a time
+// (`moveVoice` turns them). Nothing is dropped: the pages put end to end are the transcript.
+//
+// Only the last page has the rows. `Send` is not offered before the whole text has been
+// shown, so a tap on an earlier page cannot send what was not read; it turns the page. On
+// arriving at the last page the cursor is on no row (`voiceAtPage`), so the tap that was meant
+// to turn one more page does not send either.
+
+/** A page's lines are folded a little short of the panel's, since the estimate is not exact
+ *  and a line too many would push the last row off the bottom edge. */
+export const PAGE_LINE_UNITS = LINE_UNITS - 3
+
+/** Fold one newline-free segment into lines of at most `units`, breaking after the last space
+ *  on the line when there is one, as the firmware does, and inside a word only when the word
+ *  is longer than a line. The lines put end to end are the segment. */
+function foldSegment(seg: string, units: number): string[] {
+  const out: string[] = []
+  let line = ''
+  let used = 0
+  for (const ch of seg) {
+    const w = glassWidth(ch)
+    // A space at the line end hangs past it: it draws nothing, and keeping it there means
+    // the next line, and so the next page, starts with a word.
+    if (ch !== ' ' && used + w > units && line !== '') {
+      const sp = line.lastIndexOf(' ')
+      if (sp >= 0 && sp < line.length - 1) {
+        // Carry the unfinished word down.
+        out.push(line.slice(0, sp + 1))
+        line = line.slice(sp + 1)
+        used = glassWidth(line)
+      } else {
+        out.push(line)
+        line = ''
+        used = 0
+      }
+    }
+    line += ch
+    used += w
+  }
+  out.push(line)
+  return out
+}
+
+/** Pure: `s` as pages. Every page but the last holds up to `fullLines` panel lines and the
+ *  last up to `lastLines`, the fewer: it shares the panel with the rows. Always at least one
+ *  page, and the last is never empty when there is text. A page ends at a line end, so
+ *  between words where the text has spaces. */
+export function pageByLines(
+  s: string,
+  fullLines: number,
+  lastLines: number,
+  units = PAGE_LINE_UNITS,
+): string[] {
+  const last = Math.max(1, lastLines)
+  const full = Math.max(last, fullLines)
+  // Each folded line, and whether it opens a newline-separated segment.
+  const lines: { text: string; opens: boolean }[] = []
+  for (const [i, seg] of s.split('\n').entries()) {
+    for (const [j, text] of foldSegment(seg, units).entries()) {
+      lines.push({ text, opens: i > 0 && j === 0 })
+    }
+  }
+  const pages: string[] = []
+  let at = 0
+  const take = (n: number): void => {
+    // A new segment starts on its own line; a page break stands in for that line break.
+    pages.push(
+      lines
+        .slice(at, at + n)
+        .map((l, k) => (l.opens && k > 0 ? `\n${l.text}` : l.text))
+        .join(''),
+    )
+    at += n
+  }
+  // One line is always left over, so the page with the rows has something on it.
+  while (lines.length - at > last) take(Math.min(full, lines.length - at - 1))
+  take(lines.length - at)
+  return pages
+}
+
+/** The transcript's pages in `confirm`. The last page carries the rows; the ones before it
+ *  carry none, so they have the whole panel under the header. */
+export function voicePages(text: string): string[] {
+  return pageByLines(text, PANEL_LINES - 1, bodyLineBudget('confirm'))
+}
+
 /** Cut `s` down to at most `maxLines` wrapped lines, keeping the head and marking the cut
  *  with `…`. The mark is required: an undrawable glyph already vanishes silently on the
  *  panel, so elision must not shorten text silently too. */
@@ -237,6 +327,17 @@ export function voiceRows(stage: VoiceStage): VoiceRow[] {
   return []
 }
 
+/** Is an earlier page of a paged transcript showing, one with more text after it? */
+export function voiceMorePages(s: VoiceState): boolean {
+  return s.stage === 'confirm' && s.page < voicePages(s.text).length - 1
+}
+
+/** The rows this state draws: the stage's, except on a transcript page that is not the last,
+ *  which has none. */
+export function voiceRowsFor(s: VoiceState): VoiceRow[] {
+  return voiceMorePages(s) ? [] : voiceRows(s.stage)
+}
+
 /** Lines left for the body: the panel less the header and the rows. */
 export function bodyLineBudget(stage: VoiceStage): number {
   return PANEL_LINES - 1 - voiceRows(stage).length
@@ -264,6 +365,47 @@ export function voiceActionFor(g: VoiceGesture, stage: VoiceStage): VoiceAction 
 export function moveVoiceSel(sel: number, delta: number, rows: number): number {
   if (rows <= 0) return 0
   return (((sel + delta) % rows) + rows) % rows
+}
+
+/** One swipe (`delta` = -1 up, +1 down) in a stage with rows. A transcript of several pages
+ *  is read by the same swipe that moves the cursor: the stops are one ring,
+ *
+ *      page 1 > page 2 > ... > last page > its first row > ... > its last row > page 1
+ *
+ *  The last page is a stop of its own, with the cursor on no row: arriving there selects the
+ *  page, and one more step puts the cursor on `Send`. So a run of taps or swipes through the
+ *  pages ends on the last page and not on `Send`. With one page this is `moveVoiceSel`. */
+export function moveVoice(s: VoiceState, delta: number): { page: number; sel: number } {
+  const rows = voiceRows(s.stage).length
+  if (rows <= 0) return { page: 0, sel: 0 }
+  const pages = s.stage === 'confirm' ? voicePages(s.text).length : 1
+  const last = pages - 1
+  const page = Math.min(Math.max(s.page, 0), last)
+  if (pages === 1) return { page: 0, sel: moveVoiceSel(s.sel, delta, rows) }
+  // A stop's index on the ring: the pages first, then the last page's rows.
+  const at = page < last || s.sel < 0 ? page : pages + Math.min(s.sel, rows - 1)
+  const n = pages + rows
+  const to = (((at + delta) % n) + n) % n
+  return to <= last ? { page: to, sel: NO_ROW } : { page: last, sel: to - pages }
+}
+
+/** `sel` when the cursor is on no row: a page of a paged transcript is what is selected. */
+export const NO_ROW = -1
+
+/** Is a page of a paged transcript what is selected, rather than a row? True on every page
+ *  before the last, and on the last until the cursor has stepped onto its rows. A tap here
+ *  moves on (`moveVoice(s, 1)`); it never picks. */
+export function voiceAtPage(s: VoiceState): boolean {
+  if (s.stage !== 'confirm') return false
+  const pages = voicePages(s.text).length
+  return pages > 1 && (s.page < pages - 1 || s.sel < 0)
+}
+
+/** The state for a transcript that has just arrived: on its first page, and with no row
+ *  selected when there are several. */
+export function voiceConfirm(text: string, mic: VoiceMic = 'glasses'): VoiceState {
+  const paged = voicePages(text).length > 1
+  return { ...newVoiceState('confirm', mic), text, sel: paged ? NO_ROW : 0 }
 }
 
 // ── the phone button ───────────────────────────────────────────────────────────────────────
@@ -298,8 +440,13 @@ export function voiceHeader(s: VoiceState): string {
       return `Voice${s.mic === 'phone' ? ' (phone)' : ''}  listening ${String(s.seconds)}s  (tap=stop  dbl=cancel)`
     case 'recognizing':
       return 'Voice  recognizing...'
-    case 'confirm':
-      return 'Voice  (tap=pick  dbl=cancel)'
+    case 'confirm': {
+      const n = voicePages(s.text).length
+      if (n <= 1) return 'Voice  (tap=pick  dbl=cancel)'
+      const at = Math.min(Math.max(s.page, 0), n - 1) + 1
+      const keys = voiceAtPage(s) ? 'tap=next  swipe=page' : 'tap=pick  swipe up=back'
+      return `Voice ${String(at)}/${String(n)}  (${keys}  dbl=cancel)`
+    }
     case 'empty':
       return 'Voice  nothing was heard'
     case 'failed':
@@ -307,16 +454,20 @@ export function voiceHeader(s: VoiceState): string {
   }
 }
 
-/** The body: the transcript, the error, or nothing. Elided to whatever the rows leave. */
+/** The body: the transcript's current page, the error elided to whatever the rows leave, or
+ *  nothing. */
 export function voiceBody(s: VoiceState): string {
-  if (s.stage === 'confirm') return elideToLines(s.text, bodyLineBudget('confirm'))
+  if (s.stage === 'confirm') {
+    const pages = voicePages(s.text)
+    return pages[Math.min(Math.max(s.page, 0), pages.length - 1)] ?? ''
+  }
   if (s.stage === 'failed') return elideToLines(s.error, bodyLineBudget('failed'))
   return ''
 }
 
 /** The whole overlay text, with the menu's cursor spelling (`> ` / two spaces). */
 export function voiceOverlay(s: VoiceState): string {
-  const rows = voiceRows(s.stage)
+  const rows = voiceRowsFor(s)
   const body = voiceBody(s)
   const lines = [voiceHeader(s)]
   if (body !== '') lines.push(body)
@@ -331,7 +482,7 @@ export function voiceFits(s: VoiceState): boolean {
 
 /** The row the cursor is on, or null when the stage has none or `sel` is out of range. */
 export function voiceChoice(s: VoiceState): VoiceToken | null {
-  return voiceRows(s.stage)[s.sel]?.token ?? null
+  return voiceRowsFor(s)[s.sel]?.token ?? null
 }
 
 /** Is this text safe to inject? Empty text and errors both yield `false`: a recogniser's

@@ -152,7 +152,11 @@ PC and typed into the focused window.
 2. Speak, then tap to stop (on the phone, **stop**). Recording also stops by itself
    after 30 seconds.
 3. The glasses show the transcript with `Send`, `Again` and `Cancel`. Swipe to
-   choose and tap to confirm. A double tap cancels at any stage.
+   choose and tap to confirm. A double tap cancels at any stage. A transcript longer than
+   six lines is shown in pages (the header says `1/3`): tap or swipe down to turn them.
+   `Send`, `Again` and `Cancel` are on the last page only. Arriving there selects no row:
+   one more tap or swipe down puts the cursor on `Send`, and a swipe up goes back.
+   `Send` sends the whole transcript.
 4. The transcript is also placed in the phone's text box, where you can edit it and
    tap **Submit** instead. `Cancel` clears the box. The dialog closes by itself after
    60 seconds without input.

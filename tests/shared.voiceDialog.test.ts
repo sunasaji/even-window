@@ -12,19 +12,28 @@ import {
   glassWidth,
   injectable,
   LINE_UNITS,
+  moveVoice,
   moveVoiceSel,
+  NO_ROW,
   newVoiceState,
+  PAGE_LINE_UNITS,
   PANEL_LINES,
+  pageByLines,
   type VoiceStage,
   voiceActionFor,
+  voiceAtPage,
   voiceButtonFor,
   voiceChoice,
+  voiceConfirm,
   voiceFits,
   voiceHeader,
   voiceMicFor,
+  voiceMorePages,
   voiceNoAudioError,
   voiceOverlay,
+  voicePages,
   voiceRows,
+  voiceRowsFor,
   wrapGlassLines,
 } from '../src/shared/voiceDialog.ts'
 
@@ -153,6 +162,171 @@ describe('elision', () => {
 
   it('a zero budget yields nothing rather than an ellipsis', () => {
     expect(elideToLines(LONG_JA, 0)).toBe('')
+  })
+})
+
+describe('the transcript pages', () => {
+  const BUDGET = bodyLineBudget('confirm')
+
+  it('is one page, unchanged, when the text fits', () => {
+    expect(voicePages('このファイルを直して')).toEqual(['このファイルを直して'])
+    expect(voicePages('')).toEqual([''])
+  })
+
+  it('drops nothing: the pages put end to end are the text', () => {
+    for (const s of [LONG_JA, LONG_EN, LONG_JA + LONG_EN + LONG_JA]) {
+      const pages = voicePages(s)
+      expect(pages.length).toBeGreaterThan(1)
+      expect(pages.join('')).toBe(s)
+    }
+  })
+
+  it('keeps every page inside the body, counted by the panel line', () => {
+    for (const s of [LONG_JA, LONG_EN, LONG_JA + LONG_EN + LONG_JA]) {
+      const pages = voicePages(s)
+      for (const p of pages.slice(0, -1)) {
+        expect(estimateLines(p), p).toBeLessThanOrEqual(PANEL_LINES - 1)
+      }
+      expect(estimateLines(pages[pages.length - 1] ?? ''), s).toBeLessThanOrEqual(BUDGET)
+    }
+  })
+
+  it('ends a page between words where the text has spaces', () => {
+    const pages = voicePages(LONG_EN)
+    for (const p of pages.slice(0, -1)) expect(p.endsWith(' '), JSON.stringify(p)).toBe(true)
+  })
+
+  it('breaks inside a word only when the word is longer than a line', () => {
+    const word = 'a'.repeat(200)
+    const pages = pageByLines(word, 2, 2)
+    expect(pages.join('')).toBe(word)
+    for (const p of pages) expect(glassWidth(p)).toBeLessThanOrEqual(2 * PAGE_LINE_UNITS)
+  })
+
+  it('counts an edited line break as a line, and a page break stands in for one', () => {
+    expect(pageByLines('a\nb\nc', 2, 2)).toEqual(['a\nb', 'c'])
+    expect(pageByLines('a\nb', 6, 6)).toEqual(['a\nb'])
+  })
+
+  it('gives the earlier pages more lines than the last, and never leaves the last empty', () => {
+    const lines = (n: number): string => Array.from({ length: n }, (_, i) => String(i)).join('\n')
+    const count = (p: string): number => p.split('\n').length
+    for (let n = 1; n <= 40; n++) {
+      const pages = pageByLines(lines(n), 9, 6)
+      expect(pages.join('\n'), String(n)).toBe(lines(n))
+      for (const p of pages.slice(0, -1)) expect(count(p), String(n)).toBeLessThanOrEqual(9)
+      const last = pages[pages.length - 1] ?? ''
+      expect(count(last), String(n)).toBeLessThanOrEqual(6)
+      expect(last, String(n)).not.toBe('')
+    }
+    expect(pageByLines(lines(6), 9, 6).length).toBe(1)
+    expect(pageByLines(lines(7), 9, 6).length).toBe(2)
+    expect(pageByLines(lines(15), 9, 6).map(count)).toEqual([9, 6])
+  })
+
+  it('shows the page it is on, names it in the header, and fits the panel on each', () => {
+    const base = { ...newVoiceState('confirm'), text: LONG_JA + LONG_EN + LONG_JA }
+    const pages = voicePages(base.text)
+    for (const [i, p] of pages.entries()) {
+      const s = { ...base, page: i }
+      expect(voiceOverlay(s)).toContain(p)
+      expect(voiceHeader(s)).toContain(`${String(i + 1)}/${String(pages.length)}`)
+      expect(estimateLines(voiceHeader(s))).toBe(1)
+      expect(voiceFits(s), voiceOverlay(s)).toBe(true)
+    }
+    // A page out of range is clamped, not blank.
+    expect(voiceHeader({ ...base, page: 99 })).toContain(`${String(pages.length)}/`)
+    expect(voiceOverlay({ ...base, page: 99 })).toContain(pages[pages.length - 1])
+  })
+
+  it('offers the rows on the last page only, so a tap cannot send unread text', () => {
+    const base = { ...newVoiceState('confirm'), text: LONG_JA + LONG_EN + LONG_JA }
+    const n = voicePages(base.text).length
+    for (let i = 0; i < n - 1; i++) {
+      const s = { ...base, page: i }
+      expect(voiceMorePages(s)).toBe(true)
+      expect(voiceRowsFor(s)).toEqual([])
+      expect(voiceChoice(s)).toBeNull()
+      expect(voiceOverlay(s)).not.toContain('Send')
+      expect(voiceHeader(s)).toContain('tap=next')
+    }
+    const end = { ...base, page: n - 1 }
+    expect(voiceMorePages(end)).toBe(false)
+    expect(voiceRowsFor(end).map(r => r.token)).toEqual(['send', 'again', 'cancel'])
+    // A transcript that fits is one page, which is the last.
+    expect(voiceRowsFor({ ...newVoiceState('confirm'), text: 'x' }).length).toBe(3)
+    expect(voiceMorePages({ ...newVoiceState('failed'), error: LONG_EN })).toBe(false)
+  })
+
+  it('a swipe down turns the pages, then walks the rows, then starts over', () => {
+    const base = { ...newVoiceState('confirm'), text: LONG_JA + LONG_EN + LONG_JA }
+    const n = voicePages(base.text).length
+    let s = voiceConfirm(base.text)
+    const seen: string[] = []
+    for (let i = 0; i < n + 4; i++) {
+      seen.push(`${String(s.page)}:${String(s.sel)}`)
+      s = { ...s, ...moveVoice(s, 1) }
+    }
+    const want = [
+      ...Array.from({ length: n }, (_, i) => `${String(i)}:-1`),
+      `${String(n - 1)}:0`,
+      `${String(n - 1)}:1`,
+      `${String(n - 1)}:2`,
+      '0:-1',
+    ]
+    expect(seen).toEqual(want)
+  })
+
+  it('arrives on the last page with no row selected: one more step reaches Send', () => {
+    const text = LONG_JA + LONG_EN + LONG_JA
+    const n = voicePages(text).length
+    let s = voiceConfirm(text)
+    expect(s.sel).toBe(NO_ROW)
+    // As many taps as it takes to reach the last page do not put the cursor on a row.
+    for (let i = 0; i < n - 1; i++) {
+      expect(voiceAtPage(s)).toBe(true)
+      s = { ...s, ...moveVoice(s, 1) }
+    }
+    expect(s.page).toBe(n - 1)
+    expect(voiceAtPage(s)).toBe(true)
+    expect(voiceChoice(s)).toBeNull()
+    expect(voiceOverlay(s)).toContain('  Send')
+    expect(voiceOverlay(s)).not.toContain('> ')
+    expect(voiceHeader(s)).toContain('tap=next')
+    s = { ...s, ...moveVoice(s, 1) }
+    expect(voiceAtPage(s)).toBe(false)
+    expect(voiceChoice(s)).toBe('send')
+    expect(voiceHeader(s)).toContain('tap=pick')
+    // Up from Send is the page again, and up from there the page before.
+    s = { ...s, ...moveVoice(s, -1) }
+    expect([s.page, s.sel]).toEqual([n - 1, NO_ROW])
+    s = { ...s, ...moveVoice(s, -1) }
+    expect([s.page, s.sel]).toEqual([n - 2, NO_ROW])
+  })
+
+  it('a transcript that fits starts on Send, with nothing to page', () => {
+    const s = voiceConfirm('x')
+    expect(s.sel).toBe(0)
+    expect(voiceAtPage(s)).toBe(false)
+    expect(voiceChoice(s)).toBe('send')
+  })
+
+  it('a swipe up undoes a swipe down from every stop', () => {
+    const base = { ...newVoiceState('confirm'), text: LONG_JA + LONG_EN + LONG_JA }
+    let s = voiceConfirm(base.text)
+    for (let i = 0; i < 12; i++) {
+      const next = { ...s, ...moveVoice(s, 1) }
+      expect(moveVoice(next, -1)).toEqual({ page: s.page, sel: s.sel })
+      s = next
+    }
+  })
+
+  it('with one page it is the plain cursor', () => {
+    const s = { ...newVoiceState('confirm'), text: 'x' }
+    expect(moveVoice(s, 1)).toEqual({ page: 0, sel: 1 })
+    expect(moveVoice(s, -1)).toEqual({ page: 0, sel: 2 })
+    expect(moveVoice({ ...newVoiceState('empty'), sel: 1 }, 1)).toEqual({ page: 0, sel: 0 })
+    expect(moveVoice(newVoiceState('listening'), 1)).toEqual({ page: 0, sel: 0 })
   })
 })
 

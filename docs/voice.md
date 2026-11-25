@@ -55,7 +55,7 @@ PCM in `audioEvent` frames.
 | --- | --- |
 | Longest recording | 30 s, then it stops and is sent for recognition |
 | Wait for the first frame | 6 s |
-| Unanswered confirm, empty or failed dialog | closes itself after 60 s |
+| Unanswered confirm, empty or failed dialog | closes itself after 60 s without a swipe or a tap |
 
 Background: [capture measurements](notes/2026-10-voice-capture-measurements.md),
 [phone-microphone fallback](notes/2026-11-voice-phone-mic-fallback.md).
@@ -230,7 +230,15 @@ hear before it does.
 | --- | --- | --- | --- |
 | `opening`, `listening` | Stop recording | Ignored | Cancel |
 | `recognizing` | Ignored | Ignored | Cancel |
-| `confirm`, `empty`, `failed` | Choose the selected row | Move the selection (wraps) | Cancel |
+| `confirm`, `empty`, `failed` | Choose the selected row; while a page of a long transcript is selected, move on | Move the selection (wraps); in `confirm` with several pages, turn the page first | Cancel |
+
+A transcript of several pages is read with the same swipe. Only the last page has the rows,
+so `Send` cannot be picked before the whole text has been shown. The stops form one ring:
+each page in turn, the last page included, then `Send`, `Again` and `Cancel` on it, then the
+first page again. A swipe up goes the other way. The last page is a stop of its own: arriving
+there puts the cursor on no row, and one more tap or swipe down puts it on `Send`. A run of
+taps through the pages therefore ends on the last page and does not send. Moving also
+restarts the 60 s limit, so reading does not time the dialog out.
 
 While the dialog is up, gestures are consumed by it and are not sent to the mirrored desktop.
 
@@ -253,8 +261,12 @@ Background: [decisions/voice-dialog-design.md](decisions/voice-dialog-design.md)
 
 The panel shows 10 lines and the firmware wraps long lines itself. The module only estimates
 how many lines a string takes, by the width model in
-[glasses.md](glasses.md#row-width) (63 units per line), and elides the transcript with `…` to the lines left after the header and the rows: 6 in
-`confirm`. The full text stays in the phone's box. Glyphs the lens font lacks (half-width
+[glasses.md](glasses.md#row-width) (63 units per line). The header and the rows leave 6 lines in
+`confirm`. A longer transcript is cut into pages: 9 lines on each page before the last, which
+has no rows, and up to 6 on the last. Lines are folded at 60 units to leave a margin for the
+estimate and broken after a space where there is one; the header then reads `Voice 2/3`. Nothing is dropped: the pages put end to end are the transcript, and `Send`
+sends the phone's box, which holds all of it. An error message in `failed` is elided with
+`…` instead. Glyphs the lens font lacks (half-width
 kana, characters outside the Basic Multilingual Plane) are dropped silently by the firmware.
 Background: [notes/2026-10-voice-text-typing-and-lens-text.md](notes/2026-10-voice-text-typing-and-lens-text.md).
 
