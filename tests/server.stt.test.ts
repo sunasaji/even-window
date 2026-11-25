@@ -7,14 +7,19 @@
 // The WAVE header is checked against bytes written out by hand, not against the arithmetic
 // that produced it: a wrong field does not raise, it transcribes noise.
 
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { route } from '../src/server/main.ts'
 import {
   isPcmRate,
   maxPcmBytes,
   pcmToWav,
+  STT_DUMP_KEEP,
   STT_MAX_SECONDS,
+  sttDumpDir,
   sttEnabled,
   sttKeyExposed,
   sttModel,
@@ -93,6 +98,7 @@ beforeEach(() => {
   delete process.env.EW_STT_PROMPT
   delete process.env.EW_STT_OPTIONS
   delete process.env.EW_STT_API_KEY
+  delete process.env.EW_STT_DUMP_DIR
   up.refuseChunking = false
   up.lastAuth = ''
   up.hits = 0
@@ -329,6 +335,71 @@ describe('transcribe', () => {
     const r = await transcribe(new Uint8Array([1, 2]), 16000)
     expect(r.ok).toBe(false)
     expect(up.hits).toBe(1)
+  })
+
+  it('keeps nothing on disk unless EW_STT_DUMP_DIR is set', () => {
+    expect(sttDumpDir()).toBe('')
+  })
+
+  it('keeps the WAV it sent and the text it got back when EW_STT_DUMP_DIR is set', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ew-stt-dump-'))
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.EW_STT_DUMP_DIR = join(dir, 'made', 'on', 'demand')
+    try {
+      const pcm = new Uint8Array([1, 0, 2, 0])
+      expect(await transcribe(pcm, 16000)).toEqual({ ok: true, text: 'こんにちは' })
+      const kept = readdirSync(process.env.EW_STT_DUMP_DIR).sort()
+      expect(kept).toHaveLength(2)
+      expect(kept[0]).toMatch(/^utt-\d{8}-\d{6}-\d{3}\.txt$/)
+      expect(kept[1]).toBe(kept[0]?.replace('.txt', '.wav'))
+      const at = (f: string | undefined): string => join(process.env.EW_STT_DUMP_DIR ?? '', f ?? '')
+      expect(new Uint8Array(readFileSync(at(kept[1])))).toEqual(pcmToWav(pcm, 16000))
+      expect(readFileSync(at(kept[0]), 'utf8')).toBe('こんにちは\n')
+    } finally {
+      delete process.env.EW_STT_DUMP_DIR
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps the WAV even when the recogniser fails, and only the newest few', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ew-stt-dump-'))
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.EW_STT_DUMP_DIR = dir
+    try {
+      for (let i = 0; i < STT_DUMP_KEEP; i++) {
+        const stem = `utt-20200101-0000${String(i).padStart(2, '0')}-000`
+        writeFileSync(join(dir, `${stem}.wav`), '')
+        writeFileSync(join(dir, `${stem}.txt`), '')
+      }
+      writeFileSync(join(dir, 'notes.md'), 'not ours')
+      up.reply = { status: 500, body: 'boom' }
+      expect((await transcribe(new Uint8Array([1, 0]), 16000)).ok).toBe(false)
+      const kept = readdirSync(dir)
+      expect(kept.filter(f => f.endsWith('.wav'))).toHaveLength(STT_DUMP_KEEP)
+      expect(kept).not.toContain('utt-20200101-000000-000.wav')
+      expect(kept).not.toContain('utt-20200101-000000-000.txt')
+      expect(kept).toContain('notes.md')
+    } finally {
+      delete process.env.EW_STT_DUMP_DIR
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('still answers the transcript when the dump directory cannot be written', async () => {
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    // A path under a regular file: no directory can be made there.
+    const dir = mkdtempSync(join(tmpdir(), 'ew-stt-dump-'))
+    writeFileSync(join(dir, 'file'), '')
+    process.env.EW_STT_DUMP_DIR = join(dir, 'file', 'sub')
+    try {
+      expect(await transcribe(new Uint8Array([1, 0]), 16000)).toEqual({
+        ok: true,
+        text: 'こんにちは',
+      })
+    } finally {
+      delete process.env.EW_STT_DUMP_DIR
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it('treats silence as success with an empty string, not as an error', async () => {

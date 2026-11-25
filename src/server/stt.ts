@@ -12,6 +12,9 @@
 // No env is read at module load: reading inside the functions keeps these settings
 // independent of import order (see env.boot.ts) and lets a test set them per case.
 
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
 /** Recognised text. `text` may be empty: "nobody spoke" is not an error. */
 export interface SttOk {
   ok: true
@@ -112,6 +115,58 @@ export function sttOptions(): [string, string][] {
   return out
 }
 
+/** Where to keep a copy of each utterance, from `EW_STT_DUMP_DIR`; '' (the default) keeps
+ *  none. It is for finding out why a transcript came back short: the file is the exact WAV
+ *  the recogniser was sent, so it can be played and sent again by hand. */
+export function sttDumpDir(): string {
+  return (process.env.EW_STT_DUMP_DIR ?? '').trim()
+}
+
+/** How many utterances the dump directory keeps. These are recordings of the wearer, so the
+ *  directory does not grow without bound: the oldest go when a new one arrives. */
+export const STT_DUMP_KEEP = 20
+
+/** `utt-20261126-010203-456`, in local time: sorts by name in the order recorded. */
+function dumpStem(at: Date): string {
+  const p = (n: number, w = 2): string => String(n).padStart(w, '0')
+  return (
+    `utt-${String(at.getFullYear())}${p(at.getMonth() + 1)}${p(at.getDate())}` +
+    `-${p(at.getHours())}${p(at.getMinutes())}${p(at.getSeconds())}-${p(at.getMilliseconds(), 3)}`
+  )
+}
+
+/** Write the WAV into the dump directory and drop the oldest beyond `STT_DUMP_KEEP`. Returns
+ *  the path without its extension, or '' when nothing was written. Never throws: a full disk
+ *  or a bad path costs the copy, not the utterance. */
+async function dumpWav(dir: string, wav: Uint8Array): Promise<string> {
+  try {
+    await mkdir(dir, { recursive: true, mode: 0o700 })
+    const stem = join(dir, dumpStem(new Date()))
+    await writeFile(`${stem}.wav`, wav, { mode: 0o600 })
+    const old = (await readdir(dir))
+      .filter(f => /^utt-[\d-]+\.wav$/.test(f))
+      .sort()
+      .slice(0, -STT_DUMP_KEEP)
+    for (const f of old) {
+      await rm(join(dir, f), { force: true })
+      await rm(join(dir, f.replace(/\.wav$/, '.txt')), { force: true })
+    }
+    console.log(`[ew] stt: kept the utterance at ${stem}.wav (EW_STT_DUMP_DIR)`)
+    return stem
+  } catch (e) {
+    console.log(
+      `[ew] stt: could not keep the utterance in ${dir}: ${e instanceof Error ? e.message : String(e)}`,
+    )
+    return ''
+  }
+}
+
+/** Put what the recogniser answered next to the WAV, so the two can be compared later. */
+async function dumpText(stem: string, text: string): Promise<void> {
+  if (stem === '') return
+  await writeFile(`${stem}.txt`, `${text}\n`, { mode: 0o600 }).catch(() => {})
+}
+
 export function sttEnabled(): boolean {
   return sttUrl() !== ''
 }
@@ -165,6 +220,8 @@ export async function transcribe(pcm: Uint8Array, rate: number): Promise<SttResu
   const headers: Record<string, string> = key ? { authorization: `Bearer ${key}` } : {}
 
   const wav = pcmToWav(pcm, rate)
+  const dumpDir = sttDumpDir()
+  const dumped = dumpDir ? await dumpWav(dumpDir, wav) : ''
   const options = sttOptions()
   const post = (extra: boolean): Promise<Response> => {
     const form = new FormData()
@@ -223,5 +280,6 @@ export async function transcribe(pcm: Uint8Array, rate: number): Promise<SttResu
   }
   // Trimmed, not rejected, when empty: silence is a legitimate outcome. Keeping an empty
   // string away from the injector is the injection site's rule.
+  await dumpText(dumped, text.trim())
   return { ok: true, text: text.trim() }
 }
