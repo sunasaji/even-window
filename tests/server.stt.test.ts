@@ -16,7 +16,9 @@ import {
   pcmToWav,
   STT_MAX_SECONDS,
   sttEnabled,
+  sttKeyExposed,
   sttModel,
+  sttOptions,
   transcribe,
 } from '../src/server/stt.ts'
 import { enrolAndSession, makeEd25519Key, useTempStateDir } from './authFixture.ts'
@@ -28,8 +30,15 @@ interface Upstream {
   /** Raw bytes of the last request body, for asserting what actually crossed. */
   lastBody: string
   lastType: string
+  /** The last request's `Authorization` header, '' when it had none. */
+  lastAuth: string
   /** What to answer next: a status and a body. */
   reply: { status: number; body: string; type?: string }
+  /** Answer 400 to a request that carries `chunking_strategy`, as speech.cpp does when it
+   *  was started without a voice detector. */
+  refuseChunking: boolean
+  /** Requests received. */
+  hits: number
   close(): Promise<void>
 }
 
@@ -37,7 +46,10 @@ async function startUpstream(): Promise<Upstream> {
   const u: Partial<Upstream> = {
     lastBody: '',
     lastType: '',
+    lastAuth: '',
     reply: { status: 200, body: '{"text":"こんにちは"}' },
+    refuseChunking: false,
+    hits: 0,
   }
   const srv: Server = createServer((q: IncomingMessage, s: ServerResponse) => {
     const chunks: Buffer[] = []
@@ -45,7 +57,12 @@ async function startUpstream(): Promise<Upstream> {
     q.on('end', () => {
       u.lastBody = Buffer.concat(chunks).toString('latin1')
       u.lastType = q.headers['content-type'] ?? ''
-      const r = u.reply ?? { status: 200, body: '{}' }
+      u.lastAuth = q.headers.authorization ?? ''
+      u.hits = (u.hits ?? 0) + 1
+      const refused = u.refuseChunking === true && u.lastBody.includes('name="chunking_strategy"')
+      const r = refused
+        ? { status: 400, body: '{"error":{"param":"chunking_strategy"}}', type: undefined }
+        : (u.reply ?? { status: 200, body: '{}' })
       s.statusCode = r.status
       s.setHeader('content-type', r.type ?? 'application/json')
       s.end(r.body)
@@ -74,6 +91,11 @@ beforeEach(() => {
   delete process.env.EW_STT_MODEL
   delete process.env.EW_STT_LANG
   delete process.env.EW_STT_PROMPT
+  delete process.env.EW_STT_OPTIONS
+  delete process.env.EW_STT_API_KEY
+  up.refuseChunking = false
+  up.lastAuth = ''
+  up.hits = 0
   up.reply = { status: 200, body: '{"text":"こんにちは"}' }
 })
 
@@ -208,6 +230,105 @@ describe('transcribe', () => {
     expect(up.lastBody).toContain('name="language"')
     expect(up.lastBody).toContain('name="prompt"')
     expect(up.lastBody).toContain('Claude Code')
+  })
+
+  it('asks the recogniser to chunk by default, and sends nothing extra when the options are empty', async () => {
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(up.lastBody).toContain('name="chunking_strategy"')
+    expect(up.lastBody).toContain('auto')
+
+    process.env.EW_STT_OPTIONS = ''
+    await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(up.lastBody).not.toContain('name="chunking_strategy"')
+  })
+
+  it('sends the API key as a bearer token, on the retry too, and no header without one', async () => {
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(up.lastAuth).toBe('')
+
+    process.env.EW_STT_API_KEY = ' sk-test-123 '
+    await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(up.lastAuth).toBe('Bearer sk-test-123')
+    // The key is a header, never a form field.
+    expect(up.lastBody).not.toContain('sk-test-123')
+
+    up.refuseChunking = true
+    up.lastAuth = ''
+    up.hits = 0
+    await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(up.hits).toBe(2)
+    expect(up.lastAuth).toBe('Bearer sk-test-123')
+  })
+
+  it('refuses to send the key over plain http to another host', async () => {
+    expect(sttKeyExposed('http://192.168.1.5:8757/v1/audio/transcriptions', 'k')).toBe(true)
+    expect(sttKeyExposed('http://stt.example/v1/audio/transcriptions', 'k')).toBe(true)
+    expect(sttKeyExposed('https://api.openai.com/v1/audio/transcriptions', 'k')).toBe(false)
+    expect(sttKeyExposed('http://127.0.0.1:8757/v1/audio/transcriptions', 'k')).toBe(false)
+    expect(sttKeyExposed('http://localhost:8757/x', 'k')).toBe(false)
+    expect(sttKeyExposed('http://[::1]:8757/x', 'k')).toBe(false)
+    expect(sttKeyExposed('http://stt.example/x', '')).toBe(false)
+
+    process.env.EW_STT_URL = 'http://stt.example/v1/audio/transcriptions'
+    process.env.EW_STT_API_KEY = 'sk-test-123'
+    const r = await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(r.ok).toBe(false)
+    // The complaint goes to the phone: it must not carry the key.
+    expect(JSON.stringify(r)).not.toContain('sk-test-123')
+    expect(up.hits).toBe(0)
+  })
+
+  it('sends whatever fields EW_STT_OPTIONS names, in place of the default', async () => {
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.EW_STT_OPTIONS = 'vad_filter=true&temperature=0'
+    await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(up.lastBody).toContain('name="vad_filter"')
+    expect(up.lastBody).toContain('name="temperature"')
+    expect(up.lastBody).not.toContain('name="chunking_strategy"')
+  })
+
+  it('parses the options as a query string: encoded values, blanks and `file` left out', () => {
+    process.env.EW_STT_OPTIONS = ' a=1&b=x%20y&&=z&file=evil&c '
+    expect(sttOptions()).toEqual([
+      ['a', '1'],
+      ['b', 'x y'],
+      ['c', ''],
+    ])
+    process.env.EW_STT_OPTIONS = 'chunking_strategy={"type":"server_vad"}'
+    expect(sttOptions()).toEqual([['chunking_strategy', '{"type":"server_vad"}']])
+    delete process.env.EW_STT_OPTIONS
+    expect(sttOptions()).toEqual([['chunking_strategy', 'auto']])
+  })
+
+  it('lets an option replace the same field from its own setting', async () => {
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.EW_STT_LANG = 'ja'
+    process.env.EW_STT_OPTIONS = 'language=en'
+    await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(up.lastBody.split('name="language"').length - 1).toBe(1)
+  })
+
+  it('sends the utterance again without the options when the recogniser refuses them', async () => {
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    up.refuseChunking = true
+    expect(await transcribe(new Uint8Array([1, 2]), 16000)).toEqual({
+      ok: true,
+      text: 'こんにちは',
+    })
+    expect(up.hits).toBe(2)
+    expect(up.lastBody).not.toContain('name="chunking_strategy"')
+    expect(up.lastBody).toContain('RIFF')
+  })
+
+  it('does not retry a 400 when no options were sent', async () => {
+    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.EW_STT_OPTIONS = ''
+    up.reply = { status: 400, body: 'bad audio' }
+    const r = await transcribe(new Uint8Array([1, 2]), 16000)
+    expect(r.ok).toBe(false)
+    expect(up.hits).toBe(1)
   })
 
   it('treats silence as success with an empty string, not as an error', async () => {

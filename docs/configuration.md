@@ -56,6 +56,8 @@ transparent and a light background lights the whole lens.
 | `EW_STT_MODEL` | `Qwen3-ASR-0.6B` | Model id sent to the recogniser. It must be the id the recogniser's `/v1/models` reports. |
 | `EW_STT_LANG` | unset | Language hint, for example `en`. Not sent when unset. |
 | `EW_STT_PROMPT` | unset | Vocabulary hint passed as `prompt`. It also makes the recogniser likelier to hear these words when they were not said. |
+| `EW_STT_OPTIONS` | `chunking_strategy=auto` | Extra form fields for the recogniser, as `name=value` pairs joined by `&` (URL query syntax). The default asks for a long utterance to be recognised region by region. Which fields exist depends on the recogniser: see [voice.md](voice.md#recogniser-options). Set it empty to send none. A recogniser that answers 400 is asked again without them. |
+| `EW_STT_API_KEY` | unset | API key for a hosted recogniser such as OpenAI's, sent as `Authorization: Bearer`. A local recogniser needs none. It is a secret: keep it in the env file (mode 600). With it set, `EW_STT_URL` must be `https` unless it is this machine. See [voice.md](voice.md#a-hosted-recogniser). |
 
 ### Client dev server (Vite)
 

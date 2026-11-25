@@ -16,9 +16,12 @@ phone text box ◀── transcript ──────────────�
       └─ Send / Submit ──▶ POST /api/desktop/input {kind:'type'} ──▶ focused window
 ```
 
-The server sits between the phone and the recogniser so that the recogniser stays on loopback
-behind the authentication gate ([security.md](security.md)) and the audio conversion lives in
-one place. Background: [decisions/stt-backend-contract.md](decisions/stt-backend-contract.md).
+The server sits between the phone and the recogniser for three reasons: the phone holds an
+identity for this server only, so the recogniser needs no credential of the phone's
+([security.md](security.md)); a local recogniser with no authentication of its own can stay
+on loopback behind that gate; and the audio conversion lives in one place. A hosted
+recogniser is reached the same way, with its API key held by the server and never by the
+phone ([A hosted recogniser](#a-hosted-recogniser)). Background: [decisions/stt-backend-contract.md](decisions/stt-backend-contract.md).
 
 ## Capability advertisement
 
@@ -83,18 +86,71 @@ another.
 | `EW_STT_MODEL` | `Qwen3-ASR-0.6B` | Sent as `model` |
 | `EW_STT_LANG` | empty | Sent as `language` when set |
 | `EW_STT_PROMPT` | empty | Sent as `prompt` when set (vocabulary bias) |
+| `EW_STT_OPTIONS` | `chunking_strategy=auto` | Extra form fields, as `name=value` pairs joined by `&`. Empty sends none. See [Recogniser options](#recogniser-options) |
+| `EW_STT_API_KEY` | empty | Sent as `Authorization: Bearer` when set. For a hosted recogniser; see [A hosted recogniser](#a-hosted-recogniser) |
 
 The settings are read per request. See [configuration.md](configuration.md).
 
 What the server sends and expects:
 
 - A `multipart/form-data` POST with `file` (the PCM wrapped in a 44-byte WAV header,
-  `audio/wav`, named `utterance.wav`), `model`, and optionally `language` and `prompt`.
+  `audio/wav`, named `utterance.wav`), `model`, optionally `language` and `prompt`, and the
+  fields of `EW_STT_OPTIONS`. A 400 to a request that carried options is retried once
+  without them.
 - A 2xx JSON response with a string `text`. The text is trimmed.
 - Anything else is a failure: a network error, a non-2xx status, a non-JSON body, or JSON
   without `text`. The request times out after 45 seconds.
 
 An empty recording is answered `{ok: true, text: ''}` without calling the recogniser.
+
+### Recogniser options
+
+`EW_STT_OPTIONS` adds form fields to the request, so a recogniser's own switches can be set
+without a setting for each. The syntax is a URL query string: `name=value` pairs joined by
+`&`, percent-encoded where a value needs it. An option with the name of `model`, `language`
+or `prompt` replaces that field; `file` cannot be set.
+
+The default, `chunking_strategy=auto`, is a field of OpenAI's transcription API: the
+recogniser splits the audio where its voice detector hears speech and recognises each region.
+It matters for a long utterance. Sent as one window, `reazonspeech-nemo-v2` returned a
+fraction of a 30 s recording, and two seconds of silence came back as a word. Other servers
+have the same idea under another name.
+
+| Recogniser | Setting | Status |
+| --- | --- | --- |
+| speech.cpp 0.8.8 started with a voice detector (`silero-vad`, as the shipped unit does), serving `Qwen3-ASR-0.6B` or `reazonspeech-nemo-v2` | `chunking_strategy=auto` (the default) | Tested: accepted |
+| speech.cpp 0.8.8 started without a voice detector | `EW_STT_OPTIONS=` | Tested: `chunking_strategy` is refused with 400 |
+| OpenAI's API with a model that supports chunking (`gpt-4o-transcribe`, `gpt-4o-mini-transcribe`) | `chunking_strategy=auto` (the default) | Not tested; the field is OpenAI's own. See [A hosted recogniser](#a-hosted-recogniser) |
+| faster-whisper servers (Speaches, formerly faster-whisper-server) | `EW_STT_OPTIONS=vad_filter=true` | Not tested; `vad_filter` is their name for the same thing |
+
+More than one field: `EW_STT_OPTIONS=vad_filter=true&temperature=0`.
+
+When the recogniser answers 400 to a request that carried options, the server logs it and
+sends the utterance once more without them, so recognition still works with a recogniser
+that does not know a field. Set `EW_STT_OPTIONS=` (empty) to skip that first attempt.
+
+### A hosted recogniser
+
+The contract is OpenAI's API, so OpenAI's own endpoint is a valid `EW_STT_URL`. Not tested
+against the live service: the request shape is the documented one, and the bearer header is
+covered by the tests against a local stand-in.
+
+```
+EW_STT_URL=https://api.openai.com/v1/audio/transcriptions
+EW_STT_MODEL=gpt-4o-mini-transcribe
+EW_STT_API_KEY=sk-...
+```
+
+- **The audio leaves the machine.** With a local recogniser, what the microphone heard stays
+  on loopback. With a hosted one, every utterance is sent to that company, under its terms.
+- The key is sent as `Authorization: Bearer` and nowhere else: it is not logged and is not
+  part of any answer to the phone. Keep it in the env file, which must not be writable by
+  others ([configuration.md](configuration.md)).
+- With a key set, the server refuses a plain `http://` URL to another host, since the key
+  would cross the network in the clear. `http://127.0.0.1`, `localhost` and `[::1]` are
+  allowed.
+- `whisper-1` does not take `chunking_strategy`. If the API answers 400, the server retries
+  without the options (above); set `EW_STT_OPTIONS=` to skip that attempt.
 
 ### speech.cpp
 
@@ -103,7 +159,8 @@ The repository ships `systemd/speech-cpp.service`, a user unit that runs
 specific to even-window, and it is separate from the server's unit so that either can restart
 without the other.
 
-- speech.cpp has no authentication and no TLS. Keep it on loopback.
+- speech.cpp has no authentication and no TLS. Keep it on loopback. This is about where
+  speech.cpp listens, not about `EW_STT_URL`, which may name a hosted service instead.
 - The unit's model name and `EW_STT_MODEL` are different strings for the same model and must
   agree. A mismatch produces a 404 that looks like a wrong route. List the ids with
   `curl -s http://127.0.0.1:8757/v1/models`.

@@ -33,6 +33,10 @@ with its own systemd unit.
 
 - `EW_STT_URL` may point at another host or a hosted service without the phone learning a
   second credential. The audio then leaves the machine; that is the operator's choice.
+- A hosted service wants an API key, which is a header and not part of the interface's form.
+  `EW_STT_API_KEY` carries it as `Authorization: Bearer`, and the server refuses to send it
+  over plain `http` to another host. Fields that only some recognisers take go in
+  `EW_STT_OPTIONS`, so the interface stays one and the differences stay settings.
 - The client learns whether voice is available from `GET /api/health` and offers the dialog
   only then.
 - The model id is the recogniser's HTTP id, which differs from its CLI name; the server's

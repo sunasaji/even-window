@@ -6,7 +6,8 @@
 //
 // The phone goes through this server instead of calling the recogniser because its identity
 // is for this server only (docs/security.md), and so the audio format conversion lives in one
-// place.
+// place. That holds for a local recogniser on loopback and for a hosted one alike: a hosted
+// one's API key stays here (`sttApiKey`).
 //
 // No env is read at module load: reading inside the functions keeps these settings
 // independent of import order (see env.boot.ts) and lets a test set them per case.
@@ -68,6 +69,49 @@ export function sttPrompt(): string {
   return (process.env.EW_STT_PROMPT ?? '').trim()
 }
 
+/** The recogniser's API key, or '' for a recogniser that wants none (a local one). Sent as
+ *  `Authorization: Bearer`, which is what OpenAI's own endpoint requires. It is never logged
+ *  and never reaches the phone. */
+export function sttApiKey(): string {
+  return (process.env.EW_STT_API_KEY ?? '').trim()
+}
+
+/** Would the key cross the network unencrypted? True for a plain `http://` URL whose host is
+ *  not this machine. `transcribe` refuses that instead of sending the key. */
+export function sttKeyExposed(url: string, key: string): boolean {
+  if (key === '') return false
+  let u: URL
+  try {
+    u = new URL(url)
+  } catch {
+    return false // an unusable URL fails on its own, at the fetch
+  }
+  if (u.protocol !== 'http:') return false
+  const host = u.hostname
+  return !(host === 'localhost' || host === '[::1]' || /^127\./.test(host))
+}
+
+/** What `EW_STT_OPTIONS` is when unset. `chunking_strategy` is OpenAI's field: the recogniser
+ *  splits the audio where its voice detector hears speech and recognises each region. Without
+ *  it a long utterance goes in as one window, and a model trained on short clips returns only
+ *  part of it (seen with reazonspeech-nemo-v2 on a 30 s recording); silence can also come back
+ *  as a word. */
+export const STT_OPTIONS_DEFAULT = 'chunking_strategy=auto'
+
+/** Extra form fields for the recogniser, from `EW_STT_OPTIONS`: `name=value` pairs joined by
+ *  `&`, in URL query syntax, so a value may be percent-encoded. They are how a recogniser's
+ *  own switches are reached without this module knowing them (`vad_filter=true`,
+ *  `temperature=0`). Set to empty, nothing extra is sent. `file` is not theirs to set. */
+export function sttOptions(): [string, string][] {
+  const raw = (process.env.EW_STT_OPTIONS ?? STT_OPTIONS_DEFAULT).trim()
+  const out: [string, string][] = []
+  for (const [k, v] of new URLSearchParams(raw)) {
+    const name = k.trim()
+    if (name !== '' && name !== 'file') out.push([name, v])
+  }
+  return out
+}
+
 export function sttEnabled(): boolean {
   return sttUrl() !== ''
 }
@@ -111,21 +155,50 @@ export async function transcribe(pcm: Uint8Array, rate: number): Promise<SttResu
   if (!url) return { ok: false, error: 'STT is not configured — set EW_STT_URL' }
   if (pcm.length === 0) return { ok: true, text: '' }
 
-  const form = new FormData()
-  form.append('file', new Blob([pcmToWav(pcm, rate)], { type: 'audio/wav' }), 'utterance.wav')
-  form.append('model', sttModel())
-  const lang = sttLang()
-  if (lang) form.append('language', lang)
-  const prompt = sttPrompt()
-  if (prompt) form.append('prompt', prompt)
+  const key = sttApiKey()
+  if (sttKeyExposed(url, key)) {
+    return {
+      ok: false,
+      error: 'EW_STT_API_KEY is set but EW_STT_URL is plain http to another host — use https',
+    }
+  }
+  const headers: Record<string, string> = key ? { authorization: `Bearer ${key}` } : {}
 
-  let res: Response
-  try {
-    res = await fetch(url, {
+  const wav = pcmToWav(pcm, rate)
+  const options = sttOptions()
+  const post = (extra: boolean): Promise<Response> => {
+    const form = new FormData()
+    form.append('file', new Blob([wav], { type: 'audio/wav' }), 'utterance.wav')
+    form.append('model', sttModel())
+    const lang = sttLang()
+    if (lang) form.append('language', lang)
+    const prompt = sttPrompt()
+    if (prompt) form.append('prompt', prompt)
+    // `set`, so an option replaces the same field from its own setting above.
+    if (extra) for (const [k, v] of options) form.set(k, v)
+    return fetch(url, {
       method: 'POST',
+      headers,
       body: form,
       signal: AbortSignal.timeout(STT_TIMEOUT_MS),
     })
+  }
+
+  let res: Response
+  try {
+    res = await post(true)
+    // The options are the part of the request a recogniser may not take: speech.cpp answers
+    // 400 to `chunking_strategy` when it was started without a voice detector, and another
+    // server may not know a field. The utterance is worth more than the options, so it is
+    // sent once more without them.
+    if (res.status === 400 && options.length > 0) {
+      const why = await res.text().catch(() => '')
+      console.log(
+        `[ew] stt: the recogniser refused the request (400: ${excerpt(why, 120)}) — ` +
+          `retrying without EW_STT_OPTIONS (${options.map(([k]) => k).join(', ')})`,
+      )
+      res = await post(false)
+    }
   } catch (e) {
     // The common case: the recogniser is a separate process that has not been started.
     const why = e instanceof Error ? e.message : String(e)
