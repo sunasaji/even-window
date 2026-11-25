@@ -8,6 +8,7 @@ import { gestureAction } from '../src/server/main.ts'
 import {
   TYPE_DELAY_NON_ASCII_MS,
   typeDelay,
+  typeTimeoutMs,
   x11RatpoisonKey,
   xdoArgs,
 } from '../src/server/platform/x11/input.ts'
@@ -295,5 +296,25 @@ describe('non-ASCII is typed slower, because xdotool drops it at the default spe
   it('leaves every other kind alone', () => {
     expect(xdoArgs('key', 'Return')).toEqual(['key', '--clearmodifiers', 'Return'])
     expect(xdoArgs('keydown', 'ctrl')).toEqual(['keydown', 'ctrl'])
+  })
+})
+
+describe('typeTimeoutMs', () => {
+  it('keeps the base timeout for a short string', () => {
+    expect(typeTimeoutMs('')).toBe(2000)
+    expect(typeTimeoutMs('ls')).toBeLessThan(2100)
+  })
+
+  it('outlasts xdotool typing a long transcript at its own delay', () => {
+    // 141 characters at 40 ms each is 5.6 s of typing. Ending xdotool before that leaves a
+    // key down, and X auto-repeat then fills the field with one character.
+    const text = '音声テスト。'.repeat(24).slice(0, 141)
+    expect([...text]).toHaveLength(141)
+    expect(typeTimeoutMs(text)).toBeGreaterThan(141 * TYPE_DELAY_NON_ASCII_MS * 2)
+  })
+
+  it('counts characters, not UTF-16 units, and gives ASCII the shorter delay', () => {
+    expect(typeTimeoutMs('😀')).toBe(2000 + TYPE_DELAY_NON_ASCII_MS * 3)
+    expect(typeTimeoutMs('a'.repeat(100))).toBe(2000 + 100 * 12 * 3)
   })
 })

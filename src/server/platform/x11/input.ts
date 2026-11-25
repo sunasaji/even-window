@@ -22,6 +22,22 @@ export function typeDelay(arg: string): string[] {
   return /[^\x00-\x7f]/.test(arg) ? ['--delay', String(TYPE_DELAY_NON_ASCII_MS)] : []
 }
 
+/** How long one injection may take before it is ended as wedged. */
+const INPUT_TIMEOUT_MS = 2000
+
+/** The timeout for typing `arg`: the base, plus what xdotool needs at its own pace. It waits
+ *  `--delay` after each character, so a transcript of 150 characters at 40 ms takes 6 s; three
+ *  times the delay per character leaves room for a loaded machine.
+ *
+ *  A fixed 2 s was a bug, not just a short limit: xdotool was ended between a key press and
+ *  its release, the key stayed down, and X auto-repeat filled the field with that character
+ *  (a 141-character transcript came out as its first 56 characters and a run of `い`). */
+export function typeTimeoutMs(arg: string): number {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: the ASCII range is the point
+  const perChar = /[^\x00-\x7f]/.test(arg) ? TYPE_DELAY_NON_ASCII_MS : 12
+  return INPUT_TIMEOUT_MS + [...arg].length * perChar * 3
+}
+
 /** Mouse buttons xdotool understands: 1=left 2=middle 3=right 4=wheel-up 5=wheel-down. */
 function button(arg: string | undefined): string {
   return arg != null && /^[1-5]$/.test(arg) ? arg : '1'
@@ -71,7 +87,8 @@ export function xdoArgs(kind: string, arg: string): string[] | null {
 export async function x11Input(kind: string, arg: string): Promise<boolean> {
   const args = xdoArgs(kind, arg)
   if (!args) return false
-  const { code } = await run('xdotool', args, 2000)
+  const ms = kind === 'type' ? typeTimeoutMs(arg) : INPUT_TIMEOUT_MS
+  const { code } = await run('xdotool', args, ms)
   return code === 0
 }
 
