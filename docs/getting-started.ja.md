@@ -246,7 +246,7 @@ Xephyr と Xvfb のバックエンドを切り替えたいときも同じ手順�
    取得します（モデルの置き場所を移している場合、サービス自身はダウンロードできません）。
 
    ```bash
-   speech pull qwen3-asr-0.6b silero-vad
+   speech pull qwen3-asr-0.6b
    ```
 
 2. ユニットをインストールして起動します。`127.0.0.1:8757` で待ち受けます。
@@ -265,16 +265,13 @@ Xephyr と Xvfb のバックエンドを切り替えたいときも同じ手順�
    EW_STT_LANG=en
    ```
 
-ユニットに書くモデル名と、even-window が送るモデル ID は別の文字列で、両者が対応して
-いなければなりません。食い違うと、ルートが無いように見える `404` が返ります。
-
-| 用途 | ユニット（`STT_MODEL`） | env ファイル（`EW_STT_MODEL`） |
-| --- | --- | --- |
-| 多言語（既定） | `qwen3-asr-0.6b` | `Qwen3-ASR-0.6B`（既定値。省略可） |
-| 日本語専用・より高速 | `reazonspeech-v2` | `reazonspeech-nemo-v2`。`EW_STT_LANG` は設定しない |
+ユニットは `qwen3-asr-0.6b` を動かし、even-window は既定でそのモデルの HTTP 上の ID
+`Qwen3-ASR-0.6B` を送るので、`EW_STT_MODEL` は未設定のままで構いません。この 2 つは同じ
+モデルを指す別の文字列です。片方を変えるならもう片方も変えてください
+（[voice.md](voice.md#speechcpp)）。食い違うと、ルートが無いように見える `404` が返ります。
 
 ユニットの設定は `~/.config/speech.cpp/service.env` で上書きし（たとえば
-`STT_MODEL=reazonspeech-v2` や `SPEECH_MODEL_DIR=/path/to/models`）、
+`SPEECH_MODEL_DIR=/path/to/models`）、
 `systemctl --user restart speech-cpp.service` で反映します。認識サービスはループバックに
 置いたままにしてください。認証を持たないサービスで、even-window は自身の認証つき API を
 通してこれを利用します。

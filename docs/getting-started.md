@@ -242,11 +242,11 @@ Voice input needs a recogniser that answers OpenAI's `POST /v1/audio/transcripti
 The repository ships a user unit for [speech.cpp](https://github.com/nyosegawa/speech.cpp);
 any compatible server works. How voice input works is in [voice.md](voice.md).
 
-1. Install speech.cpp so that `~/.local/bin/speech` exists, then fetch the models
+1. Install speech.cpp so that `~/.local/bin/speech` exists, then fetch the model
    from a shell (the service cannot download into a relocated model directory):
 
    ```bash
-   speech pull qwen3-asr-0.6b silero-vad
+   speech pull qwen3-asr-0.6b
    ```
 
 2. Install and start the unit. It listens on `127.0.0.1:8757`.
@@ -265,16 +265,14 @@ any compatible server works. How voice input works is in [voice.md](voice.md).
    EW_STT_LANG=en
    ```
 
-The model name in the unit and the model id even-window sends are different strings
-and must agree. A mismatch returns a `404` that looks like a missing route.
-
-| Use | Unit (`STT_MODEL`) | Env file (`EW_STT_MODEL`) |
-| --- | --- | --- |
-| Multilingual (default) | `qwen3-asr-0.6b` | `Qwen3-ASR-0.6B` (the default; may be omitted) |
-| Japanese only, faster | `reazonspeech-v2` | `reazonspeech-nemo-v2`, with `EW_STT_LANG` unset |
+The unit serves `qwen3-asr-0.6b`, and even-window sends that model's HTTP id,
+`Qwen3-ASR-0.6B`, by default, so `EW_STT_MODEL` can stay unset. The two names are
+different strings for the same model; if you change one, change the other
+([voice.md](voice.md#speechcpp)). A mismatch returns a `404` that looks like a missing
+route.
 
 Override the unit's settings in `~/.config/speech.cpp/service.env` (for example
-`STT_MODEL=reazonspeech-v2` or `SPEECH_MODEL_DIR=/path/to/models`), then
+`SPEECH_MODEL_DIR=/path/to/models`), then
 `systemctl --user restart speech-cpp.service`. Keep the recogniser on loopback: it
 has no authentication, and even-window reaches it through its own authenticated API.
 

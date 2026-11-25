@@ -20,7 +20,6 @@ Type=simple
 #
 #     CLI (STT_MODEL)        HTTP id (EW_STT_MODEL)     languages
 #     qwen3-asr-0.6b         Qwen3-ASR-0.6B             30, incl. en and ja (the default)
-#     reazonspeech-v2        reazonspeech-nemo-v2       ja only, faster; leave EW_STT_LANG unset
 #
 #     curl -s http://127.0.0.1:8757/v1/models | grep -o '"id":"[^"]*"'
 #
@@ -35,7 +34,6 @@ Type=simple
 # The installed build decides what `auto` can see. Pin `cpu` only if `auto` picks
 # something slower than the CPU backend, such as a software Vulkan device (lavapipe).
 Environment=STT_MODEL=qwen3-asr-0.6b
-Environment=STT_VAD=silero-vad
 Environment=STT_PORT=8757
 Environment=STT_DEVICE=auto
 Environment=STT_BIN=%h/.local/bin/speech
@@ -64,12 +62,12 @@ EnvironmentFile=-%h/.config/speech.cpp/service.env
 #
 # `/usr/bin/env` is the executable because systemd refuses a variable in the first
 # position; going through env keeps STT_BIN overridable.
-ExecStart=/usr/bin/env ${STT_BIN} serve ${STT_MODEL} ${STT_VAD} --device ${STT_DEVICE} --host 127.0.0.1 --port ${STT_PORT}
+ExecStart=/usr/bin/env ${STT_BIN} serve ${STT_MODEL} --device ${STT_DEVICE} --host 127.0.0.1 --port ${STT_PORT}
 
 # Fetch the model before enabling the unit. `speech serve` downloads a missing model on
 # start, and Type=simple reports the unit active while the port does not answer yet:
 #
-#     speech pull qwen3-asr-0.6b silero-vad
+#     speech pull qwen3-asr-0.6b
 #
 Restart=on-failure
 RestartSec=5s

@@ -63,7 +63,7 @@ Check the phone first: if the preview shows the desktop, the server side is fine
 | --- | --- | --- |
 | Long press does nothing and there is no **voice** button | No recogniser is configured; the client offers voice only when the server reports one. | Set `EW_STT_URL` and restart the server. |
 | Transcription fails with `404` | The model id sent differs from the id the recogniser serves. | Compare `EW_STT_MODEL` with `curl -s http://127.0.0.1:8757/v1/models`. |
-| The recogniser does not answer right after its first start | It is downloading a model. | Run `speech pull <model> silero-vad` from a shell first. |
+| The recogniser does not answer right after its first start | It is downloading a model. | Run `speech pull <model>` from a shell first. |
 | `no audio` after a few seconds, using the phone microphone | The Even App has no microphone permission. | Grant it in the phone's settings. |
 
 ## The mirrored desktop (X11 backend)
