@@ -42,14 +42,22 @@ flowchart TB
   subgraph PHONE["スマホ: 公式 Even App"]
     CL["<b>even-window クライアント</b>（WebView ページ）<br/>スマホ画面: プレビュー、テキスト欄、キー、<br/>トラックパッド、ウィンドウ／アプリのパレット<br/>タイルを 16 階調グレーの PNG に変換"]
     BR["<b>グラスブリッジ</b><br/>Even Hub SDK"]
+    SK["<b>オンスクリーンキーボード</b>"]
   end
   G2["<b>G2 グラス</b><br/>576x288、4 ビットグレー"]
+  KB["Bluetooth キーボード"]
+  style KB stroke-dasharray: 5 5
+  style STT stroke-dasharray: 5 5
 
   SRV == "SSE: タイル" ==> CL
   CL == "画像の更新" ==> BR
   BR == "BLE" ==> G2
   G2 -. "ジェスチャ、マイク" .-> BR
   BR -. "イベント、音声" .-> CL
+  CL ~~~ SK
+  SK -. "キー" .-> CL
+  CL ~~~ KB
+  KB -. "キー" .-> CL
   CL -. "ジェスチャ、音声、キー、<br/>ポインタ、テキスト、起動" .-> SRV
 ```
 

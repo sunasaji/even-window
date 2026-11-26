@@ -41,14 +41,22 @@ flowchart TB
   subgraph PHONE["Phone: official Even App"]
     CL["<b>even-window client</b> (WebView page)<br/>phone screen: preview, text box, keys,<br/>trackpad, window and app palettes<br/>tiles to 16-level grey PNG"]
     BR["<b>Glasses bridge</b><br/>Even Hub SDK"]
+    SK["<b>On-screen keyboard</b>"]
   end
   G2["<b>G2 glasses</b><br/>576x288, 4-bit grey"]
+  KB["Bluetooth keyboard"]
+  style KB stroke-dasharray: 5 5
+  style STT stroke-dasharray: 5 5
 
   SRV == "SSE: tiles" ==> CL
   CL == "image updates" ==> BR
   BR == "BLE" ==> G2
   G2 -. "gestures, microphone" .-> BR
   BR -. "events, audio" .-> CL
+  CL ~~~ SK
+  SK -. "keys" .-> CL
+  CL ~~~ KB
+  KB -. "keys" .-> CL
   CL -. "gestures, audio, keys,<br/>pointer, text, launch" .-> SRV
 ```
 
