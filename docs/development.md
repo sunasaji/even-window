@@ -429,6 +429,28 @@ npm test           # vitest run
   organised imports. Conventions for comments and commits are in
   [CONTRIBUTING.md](../CONTRIBUTING.md).
 
+## Packaging
+
+```bash
+npm run pack       # npm run build, then evenhub pack app.json dist -o out.ehpk
+```
+
+`out.ehpk` (ignored by git) is the file uploaded to Even Hub for a beta or store release. The
+packer is `@evenrealities/evenhub-cli`, a dev dependency; nothing else is needed.
+
+- The package holds `app.json` and the contents of `dist/` only. The server is not part of
+  it and is installed separately by each user.
+- Set `version` in both `app.json` and `package.json` before packing. The packer reads only
+  `app.json`; `tests/manifest.test.ts` fails when the two differ.
+- The packer stamps `min_app_version` from the newest SDK published on npm, not from the one
+  installed here. If a newer SDK has appeared since the pinned one, add
+  `--sdk-ver <installed version>`: `npm run pack -- --sdk-ver 0.0.16`.
+- `npx evenhub pack --check app.json dist` asks Even Hub whether the package id is free; it
+  needs a network connection and `evenhub login`.
+- A packaged app is served from the Even App's own origin, not from the server, so it starts
+  without a server address and the API must allow its origin through `EW_ORIGINS`. See
+  [getting-started.md](getting-started.md#load-the-app-in-the-even-app).
+
 ## Vite rules
 
 - Do not pre-bundle the Even Hub SDK: it stays in `optimizeDeps.exclude`
