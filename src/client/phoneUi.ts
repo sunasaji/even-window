@@ -39,7 +39,7 @@ import {
   setInvert,
   setMirrorMode,
 } from './settings.ts'
-import { invertLabel, renderConnSummary, renderStatus } from './statusUi.ts'
+import { connFoldToggledByUser, invertLabel, renderConnSummary, renderStatus } from './statusUi.ts'
 import { startStream, sttReady } from './stream.ts'
 import { openTour, registerTourTarget } from './tour.ts'
 import { onVoiceBtn, voiceResolve } from './voice.ts'
@@ -642,8 +642,13 @@ export function mountUi(): void {
   srv.appendChild(keysNoteEl)
   renderKeys()
 
-  // Opens itself when the connection needs a human. It only ever opens: forcing it shut would
-  // fight whoever opened it on purpose.
+  // Opens itself when the connection needs a human, and closes itself when that is resolved,
+  // unless the user used it: a tap or a key anywhere in the fold, its summary included, makes
+  // the fold theirs (connFold.ts). So an address typed here leaves it open, while one entered
+  // on the server-address card closes it. The `toggle` event is not used for this, because it
+  // also fires for our own changes.
+  srv.addEventListener('pointerdown', connFoldToggledByUser)
+  srv.addEventListener('keydown', connFoldToggledByUser)
   connDetailsEl = srv
   renderConnSummary()
   ui.appendChild(srv)

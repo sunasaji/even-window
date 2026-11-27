@@ -6,6 +6,7 @@
 import { SCREEN_H, SCREEN_W, tileOrigin } from '../shared/geom.ts'
 import { PANEL_LINES, wrapGlassLines } from '../shared/voiceDialog.ts'
 import { keysAlert } from './clients.ts'
+import { type ConnFold, connFoldStep, connFoldTouched } from './connFold.ts'
 import { established, glassLinkUp } from './glassPage.ts'
 import { apps, menuItems, menuOpen, menuPath, menuRowCount, menuSel, windows } from './menu.ts'
 import { glassCovered, glassInCase, interactiveOverlay, lensOn, superseded } from './overlay.ts'
@@ -28,13 +29,25 @@ export function setStatus(s: string): void {
 /** The `▶ connection` summary line: what a user sees without opening the fold, so it carries
  *  the state that should make someone open it (pairing lives inside).
  *
- *  Self-opening on refusal: `unpaired` means the server demanded auth and we have no identity,
- *  `unauthorized` means our key is not trusted. Both need the human. It never closes itself. */
+ *  Self-opening when the connection does not work: `unpaired` means the server demanded auth
+ *  and we have no identity, `unauthorized` means our key is not trusted, `offline` means the
+ *  server did not answer, and the address to check is inside the fold. All need the human.
+ *  It closes itself once the connection works again, unless the user opened or touched it
+ *  (connFold.ts). */
+let fold: ConnFold = { open: false, auto: false, reason: '' }
+
+/** The user tapped or typed in the fold, its summary included. Whether it is open is read
+ *  from the element at the next step, so a toggle that has not been applied yet does not matter. */
+export function connFoldToggledByUser(): void {
+  if (connDetailsEl) fold = connFoldTouched(fold, connDetailsEl.open)
+}
+
 export function renderConnSummary(): void {
   if (!connSumEl) return
   const needs = authState === 'unpaired' || authState === 'unauthorized'
+  const offline = authState === 'offline'
   // A key appeared that this device did not acknowledge. Ranked above the auth states and shown
-  // in red: it is the one that has to be read. Like the auth states it only ever opens the fold.
+  // in red: it is the one that has to be read. It holds the fold open until acknowledged.
   const keysNew = keysAlert.added.length
   connSumEl.textContent = keysNew
     ? `connection — ⚠ ${keysNew} NEW enrolled key${keysNew > 1 ? 's' : ''}: open to check`
@@ -48,8 +61,11 @@ export function renderConnSummary(): void {
         : authState === 'offline'
           ? 'connection — ⚠ server unreachable'
           : 'connection'
-  connSumEl.style.color = keysNew ? '#ff6b57' : needs || authState === 'offline' ? '#ffb46e' : ''
-  if ((needs || keysNew > 0) && connDetailsEl && !connDetailsEl.open) connDetailsEl.open = true
+  connSumEl.style.color = keysNew ? '#ff6b57' : needs || offline ? '#ffb46e' : ''
+  if (!connDetailsEl) return
+  const reason = keysNew > 0 ? 'keys' : needs || offline ? authState : ''
+  fold = connFoldStep({ ...fold, open: connDetailsEl.open }, reason, authState === 'ok')
+  if (connDetailsEl.open !== fold.open) connDetailsEl.open = fold.open
 }
 
 export function renderStatus(): void {

@@ -326,7 +326,8 @@ Invariants:
 
 ## Connection fold
 
-The summary states what needs attention, and the fold opens itself for the first three:
+The summary states what needs attention, and the fold opens itself once for each of these
+states:
 
 | State | Summary |
 | --- | --- |
@@ -334,6 +335,11 @@ The summary states what needs attention, and the fold opens itself for the first
 | `unpaired` | `connection — ⚠ not paired yet: open to pair` |
 | `unauthorized` | `connection — ⚠ this device's key is not enrolled: open to re-pair` |
 | `offline` | `connection — ⚠ server unreachable` |
+
+A fold that opened by itself closes again when the connection works: the server answers again,
+pairing completes, or an address entered on the server-address card connects. A fold the user
+opened, or tapped or typed in after it opened by itself, is left alone. A user who closes it while the problem lasts is not overruled:
+the same problem does not open it a second time.
 
 Inside: the status line (the client's own bookkeeping), the server URL field with `apply`
 (sets the API base, stored as `ew.server`, and restarts the stream), and `pair`, which opens
