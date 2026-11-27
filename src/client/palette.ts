@@ -515,6 +515,11 @@ function openPaletteShell(spec: PaletteSpec): PaletteShell {
   }
 }
 
+/** Is the launcher the palette that is up? For the tour, which opens and closes it. */
+export function appsPaletteOpen(): boolean {
+  return paletteName === 'apps' && paletteEl !== null
+}
+
 export function openAppsPalette(): void {
   if (paletteName === 'apps' && paletteEl) {
     closePalette('toggled off')

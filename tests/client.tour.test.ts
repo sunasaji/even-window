@@ -10,6 +10,7 @@ import {
   type TourTarget,
   tourCards,
   tourQuery,
+  tourRegions,
 } from '../src/client/tour.ts'
 import { clientSource } from './helpers/source.ts'
 
@@ -40,15 +41,41 @@ describe('cards', () => {
     expect(g?.figureAt).toBe('mirror')
   })
 
-  it('come in the order: glasses, phone rows top to bottom, typing, palettes', () => {
-    expect(tourCards(false).map(c => c.target ?? `figure:${String(c.figureAt)}`)).toEqual([
+  it('come in the order: the mirror, then the screen from the top down', () => {
+    expect(
+      tourCards(false).map(c =>
+        c.demo ? `open:${c.demo}` : (c.target ?? `figure:${String(c.figureAt)}`),
+      ),
+    ).toEqual([
       'mirror',
       'figure:mirror',
+      'palettes',
+      'open:apps',
+      'text',
       'gestures',
       'tools',
-      'text',
-      'palettes',
+      'open:keys',
+      'open:vring',
+      'open:vpad',
+      'app',
     ])
+  })
+
+  // A surface that opens over the screen is shown open, right after the row its button is in.
+  it('open each surface on the card after the one that lights its button', () => {
+    const cs = tourCards(true)
+    const at = (pred: (c: (typeof cs)[number]) => boolean): number => cs.findIndex(pred)
+    expect(at(c => c.demo === 'keys')).toBe(at(c => c.target === 'tools') + 1)
+    expect(at(c => c.demo === 'apps')).toBe(at(c => c.target === 'palettes') + 1)
+    // A full-screen surface is not dimmed, so its card says where to stand.
+    for (const d of ['vring', 'vpad', 'apps'])
+      expect(cs.find(c => c.demo === d)?.cardAt, d).toBeGreaterThan(0)
+  })
+
+  it('give Submit and ▶ app a card each', () => {
+    const cs = tourCards(false)
+    expect(cs.filter(c => c.target === 'text')).toHaveLength(1)
+    expect(cs.filter(c => c.target === 'app')).toHaveLength(1)
   })
 
   it('name every button of the rows they light', () => {
@@ -73,6 +100,27 @@ describe('cards', () => {
 
   it('mention the voice button only with a recogniser', () => {
     expect(JSON.stringify(tourCards(false))).not.toContain('🎤')
+  })
+})
+
+describe('overview', () => {
+  it('numbers each area with the cards that explain it, in card order', () => {
+    expect(tourRegions(tourCards(false))).toEqual([
+      { target: 'mirror', label: '1–2' },
+      { target: 'palettes', label: '3–4' },
+      { target: 'text', label: '5' },
+      { target: 'gestures', label: '6' },
+      { target: 'tools', label: '7–10' },
+      { target: 'app', label: '11' },
+    ])
+  })
+
+  it('lists the numbers when an area is visited twice with other cards between', () => {
+    const card = (target: TourTarget) => ({ target, title: '', lines: [] })
+    expect(tourRegions([card('mirror'), card('tools'), card('mirror')])).toEqual([
+      { target: 'mirror', label: '1·3' },
+      { target: 'tools', label: '2' },
+    ])
   })
 })
 
@@ -145,6 +193,11 @@ describe('wiring', () => {
     )
     for (const t of names as Set<TourTarget>)
       expect(src.has(`registerTourTarget('${t}'`), `registerTourTarget('${t}')`).toBe(true)
+  })
+
+  it('every surface a card opens is registered by the UI', () => {
+    for (const c of tourCards(true))
+      if (c.demo) expect(src.has(`registerTourDemo('${c.demo}'`), c.demo).toBe(true)
   })
 
   it('opens on the first health answer, and from the ? pill', () => {

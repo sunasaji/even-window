@@ -3,6 +3,11 @@
 // the docs (docs/phone-ui.md). It opens by itself once per device, and the `?` pill in the
 // title row opens it again.
 //
+// It starts on an overview: the whole screen undimmed, every area the tour visits framed and
+// numbered with its cards, so the layout and the route are seen before the first card. The
+// surfaces that open over the screen (`keys`, vRing, vPad, the `apps` palette) get a card of
+// their own, during which the tour opens the real thing and closes it again (`TourDemo`).
+//
 // The spotlight is the live UI, not a picture of it: holes cut in a dimmed layer over the
 // elements' own boxes (`clip-path` with an even-odd path, so a card can point at two places
 // without lighting what lies between), with the card placed above or below them. The
@@ -18,7 +23,18 @@ import { log } from './debugLog.ts'
 import { keep } from './durableKv.ts'
 
 /** The parts of the phone UI a card can spotlight. Registered by `mountUi`. */
-export type TourTarget = 'mirror' | 'gestures' | 'text' | 'tools' | 'palettes'
+export type TourTarget = 'mirror' | 'gestures' | 'text' | 'app' | 'tools' | 'palettes'
+
+/** A surface the tour opens for the length of one card. Registered by `mountUi`. */
+export type TourDemo = 'keys' | 'vring' | 'vpad' | 'apps'
+
+/** Where the button that opens each demo lives; the overview counts the demo's card there. */
+const DEMO_REGION: Readonly<Record<TourDemo, TourTarget>> = {
+  keys: 'tools',
+  vring: 'tools',
+  vpad: 'tools',
+  apps: 'palettes',
+}
 
 /** One row of a card: a sentence, or a `[control, what it does]` pair laid out as a table. */
 export type TourLine = string | readonly [string, string]
@@ -29,13 +45,19 @@ export interface TourCard {
   /** A drawing laid over this target's box instead of a hole: the glasses gestures are made on
    *  hardware, so the card that explains them shows the hardware, not the phone's buttons. */
   readonly figureAt?: TourTarget
+  /** Open this surface while the card is up. A full-screen one is shown as it is, undimmed. */
+  readonly demo?: TourDemo
+  /** With a full-screen demo: the card's top as a fraction of the viewport height, chosen per
+   *  surface so the card covers what matters least there. */
+  readonly cardAt?: number
   readonly title: string
   readonly lines: readonly TourLine[]
 }
 
-/** Pure: the cards, in order. Glasses first (what the lens shows, then the gestures on the
- *  hardware), then the phone's rows top to bottom, typing last (it is wanted once the rest is
- *  understood), and the palettes, which close on how to get back here. Voice rows appear only
+/** Pure: the cards, in order. The mirror first, because the rest acts on it (what the lens
+ *  shows, then the gestures on the hardware), then the screen from the top down: the palette
+ *  openers, the text row, the gesture row, the tools row and `▶ app`, each surface a row opens
+ *  directly after that row. The last card says how to get back here. Voice rows appear only
  *  when the server has a recogniser, the same rule as the lens hint and the `🎤 voice` button. */
 export function tourCards(voice: boolean): TourCard[] {
   return [
@@ -63,6 +85,37 @@ export function tourCards(voice: boolean): TourCard[] {
       ],
     },
     {
+      target: 'palettes',
+      title: 'Windows and apps',
+      lines: [
+        ['task', 'switch to another window'],
+        ['window', 'close one, open a terminal, more'],
+        ['apps', 'launch a program: the next card opens it'],
+      ],
+    },
+    {
+      target: null,
+      demo: 'apps',
+      cardAt: 0.62,
+      title: 'apps: launch a program',
+      lines: [
+        'Tap a row to start it on the desktop. The box at the top filters the list.',
+        '✕ or a tap outside closes it.',
+      ],
+    },
+    {
+      target: 'text',
+      title: 'Type into the window',
+      lines: [
+        ['Submit', 'types the box into the window (bottom right, or Ctrl+Enter)'],
+        ...(voice
+          ? [['🎤 voice', 'speak instead (top right); the text lands in the box'] as const]
+          : []),
+        'By default Submit only types and presses no key; ▶ app, further down, sets one.',
+        'Hold Submit to send once without that key.',
+      ],
+    },
+    {
       target: 'gestures',
       title: 'The same gestures from the phone',
       lines: [
@@ -76,40 +129,88 @@ export function tourCards(voice: boolean): TourCard[] {
       target: 'tools',
       title: 'More controls',
       lines: [
-        ['keys', 'keyboard: Esc, Ctrl, Alt, arrows, F-keys'],
-        [
-          'vRing',
-          'the whole screen as a ring: swipe up / down; tap the left half = tap, the right half = double-tap',
-        ],
-        ['vPad', 'trackpad: move, click, right click, wheel'],
+        ['keys', 'a keyboard under this row'],
+        ['vRing', 'the whole screen as a ring'],
+        ['vPad', 'the whole screen as a trackpad'],
+        'The next three cards open each of them.',
         ['inv', 'flip dark and light, for bright apps'],
         ['color', 'preview in desktop colours, or green as the lens shows it'],
         ['lens', 'pause the glasses to save battery'],
       ],
     },
     {
-      target: 'text',
-      title: 'Type into the window',
+      target: null,
+      demo: 'keys',
+      title: 'keys: a keyboard',
       lines: [
-        ['Submit', 'types the box into the window (bottom right, or Ctrl+Enter)'],
-        ...(voice
-          ? [['🎤 voice', 'speak instead (top right); the text lands in the box'] as const]
-          : []),
-        'By default Submit only types. To run the line, open ▶ app and set submit to Enter.',
-        'Hold Submit to send once without that key.',
+        'For keys the phone keyboard does not have: Esc, Tab, arrows, F-keys.',
+        ['Ctrl  Alt', 'arm one, and the next key or tap carries it'],
+        'For a whole line of text, the text box is faster.',
       ],
     },
     {
-      target: 'palettes',
-      title: 'Windows and apps',
+      target: null,
+      demo: 'vring',
+      cardAt: 0.56,
+      title: 'vRing: the screen as a ring',
       lines: [
-        ['task', 'switch to another window'],
-        ['window', 'close one, open a terminal, more'],
-        ['apps', 'launch a program'],
-        'The ? button brings this tour back.',
+        ['swipe', 'up / down, anywhere: the Up / Down key'],
+        ['left half', 'tap'],
+        ['right half', 'double-tap, which opens the menu'],
+        ...(voice ? [['bottom band', 'long press: voice input'] as const] : []),
+        '✕ at the top right closes it.',
+      ],
+    },
+    {
+      target: null,
+      demo: 'vpad',
+      cardAt: 0.66,
+      title: 'vPad: the screen as a trackpad',
+      lines: [
+        ['drag', 'move the pointer'],
+        ['tap', 'click with the button picked at the bottom'],
+        ['right edge', 'wheel'],
+        '✕ at the top right closes it.',
+      ],
+    },
+    {
+      target: 'app',
+      title: '▶ app: what Submit and swipes do here',
+      lines: [
+        'Settings for the application in front, remembered per application.',
+        ['submit', 'the key Submit presses after typing: set Enter to run the line'],
+        ['swipe', 'the keys a swipe up / down sends'],
+        'The ? button at the top brings this tour back.',
       ],
     },
   ]
+}
+
+/** One framed area of the overview. */
+export interface TourRegion {
+  readonly target: TourTarget
+  /** The cards that explain it, as shown in its badge: `3`, `1–2`, `4–7`. */
+  readonly label: string
+}
+
+/** Pure: which area each card belongs to, for the overview. A card counts where its spotlight
+ *  is, a figure where it is laid, a demo where its button is. Areas come in card order. */
+export function tourRegions(cards: readonly TourCard[]): TourRegion[] {
+  const by = new Map<TourTarget, number[]>()
+  cards.forEach((c, i) => {
+    const t = c.target ?? c.figureAt ?? (c.demo ? DEMO_REGION[c.demo] : null)
+    if (!t) return
+    by.set(t, [...(by.get(t) ?? []), i + 1])
+  })
+  return [...by].map(([target, ns]) => {
+    const first = ns[0] ?? 0
+    const last = ns[ns.length - 1] ?? first
+    const run = last - first === ns.length - 1
+    return {
+      target,
+      label: ns.length === 1 ? String(first) : run ? `${first}–${last}` : ns.join('·'),
+    }
+  })
 }
 
 // ── the gestures figure ────────────────────────────────────────────────────────────────────
@@ -217,9 +318,23 @@ export function registerTourTarget(t: TourTarget, ...holes: (HTMLElement | HTMLE
   )
 }
 
-/** Below the pairing and server-guard screens and the toast; level with vRing / vPad, which
- *  cannot be open while this is (it covers the buttons that open them). */
+/** What `mountUi` gives the tour for one demo. `open` returns the element to spotlight, or
+ *  null for a surface that covers the screen; `close` puts things back as they were. */
+export interface TourDemoHooks {
+  open(): HTMLElement | null
+  close(): void
+}
+const demos = new Map<TourDemo, TourDemoHooks>()
+export function registerTourDemo(d: TourDemo, hooks: TourDemoHooks): void {
+  demos.set(d, hooks)
+}
+
+/** Below the pairing and server-guard screens and the toast; level with vRing / vPad. Those
+ *  are opened by a demo card, so the layer is moved to the end of the body after each opens:
+ *  at an equal z-index the later element is on top, and takes the touches. */
 const TOUR_Z = 9999
+/** The card's frame colour. */
+const CARD_EDGE = '#a78bfa'
 /** Space between the element and the edge of the hole. */
 const HOLE_PAD = 6
 
@@ -303,8 +418,13 @@ export function openTour(voice: boolean, why: string): void {
   if (typeof document === 'undefined') return
   if (root) closeTour('reopened')
   const cards = tourCards(voice)
-  let at = 0
-  log(`tour opened (${why}) — ${String(cards.length)} cards`)
+  const regions = tourRegions(cards)
+  /** -1 is the overview; 0.. are the cards. */
+  let at = -1
+  /** The demo that is open, and what it gave us to spotlight. */
+  let demo: TourDemo | null = null
+  let demoEl: HTMLElement | null = null
+  log(`tour opened (${why}) — overview + ${String(cards.length)} cards`)
 
   const layer = document.createElement('div')
   layer.setAttribute('role', 'dialog')
@@ -325,8 +445,12 @@ export function openTour(voice: boolean, why: string): void {
   const card = document.createElement('div')
   card.style.cssText =
     'position:fixed;left:12px;right:12px;max-width:480px;margin:0 auto;box-sizing:border-box;' +
-    'background:#1c1c1c;color:#E5E5E5;border:1px solid #555;border-radius:10px;padding:12px 14px;' +
-    'font:14px/1.45 system-ui;box-shadow:0 6px 18px rgba(0,0,0,.6)'
+    // The purple frame marks the card as the tour's own: over an undimmed screen (the overview,
+    // an opened pad) a grey-bordered card reads as one more panel of the UI. Orange is taken by
+    // the frames around what is explained, blue by the pads' own text.
+    `background:#1c1c1c;color:#E5E5E5;border:2px solid ${CARD_EDGE};border-radius:10px;` +
+    'padding:12px 14px;font:14px/1.45 system-ui;' +
+    `box-shadow:0 0 0 3px ${CARD_EDGE}40,0 6px 18px rgba(0,0,0,.6)`
   layer.append(dim, rings, figure, card)
 
   const step = document.createElement('div')
@@ -349,12 +473,32 @@ export function openTour(voice: boolean, why: string): void {
     if (at === cards.length - 1) closeTour('done')
     else go(at + 1)
   })
+  // Every touch ends here: a demo surface under the layer must not see it.
+  for (const ev of ['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove'])
+    layer.addEventListener(ev, e => e.stopPropagation())
   nav.append(skip, spacer, back, next)
   card.append(step, title, body, nav)
 
-  const groups = (): readonly (readonly HTMLElement[])[] => {
-    const t = cards[at]?.target
-    return t ? (targets.get(t) ?? []) : []
+  /** The holes of the current page, each with the badge the overview puts on it. */
+  const groups = (): readonly { els: readonly HTMLElement[]; badge: string }[] => {
+    if (at < 0) {
+      return regions.flatMap(r =>
+        (targets.get(r.target) ?? []).map(els => ({ els, badge: r.label })),
+      )
+    }
+    const c = cards[at]
+    const t = c?.target ?? (demoEl && c?.demo ? DEMO_REGION[c.demo] : null)
+    const own = t ? (targets.get(t) ?? []) : []
+    return [...own, ...(demoEl ? [[demoEl]] : [])].map(els => ({ els, badge: '' }))
+  }
+  /** Open the card's demo and close the one before it. */
+  const setDemo = (d: TourDemo | undefined): void => {
+    if (demo === (d ?? null)) return
+    if (demo) demos.get(demo)?.close()
+    demo = d ?? null
+    demoEl = d ? (demos.get(d)?.open() ?? null) : null
+    // Whatever just opened was appended after us; go back on top of it.
+    if (d) document.body.appendChild(layer)
   }
   /** The box the card's figure covers, or null when it has none. */
   const figureBox = (): Box | null => {
@@ -367,30 +511,46 @@ export function openTour(voice: boolean, why: string): void {
   /** Cut the holes over the targets and put the card beside them. Re-run on scroll and
    *  resize. */
   const place = (): void => {
-    const holes: Box[] = []
+    const holes: (Box & { badge: string })[] = []
     for (const g of groups()) {
-      const r = unionRect(g)
+      const r = unionRect(g.els)
       if (!r) continue // hidden
       holes.push({
         left: r.left - HOLE_PAD,
         top: r.top - HOLE_PAD,
         width: r.width + 2 * HOLE_PAD,
         height: r.height + 2 * HOLE_PAD,
+        badge: g.badge,
       })
     }
     const viewW = window.innerWidth
     const viewH = window.innerHeight
+    // The overview and a full-screen demo show the screen as it is; a card dims around its
+    // holes.
+    const fullDemo = demo !== null && demoEl === null
+    dim.style.display = at < 0 || fullDemo ? 'none' : ''
     dim.style.clipPath = dimPath(viewW, viewH, holes)
-    rings.replaceChildren(
-      ...holes.map(b => {
-        const ring = document.createElement('div')
-        ring.style.cssText =
-          'position:fixed;box-sizing:border-box;border:2px solid #ffb070;border-radius:8px;' +
-          `pointer-events:none;left:${String(b.left)}px;top:${String(b.top)}px;` +
-          `width:${String(b.width)}px;height:${String(b.height)}px`
-        return ring
-      }),
-    )
+    const ringOf = (b: Box): HTMLElement => {
+      const ring = document.createElement('div')
+      ring.style.cssText =
+        'position:fixed;box-sizing:border-box;border:2px solid #ffb070;border-radius:8px;' +
+        `pointer-events:none;left:${String(b.left)}px;top:${String(b.top)}px;` +
+        `width:${String(b.width)}px;height:${String(b.height)}px`
+      return ring
+    }
+    // Astride the top edge at the right end: the rows are filled from the left, so this is
+    // where a badge covers the least of what it numbers. After every frame, so that the frame
+    // of the row above does not run through it.
+    const badgeOf = (b: Box & { badge: string }): HTMLElement => {
+      const badge = document.createElement('div')
+      badge.style.cssText =
+        'position:fixed;padding:0 8px;border-radius:9px;pointer-events:none;' +
+        'background:#ffb070;color:#1c1c1c;font:700 12px/18px system-ui;white-space:nowrap;' +
+        `right:${String(viewW - (b.left + b.width) + 10)}px;top:${String(b.top - 9)}px`
+      badge.textContent = b.badge
+      return badge
+    }
+    rings.replaceChildren(...holes.map(ringOf), ...holes.filter(b => b.badge).map(badgeOf))
     const fig = figureBox()
     figure.style.display = fig ? '' : 'none'
     if (fig) {
@@ -409,20 +569,32 @@ export function openTour(voice: boolean, why: string): void {
             bottom: Math.max(...boxes.map(b => b.top + b.height)),
           }
         : null
-    card.style.top = `${String(cardTop(span, card.offsetHeight, viewH))}px`
+    const frac = fullDemo ? cards[at]?.cardAt : undefined
+    card.style.top =
+      frac === undefined
+        ? `${String(cardTop(span, card.offsetHeight, viewH))}px`
+        : `${String(Math.max(12, Math.min(viewH * frac, viewH - card.offsetHeight - 12)))}px`
   }
 
   const go = (i: number): void => {
-    at = Math.max(0, Math.min(cards.length - 1, i))
+    at = Math.max(-1, Math.min(cards.length - 1, i))
     const c = cards[at]
-    if (!c) return
-    step.textContent = `${String(at + 1)} / ${String(cards.length)}`
-    title.textContent = c.title
-    body.replaceChildren(...c.lines.map(renderLine))
-    back.style.visibility = at === 0 ? 'hidden' : 'visible'
-    next.textContent = at === cards.length - 1 ? 'done' : 'next'
-    // Bring the target on screen first; the column scrolls inside `#app`.
-    const first = groups()[0]?.[0] ?? (c.figureAt ? targets.get(c.figureAt)?.[0]?.[0] : undefined)
+    setDemo(c?.demo)
+    step.textContent = c ? `${String(at + 1)} / ${String(cards.length)}` : 'tour'
+    title.textContent = c ? c.title : 'The screen at a glance'
+    const lines: readonly TourLine[] = c
+      ? c.lines
+      : [
+          `The numbers are the ${String(cards.length)} cards of this tour, in order.`,
+          'Each framed area is explained by the cards on its badge.',
+        ]
+    body.replaceChildren(...lines.map(renderLine))
+    back.style.visibility = at < 0 ? 'hidden' : 'visible'
+    next.textContent = at === cards.length - 1 ? 'done' : at < 0 ? 'start' : 'next'
+    // Bring the target on screen first; the column scrolls inside `#app`. A demo's own element
+    // comes before the row its button is in: it is what the card is about.
+    const first =
+      demoEl ?? groups()[0]?.els[0] ?? (c?.figureAt ? targets.get(c.figureAt)?.[0]?.[0] : undefined)
     first?.scrollIntoView({ block: 'nearest' })
     place()
     requestAnimationFrame(place) // after the scroll has landed
@@ -455,6 +627,7 @@ export function openTour(voice: boolean, why: string): void {
   window.addEventListener('resize', onMove)
   window.addEventListener('scroll', onMove, true)
   teardown = () => {
+    setDemo(undefined)
     window.removeEventListener('keydown', onKey, true)
     window.removeEventListener('resize', onMove)
     window.removeEventListener('scroll', onMove, true)
@@ -462,7 +635,7 @@ export function openTour(voice: boolean, why: string): void {
 
   document.body.appendChild(layer)
   root = layer
-  go(0)
+  go(-1)
 }
 
 function renderLine(l: TourLine): HTMLElement {

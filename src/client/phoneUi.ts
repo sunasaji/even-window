@@ -28,7 +28,13 @@ import { wireMirrorTouch } from './mirrorTouch.ts'
 import { buildKeyPad } from './oskb.ts'
 import { glassInCase, lensLabel, lensOn, overrideCase, setLensOn } from './overlay.ts'
 import { openPairingDialog } from './pairingUI.ts'
-import { openAppsPalette, openTaskPalette, openWindowPalette, renderAppsEntry } from './palette.ts'
+import {
+  appsPaletteOpen,
+  openAppsPalette,
+  openTaskPalette,
+  openWindowPalette,
+  renderAppsEntry,
+} from './palette.ts'
 import { SERVER, setServer } from './serverLink.ts'
 import {
   applyMirrorMode,
@@ -41,7 +47,7 @@ import {
 } from './settings.ts'
 import { connFoldToggledByUser, invertLabel, renderConnSummary, renderStatus } from './statusUi.ts'
 import { startStream, sttReady } from './stream.ts'
-import { openTour, registerTourTarget } from './tour.ts'
+import { openTour, registerTourDemo, registerTourTarget } from './tour.ts'
 import { onVoiceBtn, voiceResolve } from './voice.ts'
 import { closeVPad, openVPad, SUBMIT_HINT_MS, SUBMIT_HOLD_MS, vpadOpen } from './vpad.ts'
 import { closeVRing, openVRing, vRingOpen } from './vring.ts'
@@ -192,6 +198,16 @@ export function mountUi(): void {
   windowBtn.setAttribute('aria-haspopup', 'dialog')
   titleRow.append(title, helpBtn, taskBtn, windowBtn, appsBtn)
   registerTourTarget('palettes', [taskBtn, windowBtn, appsBtn])
+  // The launcher toggles: opening it when it is up would close it, so both hooks check first.
+  registerTourDemo('apps', {
+    open: () => {
+      if (!appsPaletteOpen()) openAppsPalette()
+      return null
+    },
+    close: () => {
+      if (appsPaletteOpen()) openAppsPalette()
+    },
+  })
   ui.appendChild(titleRow)
 
   // Above the preview, because it explains a mirror that never lights up. Not a toast: it must
@@ -537,6 +553,34 @@ export function mountUi(): void {
   // Not in this row: `copy` (the log panel owns it), `pair` (inside `▶ connection`), and the
   // submit key (a per-app setting in `▶ app`). There is no hardware-keyboard toggle
   // (docs/decisions/phone-hardware-keyboard.md).
+  // The tour opens each of these for one card. `keys` is left as the user had it; the two
+  // pads are always closed afterwards, because the tour cannot open over an open pad.
+  let keysOpenedByTour = false
+  registerTourDemo('keys', {
+    open: () => {
+      keysOpenedByTour = keyPad.style.display === 'none'
+      if (keysOpenedByTour) keysBtn.click()
+      return keyPad
+    },
+    close: () => {
+      if (keysOpenedByTour && keyPad.style.display !== 'none') keysBtn.click()
+      keysOpenedByTour = false
+    },
+  })
+  registerTourDemo('vring', {
+    open: () => {
+      openVRing()
+      return null
+    },
+    close: closeVRing,
+  })
+  registerTourDemo('vpad', {
+    open: () => {
+      openVPad()
+      return null
+    },
+    close: closeVPad,
+  })
   const tools = pillRow(keysBtn, vringBtn, vpadBtn, invertBtn, mirrorBtn, lensBtn)
   tools.id = 'tools'
   ui.appendChild(tools)
@@ -546,10 +590,11 @@ export function mountUi(): void {
 
   // `▶ app`: the per-app binding editor, directly under the rows whose pills it governs, and
   // folded. Its summary line carries what this app does right now, the submit key first.
-  // The Submit card spotlights the text row together with this fold, where the submit key is.
+  // The tour gives the text row and this fold a card each: the fold is where the submit key is.
   const appPanel = buildAppPanel()
   ui.appendChild(appPanel)
-  registerTourTarget('text', textRow, appPanel)
+  registerTourTarget('text', textRow)
+  registerTourTarget('app', appPanel)
 
   // The launcher is the `apps` button in the title row, which opens a palette anchored to the
   // top of the visible viewport: a filter box down here would sit where the soft keyboard

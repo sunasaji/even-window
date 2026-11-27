@@ -401,17 +401,34 @@ next window poll.
 
 ## Tour
 
-`src/client/tour.ts`. Six cards, each spotlighting part of this UI and saying what it does:
+`src/client/tour.ts`. An overview, then eleven cards, each spotlighting part of this UI and
+saying what it does.
 
-1. The mirror preview (tap = click, drag = drag).
-2. The glasses gestures. No button is lit: a schematic of the G2 from its right side (the pad on the temple tip behind the ear, swiped along its slant: back = Down) and the R1 ring
-   (`gestureFigureSvg()`) is laid over the mirror's box (`figureAt`), so what is pointed at is
-   what is explained.
-3. The gesture row: `▼ dn` `▲ up` `● tap` `●● dbl` and `font −/+`.
-4. The tools row: `keys`, `vRing`, `vPad`, `inv`, `color`, `lens`.
-5. Typing: the text row (Submit bottom right, `🎤 voice` top right) and `▶ app` (the submit
-   key). Late on purpose: typing is wanted once the rest is understood.
-6. The palette openers, ending on how to reopen the tour.
+The overview shows the whole screen undimmed. Every area the tour visits is framed and carries
+a badge with the numbers of its cards (`tourRegions()`), so the layout and the route are seen
+before the first card:
+
+| Badge | Area | Cards |
+| --- | --- | --- |
+| `1–2` | Mirror preview | 1 the preview (tap = click, drag = drag); 2 the glasses gestures |
+| `3–4` | Palette openers | 3 `task`, `window`, `apps`; 4 the `apps` palette open |
+| `5` | Text row | Submit bottom right, `🎤 voice` top right |
+| `6` | Gesture row | `▼ dn` `▲ up` `● tap` `●● dbl` and `font −/+` |
+| `7–10` | Tools row | 7 the row; 8 `keys` open; 9 vRing open; 10 vPad open |
+| `11` | `▶ app` | The submit key and the swipe keys of the application in front |
+
+The mirror comes first because everything else acts on it; after it the cards go down the
+screen from the top.
+
+- Card 2 lights no button: a schematic of the G2 from its right side (the pad on the temple
+  tip behind the ear, swiped along its slant: back = Down) and the R1 ring
+  (`gestureFigureSvg()`) is laid over the mirror's box (`figureAt`), so what is pointed at is
+  what is explained.
+- Cards 4, 8, 9 and 10 open the real surface for as long as the card is up and close it again
+  (`registerTourDemo()`); `keys` is left as the user had it. The keyboard is spotlighted like
+  any other area. vRing, vPad and the palette cover the screen, so they are shown undimmed and
+  the card stands where it covers least (`cardAt`). The tour's layer stays on top and takes
+  every touch, so nothing on the opened surface can be pressed.
 
 Voice rows (the long press, `🎤 voice`) appear only with a recogniser.
 
@@ -420,12 +437,13 @@ Voice rows (the long press, `🎤 voice`) appear only with a recogniser.
   would explain controls that do nothing.
 - `?` in the title row opens it again. `?tour=1` opens it at boot regardless; `?tour=0` keeps
   it shut for that load (for runs that drive the UI by coordinates). Neither is stored.
-- `skip`, `back`, `next` / `done`; `Escape`, `←`, `→` and `Enter` from a hardware keyboard.
+- `skip`, `back`, `start` / `next` / `done`; `Escape`, `←`, `→` and `Enter` from a hardware
+  keyboard.
   Those keys stop there and do not reach the mirrored window.
 - The spotlight is the live UI. A transparent full-screen layer at `z-index` 9999 takes every
   touch, and a dim layer under it has the holes clipped out (`dimPath()`, an even-odd
-  `clip-path`). A card can cut more than one hole, so the text row and `▶ app` light up
-  without the rows between them. The card goes below the holes, else above, else pinned to
+  `clip-path`). A card can cut more than one hole: the `keys` card lights the tools row and
+  the keyboard under it. The card goes below the holes, else above, else pinned to
   the roomier edge (`cardTop()`); positions are recomputed on scroll and resize.
 - It sits below the toast and the pairing and server-guard screens. A first-run tour that opens
   under the pairing dialog is waiting when pairing is done.
