@@ -181,6 +181,8 @@ Rules:
   wrong path on the Vite port returns `index.html` with status 200.
 - The phone preview is drawn by a separate path. Something visible in the preview is not
   evidence that it reached the glasses.
+- On the first three launches of a profile the lens shows the startup hint, with the mirror
+  blank under it, until a gesture arrives. Inject a swipe or a tap before judging the mirror.
 
 Background: [notes/2026-10-simulator-harness-traps.md](notes/2026-10-simulator-harness-traps.md).
 

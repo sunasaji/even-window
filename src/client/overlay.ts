@@ -10,7 +10,7 @@ import { LatestAsyncWriter } from '../shared/latestAsyncWriter.ts'
 import { voiceOverlay } from '../shared/voiceDialog.ts'
 import { log } from './debugLog.ts'
 import { established, flushLogNow, glassLinkUp, pushImage, renderPageWarning } from './glassPage.ts'
-import { STARTUP_HINT_MS, startupHintText, takeHint } from './hints.ts'
+import { startupHintText, takeHint } from './hints.ts'
 import {
   formatLinkBase,
   LINK_BASE_PUSHES,
@@ -166,28 +166,25 @@ export function setLensOn(on: boolean): void {
 //
 // The mirror carries no hint of its own, so the double-tap that opens everything else is
 // invisible to a first-time user. The first time a page load establishes, on the first few
-// launches per device, the lens shows the gestures for `STARTUP_HINT_MS`. Any gesture closes
-// it: swipe and tap are consumed (their effect could not be seen under the text), a double-tap
-// goes on to open the menu. A lowest-priority notice: the menu, the dialog, `X unavailable`
-// and a pause all draw over it, and its timer runs regardless.
+// launches per device, the lens shows the gestures until a gesture closes it: swipe and tap
+// are consumed (their effect could not be seen under the text), a double-tap goes on to open
+// the menu. There is no timer: text in the field of view goes away when the reader says so,
+// not while it is still being read (it used to close after 8 s, which was too short on the
+// glasses). A lowest-priority notice: the menu, the dialog, `X unavailable` and a pause all
+// draw over it.
 
 /** Is the startup hint on the lens? */
 export let startupHint = false
 /** Considered once per page load, so a re-establish never shows it again. */
 let startupHintConsidered = false
-let startupHintTimer: ReturnType<typeof setTimeout> | null = null
 
 /** Called when the page establishes. Shows the hint if this device is still due one. */
 export function maybeShowStartupHint(): void {
   if (startupHintConsidered) return
   startupHintConsidered = true
   if (!takeHint('startup')) return
-  log(`startup hint ON for ${String(STARTUP_HINT_MS)} ms (hints.ts; any gesture closes it)`)
+  log('startup hint ON (hints.ts; it stays until a gesture closes it)')
   startupHint = true
-  startupHintTimer = setTimeout(() => {
-    startupHintTimer = null
-    dismissStartupHint()
-  }, STARTUP_HINT_MS)
   syncOverlay()
 }
 
@@ -197,10 +194,6 @@ export function maybeShowStartupHint(): void {
 export function dismissStartupHint(sync = true): boolean {
   if (!startupHint) return false
   startupHint = false
-  if (startupHintTimer !== null) {
-    clearTimeout(startupHintTimer)
-    startupHintTimer = null
-  }
   log('startup hint OFF')
   if (sync) syncOverlay()
   return true

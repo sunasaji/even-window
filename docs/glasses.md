@@ -233,7 +233,7 @@ menu, `X unavailable` notice, `mirror paused` notice, startup hint, blank (`' '`
 
 The startup hint lists the gestures (`startupHintText()` in `src/client/hints.ts`). It is
 considered once per page load, at the first establish, and shown on the first three launches
-per device (`HINT_SHOWS`, counted in localStorage). It stays 8 s (`STARTUP_HINT_MS`). A swipe
+per device (`HINT_SHOWS`, counted in localStorage). It stays until a gesture: a swipe
 or tap only closes it; a double-tap closes it and opens the menu. The menu or the voice dialog
 coming up retires it, so it never returns after they close.
 

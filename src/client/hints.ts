@@ -16,9 +16,6 @@ import { keep } from './durableKv.ts'
  *  first showing is easily missed: the glasses may not be worn yet when the app first starts. */
 export const HINT_SHOWS = 3
 
-/** How long the startup hint stays on the lens unless a gesture closes it first. */
-export const STARTUP_HINT_MS = 8000
-
 export type HintId = 'startup' | 'submit-off'
 
 const storeKey = (id: HintId): string => `ew.hint.${id}`

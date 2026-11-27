@@ -20,8 +20,8 @@ Gestures come from either temple or from the ring.
 Several swipes in quick succession are sent together as one batch, so a burst of
 five swipes arrives as five key presses.
 
-On the first few launches, the lens lists these gestures for a few seconds when the app
-starts. Any gesture closes the list; a double tap also opens the menu.
+On the first few launches, the lens lists these gestures when the app starts. The list
+stays until you make a gesture: any gesture closes it, and a double tap also opens the menu.
 
 ## The on-glasses menu
 
