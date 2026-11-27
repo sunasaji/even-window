@@ -489,6 +489,13 @@ only a chosen address; see [Connection fold](#when-no-server-address-was-chosen)
 are read from the URL only and never persist. When a setting came from storage rather than
 the URL, the boot log prints a `sticky:` line naming it and its value.
 
+In the packaged app `localStorage` is emptied when the Even App is restarted. Everything the
+client keeps there is therefore also held in the bridge's storage (one JSON object under
+`ew.kv`, written by `src/client/durableKv.ts`) and put back at start: the settings above, the
+tour and hint records (`ew.tour.seen`, `ew.hint.*`) and the acknowledged enrolled keys
+(`ew.keys.acked`). A value chosen by a query or a tap in the current load wins over the kept
+one. The boot log names what was put back (`settings recovered from the durable store: …`).
+
 ## Log and key probe
 
 The log keeps 400 lines, newest at the bottom, and follows the tail until scrolled away.

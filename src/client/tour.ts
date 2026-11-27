@@ -15,6 +15,7 @@
 
 import { button } from './chrome.ts'
 import { log } from './debugLog.ts'
+import { keep } from './durableKv.ts'
 
 /** The parts of the phone UI a card can spotlight. Registered by `mountUi`. */
 export type TourTarget = 'mirror' | 'gestures' | 'text' | 'tools' | 'palettes'
@@ -178,11 +179,7 @@ function seen(): boolean {
 }
 
 function markSeen(): void {
-  try {
-    localStorage.setItem(SEEN_KEY, '1')
-  } catch {
-    // nothing to do
-  }
+  keep(SEEN_KEY, '1')
 }
 
 /** Considered once per page load: health answers again on every stream reconnect. */

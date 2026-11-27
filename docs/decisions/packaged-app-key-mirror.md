@@ -31,8 +31,11 @@ back to IndexedDB. In a plain browser no JWK is ever written.
   the identity. This is a scoped weakening accepted for that environment only.
 - A copied key is a reason to `revoke` on the host; the client cap and the enrolled-clients
   notification do not detect use of a copied key.
-- The chosen server address is kept in the same storage, for the same reason: `localStorage`
-  is lost on restart too (observed on an iPhone, 2026-11-27). It is not a secret.
+- The chosen server address and the client's other stored values (settings, tour and hint
+  records, the acknowledged enrolled keys) are kept in the same storage, for the same reason:
+  `localStorage` is lost on restart too (observed on an iPhone, 2026-11-27). None of them is
+  a secret. Without the acknowledged keys, every restart would adopt the current enrolled set
+  as the baseline and a key added in between would never be flagged.
 - The client opens the stream before the bridge is ready, so wiring the durable store
   invalidates a cached "no identity" result; otherwise the mirror would never be consulted.
 - There is no unpair control in the client. Discarding the key on the device does not remove

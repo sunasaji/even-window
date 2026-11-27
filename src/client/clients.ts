@@ -5,6 +5,7 @@
 
 import type { EnrolledClient } from '../shared/types.ts'
 import { log } from './debugLog.ts'
+import { keep } from './durableKv.ts'
 import { myClientId } from './main.ts'
 import { keysAckBtn, keysNoteEl, keysTableEl } from './phoneUi.ts'
 import { renderConnSummary } from './statusUi.ts'
@@ -58,11 +59,7 @@ function loadAckedKeys(): void {
 export function ackKeys(): void {
   if (!enrolledKeys) return
   ackedKeyIds = enrolledKeys.map(c => c.id)
-  try {
-    localStorage.setItem(ACKED_KEYS_STORE, JSON.stringify(ackedKeyIds))
-  } catch {
-    /* storage blocked */
-  }
+  keep(ACKED_KEYS_STORE, JSON.stringify(ackedKeyIds))
   keysAlert = { added: [], removed: [], alert: false }
   log(`keys: acknowledged ${ackedKeyIds.length} enrolled key(s)`)
   renderKeys()
@@ -83,11 +80,7 @@ export function setEnrolledKeys(list: EnrolledClient[], enforced: boolean): void
   if (ackedKeyIds === null) {
     // First report on this device: adopt it as the baseline silently.
     ackedKeyIds = list.map(c => c.id)
-    try {
-      localStorage.setItem(ACKED_KEYS_STORE, JSON.stringify(ackedKeyIds))
-    } catch {
-      /* storage blocked */
-    }
+    keep(ACKED_KEYS_STORE, JSON.stringify(ackedKeyIds))
   }
   log(
     `keys: ${list.length} enrolled${enforced ? '' : ' (auth OFF — the registry is not consulted)'}` +

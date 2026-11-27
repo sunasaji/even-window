@@ -4,6 +4,7 @@
 // another non-leaf module while this one is still loading.
 
 import { log } from './debugLog.ts'
+import { keep } from './durableKv.ts'
 import {
   effectiveMirrorMode,
   flagSource,
@@ -38,6 +39,7 @@ export function initMirrorMode(): void {
   } catch {
     /* no location */
   }
+  const fromQuery = v !== null
   if (v === null) {
     try {
       v = parseMirrorMode(localStorage.getItem(MIRROR_KEY))
@@ -46,11 +48,7 @@ export function initMirrorMode(): void {
     }
   }
   mirrorChoice = v ?? 'color'
-  try {
-    localStorage.setItem(MIRROR_KEY, mirrorChoice)
-  } catch {
-    /* storage blocked */
-  }
+  keep(MIRROR_KEY, mirrorChoice, fromQuery)
   // Through the same path as every later change, so `mirrorMode` has exactly one writer.
   applyMirrorMode()
 }
@@ -76,11 +74,7 @@ function initFlag(name: string, key: string, fallback: boolean): boolean {
   }
   const on = q ?? stored ?? fallback
   noteFlag(name, flagSource(q !== null, stored !== null), on ? 'on' : 'off')
-  try {
-    localStorage.setItem(key, on ? '1' : '0')
-  } catch {
-    /* storage blocked */
-  }
+  keep(key, on ? '1' : '0', q !== null)
   return on
 }
 
@@ -102,6 +96,17 @@ export function initScrollNatural(): void {
   padScrollNatural = initFlag('scrollnat', SCROLLNAT_KEY, true)
 }
 
+/** Resolve the stored settings again, after `wireKv` put values back that the boot-time
+ *  resolvers could not see. Runs before the glasses page is established, so re-deriving the
+ *  cached tiles is all a changed polarity needs. */
+export function reapplyStoredSettings(): void {
+  const was = invert
+  initInvert()
+  initScrollNatural()
+  initMirrorMode()
+  if (invert !== was) refreshGrey()
+}
+
 /** The label is the mapping itself (`2f↑=wheel↑`), because both camps call their own convention
  *  "natural". */
 export function scrollNatLabel(natural: boolean): string {
@@ -116,19 +121,11 @@ export function twoFingerWheelDir(accum: number, natural: boolean): -1 | 1 {
 }
 
 export function persistScrollNatural(): void {
-  try {
-    localStorage.setItem(SCROLLNAT_KEY, padScrollNatural ? '1' : '0')
-  } catch {
-    /* storage blocked */
-  }
+  keep(SCROLLNAT_KEY, padScrollNatural ? '1' : '0')
 }
 
 function persistInvert(): void {
-  try {
-    localStorage.setItem(INVERT_KEY, invert ? '1' : '0')
-  } catch {
-    /* storage blocked */
-  }
+  keep(INVERT_KEY, invert ? '1' : '0')
 }
 
 // The invert toggle. Flipping re-derives the four cached tiles, but everything on the glass was
@@ -166,11 +163,7 @@ const MIRROR_HINT_DOWN =
 export function setMirrorMode(m: MirrorMode): void {
   if (m === mirrorChoice) return
   mirrorChoice = m
-  try {
-    localStorage.setItem(MIRROR_KEY, m)
-  } catch {
-    /* storage blocked */
-  }
+  keep(MIRROR_KEY, m)
   log(`mirror: ${m}`)
   applyMirrorMode()
 }

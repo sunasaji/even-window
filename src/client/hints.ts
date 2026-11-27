@@ -8,7 +8,9 @@
 //   * `submit-off` — on the phone, after a Submit to an app whose submit key is `off`: the text
 //     was typed but nothing ran, which reads as "Submit is broken" until the setting is found.
 //
-// A leaf module: it imports nothing from the client, so anything may call it.
+// Nearly a leaf: it imports only the storage helper, so anything may call it.
+
+import { keep } from './durableKv.ts'
 
 /** How many times each hint is shown on a device before it retires. More than one, because the
  *  first showing is easily missed: the glasses may not be worn yet when the app first starts. */
@@ -37,21 +39,13 @@ export function takeHint(id: HintId): boolean {
     // no storage: treat as unseen
   }
   if (!hintDue(shown)) return false
-  try {
-    localStorage.setItem(storeKey(id), String(shown + 1))
-  } catch {
-    // no storage: shown again next time, which is harmless
-  }
+  keep(storeKey(id), String(shown + 1))
   return true
 }
 
 /** Retire a hint early: the user has shown they know what it would say. */
 export function retireHint(id: HintId): void {
-  try {
-    localStorage.setItem(storeKey(id), String(HINT_SHOWS))
-  } catch {
-    // nothing to do
-  }
+  keep(storeKey(id), String(HINT_SHOWS))
 }
 
 /** Pure: the lens text of the startup hint. Lines stay well under the panel's width

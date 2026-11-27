@@ -11,6 +11,7 @@ import { voiceOverlay, voiceRowsFor } from '../shared/voiceDialog.ts'
 import { clientId, type DurableStore, isPaired, setDurableStore } from './authClient.ts'
 import { renderKeys } from './clients.ts'
 import { DEBUG_EVENTS, installErrorFunnel, log } from './debugLog.ts'
+import { wireKv } from './durableKv.ts'
 import { stickyFlags, stickyLine } from './flags.ts'
 import { onDouble, onHubEvent } from './gestures.ts'
 import {
@@ -54,6 +55,7 @@ import {
   invert,
   mirrorMode,
   padScrollNatural,
+  reapplyStoredSettings,
   scrollNatLabel,
   setInvert,
 } from './settings.ts'
@@ -229,6 +231,14 @@ async function boot(): Promise<void> {
     },
   }
   setDurableStore(store)
+  // First, so that everything below reads what the last run left: settings, the tour and hint
+  // records, the acknowledged keys (durableKv.ts).
+  const restored = await wireKv(store)
+  if (restored.length > 0) {
+    log(`settings recovered from the durable store: ${restored.join(' ')}`)
+    reapplyStoredSettings()
+    if (invertBtn) invertBtn.textContent = invertLabel()
+  }
   // Before the identity is declared settled: an address kept in the store must be adopted
   // before anyone is asked for one.
   await wireServerStore(store)
