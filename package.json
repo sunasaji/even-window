@@ -1,6 +1,6 @@
 {
   "name": "even-window",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Mirror a PC window to Even Realities G2 smart glasses, with lightweight remote control",
   "license": "MIT",
