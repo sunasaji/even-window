@@ -67,6 +67,13 @@ export let fireSubmit: ((via: string) => void) | null = null
 export let statusEl: HTMLElement | null = null
 export let connSumEl: HTMLElement | null = null
 export let connDetailsEl: HTMLDetailsElement | null = null
+let serverFieldEl: HTMLInputElement | null = null
+
+/** Show the current server in the `connection` field after it changed somewhere else (a
+ *  pasted pairing URL, the server-address card). */
+export function syncServerField(): void {
+  if (serverFieldEl) serverFieldEl.value = SERVER
+}
 export let logEl: HTMLElement | null = null
 export let logCountEl: HTMLElement | null = null
 export let followBtn: HTMLButtonElement | null = null
@@ -565,6 +572,7 @@ export function mountUi(): void {
   const srvRow = document.createElement('div')
   srvRow.style.cssText = 'display:flex;gap:6px;margin-top:6px'
   const field = document.createElement('input')
+  serverFieldEl = field
   field.value = SERVER
   field.style.cssText =
     'flex:1;min-width:0;padding:7px 9px;font:16px ui-monospace,monospace;' +

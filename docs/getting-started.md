@@ -177,8 +177,10 @@ The app is one web page (`index.html`, described by `app.json`).
   per device and is a separate step ([Pair a device](#pair-a-device)).
 - **Packaged.** `npm run build` type-checks and writes the static app to `dist/`,
   which is packaged together with `app.json` using the Even Hub tooling. A packaged
-  app runs on its own origin, so it has no default server: open **connection** and
-  enter the server URL, or paste a pairing URL, which carries the server address.
+  app runs on its own origin, so it cannot know where the server is. On first start it
+  asks: a device that is not paired gets the pairing dialog, where a pasted pairing URL
+  carries the server address, and a device that already holds a key is asked for the
+  server URL only. The address can be changed later under **connection**.
   The server allows any origin while authentication is on, so no CORS setting is needed;
   with `EW_AUTH=0` the app's origin must be listed in `EW_ORIGINS`.
 

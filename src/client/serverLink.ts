@@ -3,20 +3,23 @@
 // The client modules import each other freely, but only from inside functions: nothing here may
 // use another non-leaf module while this one is still loading.
 
-import { bearer, resetSession, setAuthBase } from './authClient.ts'
+import { bearer, type DurableStore, isPaired, resetSession, setAuthBase } from './authClient.ts'
 import { log } from './debugLog.ts'
 import { flagSource, noteFlag } from './flags.ts'
 import { maybePromptPairing } from './main.ts'
+import { syncServerField } from './phoneUi.ts'
 import { kickPump, setForcePending } from './pump.ts'
 import { confirmServerChange, serverChangeNeedsConfirm } from './serverGuard.ts'
+import { needsServerAddress, openServerSetup } from './serverSetup.ts'
 import { renderStatus, setStatus } from './statusUi.ts'
 import { startStream } from './stream.ts'
-import { errText } from './util.ts'
+import { errText, withTimeout } from './util.ts'
 
 // ── server address ─────────────────────────────────────────────────────────────────────────
 // The API base is explicit and may be cross-origin (the simulator and the Vite dev server are
 // other origins than the API; see docs/protocol.md for the CORS policy).
-// Resolution order: `?server=` → localStorage → default. Whatever wins is persisted.
+// Resolution order: `?server=` → localStorage → default. A chosen address is persisted; the
+// default is a guess and is not, so the next load can still tell that nobody chose.
 
 const LOOPBACK_SERVER = 'http://localhost:8787'
 const SERVER_KEY = 'ew.server'
@@ -42,6 +45,10 @@ export function defaultServer(origin: string, host: string): string {
 }
 
 export let SERVER = LOOPBACK_SERVER
+
+/** True while `SERVER` is the default and nobody chose it: no `?server=`, no stored value, no
+ *  address entered or pasted. See `maybeAskForServer`. */
+export let serverIsGuess = false
 
 /** A `?server=` that `initServer` did not adopt by itself, pending `settlePendingServer`
  *  (see src/client/serverGuard.ts). */
@@ -77,17 +84,24 @@ export function initServer(): void {
     return
   }
   const v = q?.trim() ? q : stored?.trim() ? stored : fallback
+  const from = flagSource(!!q?.trim(), !!stored?.trim())
   // Recorded like the boolean flags, so a server URL persisted by a previous run is visible.
-  noteFlag('server', flagSource(!!q?.trim(), !!stored?.trim()), normaliseServer(v))
-  setServer(v)
+  noteFlag('server', from, normaliseServer(v))
+  setServer(v, from === 'default')
 }
 
-export function setServer(raw: string): void {
+/** Point the client at an API base. `guess` marks the built-in default, which is used but not
+ *  stored; every other caller passes an address somebody chose. */
+export function setServer(raw: string, guess = false): void {
   SERVER = normaliseServer(raw)
-  try {
-    localStorage.setItem(SERVER_KEY, SERVER)
-  } catch {
-    /* storage blocked */
+  serverIsGuess = guess
+  if (!guess) {
+    try {
+      localStorage.setItem(SERVER_KEY, SERVER)
+    } catch {
+      /* storage blocked */
+    }
+    void serverStore?.set(SERVER_KEY, SERVER)
   }
   // A different server has a different signing secret: drop the cached session so the old
   // server's token is never sent to the new one.
@@ -95,10 +109,37 @@ export function setServer(raw: string): void {
   resetSession()
 }
 
+// ── the address in the bridge's durable store ──────────────────────────────────────────────
+// In the packaged Even Hub app localStorage does not survive a restart of the app (observed on
+// an iPhone, 2026-11-27), so the chosen address is mirrored where the device key already is.
+
+let serverStore: DurableStore | null = null
+
+/** Wire the durable store, once the bridge exists. A chosen address is written to it; when
+ *  this load is still on the guessed default, the address kept there is adopted. It is one
+ *  this device chose earlier, so no confirmation is asked. */
+export async function wireServerStore(store: DurableStore): Promise<void> {
+  serverStore = store
+  if (!serverIsGuess) {
+    void store.set(SERVER_KEY, SERVER)
+    return
+  }
+  let kept = ''
+  try {
+    kept = normaliseServer((await withTimeout(store.get(SERVER_KEY), 3000, 'server store')) ?? '')
+  } catch {
+    /* slow or failing bridge: stay on the guess, and the address card may open */
+  }
+  if (!kept || !serverIsGuess) return
+  log(`server: ${kept} recovered from the durable store`)
+  switchServer(kept)
+}
+
 /** Adopt a new API base mid-run: re-point the handshake, drop the old session and re-open
  *  the stream. Never a reload, which would re-establish the glasses page (docs/glasses.md). */
 export function switchServer(raw: string): void {
   setServer(raw)
+  syncServerField()
   setAuthState('unknown')
   setStatus(`server changed — reconnecting: ${SERVER}`)
   setForcePending(true)
@@ -154,6 +195,47 @@ export function setAuthState(s: AuthState): void {
   // A refused paired device (key revoked, registry wiped) and an unpaired one both need the
   // pairing dialog.
   if (s === 'unpaired' || s === 'unauthorized') maybePromptPairing()
+  if (s === 'offline') void maybeAskForServer()
+}
+
+// ── asking for the server address ──────────────────────────────────────────────────────────
+// The packaged app starts on a guessed address that cannot answer (src/client/serverSetup.ts).
+// Asked at most once per page load, and only once the identity is known: before the bridge's
+// durable store is wired, a device that holds a key still looks unpaired, and would be sent to
+// the pairing dialog to enrol a second one.
+
+let identitySettled = false
+let askedForServer = false
+
+/** Called by boot when `isPaired()` can be trusted: the durable store is wired, or there is
+ *  no bridge to wait for. */
+export function identityIsSettled(): void {
+  identitySettled = true
+  void maybeAskForServer()
+}
+
+async function maybeAskForServer(): Promise<void> {
+  if (askedForServer || !identitySettled) return
+  if (!needsServerAddress(serverIsGuess, authState === 'offline')) return
+  askedForServer = true
+  const tried = SERVER
+  if (!(await isPaired())) {
+    log(`server: no answer from the default ${tried} and no identity — opening the pairing dialog`)
+    maybePromptPairing()
+    return
+  }
+  log(`server: no answer from the default ${tried} on a paired device — asking for the address`)
+  try {
+    openServerSetup({
+      tried,
+      onServer: origin => {
+        log(`server: address entered — ${origin}`)
+        switchServer(origin)
+      },
+    })
+  } catch {
+    /* no DOM (tests): the log line above is the record */
+  }
 }
 
 export async function authFetch(path: string, init?: RequestInit): Promise<Response> {

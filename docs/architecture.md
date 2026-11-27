@@ -153,7 +153,7 @@ Even App 2.2.10 or newer. This table is the blast radius of an SDK upgrade.
 | `OsEventTypeList.LONG_PRESS_EVENT` (9) | Starts voice input when the server reports a recogniser. `LONG_PRESS_RELEASE_EVENT` (10) is not bound |
 | `onDeviceStatusChanged`, `getDeviceInfo` | Link state (`connectType`) and `isInCase`. `isWearing` is only logged |
 | `audioControl`, `AudioInputSource.Glasses` | The glasses microphone; needs the `g2-microphone` permission in `app.json` |
-| `getLocalStorage`, `setLocalStorage` | The only key-value store that survives an app restart; the packaged app mirrors the device key there |
+| `getLocalStorage`, `setLocalStorage` | The only key-value store that survives an app restart; the packaged app mirrors the device key and the chosen server address there |
 
 Not used: `menuObject` / `menuItemClickEvent` (it cannot coexist with `zOrderIndex`) and
 `TextContainerProperty.textColor`. Image data is LZ4-compressed inside the SDK since 0.0.12,

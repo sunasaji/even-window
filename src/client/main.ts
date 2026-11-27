@@ -8,7 +8,7 @@
 
 import type { EvenAppBridge } from '@evenrealities/even_hub_sdk'
 import { voiceOverlay, voiceRowsFor } from '../shared/voiceDialog.ts'
-import { clientId, isPaired, setDurableStore } from './authClient.ts'
+import { clientId, type DurableStore, isPaired, setDurableStore } from './authClient.ts'
 import { renderKeys } from './clients.ts'
 import { DEBUG_EVENTS, installErrorFunnel, log } from './debugLog.ts'
 import { stickyFlags, stickyLine } from './flags.ts'
@@ -39,11 +39,13 @@ import { maybeStartPairing, openPairingDialog, type PairingHooks } from './pairi
 import { invertBtn, mountUi, textBox } from './phoneUi.ts'
 import { initStats, kickPump, STATS_PERIOD_MS, setForcePending, statsOn } from './pump.ts'
 import {
+  identityIsSettled,
   initServer,
   SERVER,
   setAuthState,
   settlePendingServer,
   switchServer,
+  wireServerStore,
 } from './serverLink.ts'
 import {
   initInvert,
@@ -190,6 +192,7 @@ async function boot(): Promise<void> {
     sdk = await import('@evenrealities/even_hub_sdk')
   } catch (e) {
     setStatus(`sdk load failed: ${errText(e)}`)
+    identityIsSettled() // no bridge is coming, so IndexedDB is the whole answer
     return
   }
   log(
@@ -201,6 +204,7 @@ async function boot(): Promise<void> {
     bridge = await withTimeout(waitBridge(sdk), 8000, 'bridge')
   } catch (e) {
     setStatus(`no glasses bridge (${errText(e)}) — DOM-only mode`)
+    identityIsSettled()
     return
   }
 
@@ -208,7 +212,7 @@ async function boot(): Promise<void> {
   // packaged Even Hub app, so a key kept only there is lost on restart. Must be wired before
   // any auth use (see DurableStore in authClient.ts).
   const br = bridge
-  setDurableStore({
+  const store: DurableStore = {
     get: async k => {
       try {
         return (await br.getLocalStorage(k)) || null
@@ -223,7 +227,14 @@ async function boot(): Promise<void> {
         /* ignore */
       }
     },
-  })
+  }
+  setDurableStore(store)
+  // Before the identity is declared settled: an address kept in the store must be adopted
+  // before anyone is asked for one.
+  await wireServerStore(store)
+  // From here `isPaired()` sees the mirrored key too, so "no server address" can be told apart
+  // from "never paired" (serverLink.ts, `maybeAskForServer`).
+  identityIsSettled()
   // The stream above was opened before the bridge existed, so it may be running without a
   // ticket while the durable mirror does hold an identity. Re-open it once if so.
   if (!streamTicketed && (await isPaired())) {

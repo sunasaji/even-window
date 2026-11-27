@@ -340,6 +340,27 @@ Inside: the status line (the client's own bookkeeping), the server URL field wit
 the pairing dialog regardless of auth state, because a device that cannot reach the server
 never learns its state. Pairing is described in [security.md](security.md).
 
+### When no server address was chosen
+
+With no `?server=` and no stored address the client uses a default: its own origin, or
+`http://localhost:8787` when the page is on loopback or has no origin. The packaged app is in
+the second case, and on a phone that address leads nowhere. The default is used but not
+stored, so the client can tell that nobody chose it.
+
+When the default does not answer, the client asks once per page load:
+
+| Device | What opens |
+| --- | --- |
+| Holds no key | The pairing dialog. A pasted pairing URL carries the server address |
+| Holds a key | A card asking for the server address only. It accepts an origin, any URL on the server, a pairing URL, or a bare `host:port` (taken as https) |
+
+A chosen address that stops answering opens nothing; the summary line says `server
+unreachable`.
+
+In the packaged app `localStorage` does not survive a restart of the Even App, so a chosen
+address is also written to the bridge's storage (`setLocalStorage`, key `ew.server`) and read
+back at start when the client would otherwise be on the default.
+
 Enrolled keys table: a read-only list of the client keys the server trusts, received on the
 stream (`{t:'clients'}`): name, first 12 characters of the id, date added, with this device
 marked. The first list seen becomes the acknowledged set (stored as `ew.keys.acked`). A key
@@ -463,7 +484,8 @@ anything else decides nothing.
 | `voicefeed=<url>` | Test hook | See [voice.md](voice.md) |
 | `tour=1\|0` | One-shot | Opens the [tour](#tour) at boot, or keeps it shut for this load |
 
-Settings resolve as query → `localStorage` → default, and the winner is stored. Instruments
+Settings resolve as query → `localStorage` → default, and the winner is stored (for `server`,
+only a chosen address; see [Connection fold](#when-no-server-address-was-chosen)). Instruments
 are read from the URL only and never persist. When a setting came from storage rather than
 the URL, the boot log prints a `sticky:` line naming it and its value.
 

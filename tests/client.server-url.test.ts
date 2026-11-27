@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { serverChangeNeedsConfirm } from '../src/client/serverGuard.ts'
 import { defaultServer, normaliseServer } from '../src/client/serverLink.ts'
+import { needsServerAddress, serverFromInput } from '../src/client/serverSetup.ts'
 
 const LOOPBACK = 'http://localhost:8787'
 
@@ -85,5 +86,44 @@ describe('serverChangeNeedsConfirm', () => {
   it('asks when only the port or the scheme moves (same host is not the same server)', () => {
     expect(ask('http://host.ts.net:8443', 'https://host.ts.net:8443', true)).toBe(true)
     expect(ask('https://host.ts.net:9999', 'https://host.ts.net:8443', true)).toBe(true)
+  })
+})
+
+describe('needsServerAddress', () => {
+  it('asks only when the address is a guess that did not answer', () => {
+    expect(needsServerAddress(true, true)).toBe(true)
+    // A chosen address that is down is an outage; the user already said where the server is.
+    expect(needsServerAddress(false, true)).toBe(false)
+    // The guess worked (a browser on the server's own machine).
+    expect(needsServerAddress(true, false)).toBe(false)
+  })
+})
+
+describe('serverFromInput', () => {
+  it('reduces whatever names the server to its origin', () => {
+    expect(serverFromInput('https://host.ts.net:8443')).toBe('https://host.ts.net:8443')
+    expect(serverFromInput('  https://host.ts.net:8443/some/page?x=1 ')).toBe(
+      'https://host.ts.net:8443',
+    )
+    expect(serverFromInput('http://192.168.3.2:8787/')).toBe('http://192.168.3.2:8787')
+  })
+
+  it('takes a bare host as https, the scheme a phone reaches the server with', () => {
+    expect(serverFromInput('host.ts.net:8443')).toBe('https://host.ts.net:8443')
+    expect(serverFromInput('host.ts.net')).toBe('https://host.ts.net')
+  })
+
+  it('prefers the server= of a pairing URL over the page it points at', () => {
+    expect(
+      serverFromInput('https://app.example/?server=https%3A%2F%2Fhost.ts.net%3A8443#pair=abc'),
+    ).toBe('https://host.ts.net:8443')
+  })
+
+  it('refuses what is not an http(s) address', () => {
+    expect(serverFromInput('')).toBe('')
+    expect(serverFromInput('   ')).toBe('')
+    expect(serverFromInput('file:///etc/passwd')).toBe('')
+    expect(serverFromInput('javascript:alert(1)')).toBe('')
+    expect(serverFromInput('not a url')).toBe('')
   })
 })
