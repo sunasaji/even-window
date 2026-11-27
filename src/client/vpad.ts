@@ -17,7 +17,7 @@ import {
 } from './chrome.ts'
 import { log } from './debugLog.ts'
 import { onSwipe, padMove, x11Inject } from './gestures.ts'
-import { keyModList, modPrefix, takeKeyMods } from './oskb.ts'
+import { modPrefix, takeKeyMods } from './oskb.ts'
 import { mirrorEl, vpadBtn } from './phoneUi.ts'
 import {
   padScrollNatural,
@@ -200,19 +200,32 @@ export async function padRelease(why: string): Promise<void> {
   for (const m of [...h.mods].reverse()) await padTry('keyup', m, `release ${m} · ${why}`)
 }
 
-/** The in-overlay armed-modifier line. Null while the pad is closed. */
-let padArmedEl: HTMLElement | null = null
+// ── latched modifiers ──────────────────────────────────────────────────────────────────────
+// Ctrl / Alt / Shift have a pill each in the pad's top row. A lit pill goes with every tap,
+// hold and wheel action until it is tapped again; closing the pad clears all three. They are
+// lit on the pad itself, which is what makes a lasting modifier acceptable here: the `keys`
+// panel is behind the overlay, so a modifier latched there would be invisible
+// (docs/decisions/phone-vpad-latched-modifiers.md).
+//
+// The latch is this page's state only. On the X side a modifier is pressed for one action and
+// released after it, through `padPress` / `padRelease`, so nothing stays down between actions.
 
-/** Say the armed modifier in words inside the overlay. The `keys` panel's green fill is behind
- *  the full-screen pad, and an invisible modifier changes what the next tap injects. */
-export function renderPadArmed(): void {
-  if (!padArmedEl) return
-  const mods = keyModList()
-  padArmedEl.textContent = mods.length
-    ? `${mods.join('+')} armed (one-shot) — next tap = ${modPrefix(mods)}click, ` +
-      // The wheel strip takes the arm too (ctrl+wheel is zoom in most clients).
-      `next hold = ${modPrefix(mods)}press-and-hold (a wheel drag takes it too)`
-    : ''
+const PAD_MODS = ['ctrl', 'alt', 'shift'] as const
+export type PadMod = (typeof PAD_MODS)[number]
+const padMod: Record<PadMod, boolean> = { ctrl: false, alt: false, shift: false }
+
+/** The lit modifiers as xdotool keysyms, in a fixed order. A fresh array each call: a press
+ *  keeps the one it was given until its release. */
+export function padMods(): string[] {
+  return PAD_MODS.filter(m => padMod[m])
+}
+
+/** Pure: the pills' state after `m` is tapped. Each pill is its own toggle; they combine. */
+export function padModToggled(
+  state: Readonly<Record<PadMod, boolean>>,
+  m: PadMod,
+): Record<PadMod, boolean> {
+  return { ...state, [m]: !state[m] }
 }
 
 export let vpadOpen = false
@@ -253,14 +266,17 @@ export function openVPad(): void {
   setLit(vpadBtn, true)
   cursor.shown = true
   refreshCursorTiles() // also seeds `cursorTile` for the incremental path
-  // The latched button is in the open line because it survives close/reopen, and so is an armed
-  // Ctrl/Alt: both change what the next tap injects, and the `keys` panel is behind this
-  // overlay. Press-and-hold and tap-then-drag are the same state (the latched button held,
-  // movement still tracking) with one release path (`padRelease`).
-  const armed = keyModList()
+  // A Ctrl / Alt armed in `keys` before opening comes along as a lit pill. It is taken from
+  // `keys`, so it is not also waiting there when the pad closes.
+  for (const m of takeKeyMods()) if (m === 'ctrl' || m === 'alt') padMod[m] = true
+  // The latched button is in the open line because it survives close/reopen, and so are the lit
+  // modifiers: both change what the next tap injects. Press-and-hold and tap-then-drag are the
+  // same state (the latched button held, movement still tracking) with one release path
+  // (`padRelease`).
+  const armed = padMods()
   log(
     `vPad OPEN — button=${padButtonLabel(padButton)}` +
-      (armed.length ? ` · armed=${armed.join('+')} (one-shot)` : '') +
+      (armed.length ? ` · latched=${armed.join('+')}` : '') +
       ' · drag=move · tap=click · press-and-hold (or tap-then-drag)=button held, tracking' +
       ` · two fingers=wheel scroll (${scrollNatLabel(padScrollNatural)})` +
       ' · right-edge strip=the same wheel',
@@ -318,6 +334,47 @@ export function openVPad(): void {
     'color:#E5E5E5;font:11px ui-monospace,monospace;box-sizing:content-box'
   ov.appendChild(natBtn)
 
+  // Ctrl / Alt / Shift, after the scroll toggle in the same row. The same ink-in-a-box
+  // construction, a little narrower so the row clears the ✕ on a 360px screen. Like the toggle
+  // they have no `click` listener: their one entry point is the `controls` table.
+  const modRow = document.createElement('div')
+  modRow.style.cssText = cornerCss('left') + 'display:flex;align-items:center'
+  // The toggle moves into the row; its own corner position is the row's now.
+  natBtn.style.position = 'static'
+  modRow.appendChild(natBtn)
+  const modBtns = new Map<PadMod, HTMLButtonElement>()
+  const paintMods = (): void => {
+    for (const [m, b] of modBtns) {
+      // Lit = the green of an armed key in `keys`, so the two read as the same thing.
+      // `backgroundColor`, not the shorthand: that would reset `background-clip` and paint
+      // the transparent border too.
+      b.style.backgroundColor = padMod[m] ? '#2b6' : '#222'
+      b.style.color = padMod[m] ? '#06210f' : '#E5E5E5'
+      b.setAttribute('aria-pressed', padMod[m] ? 'true' : 'false')
+    }
+  }
+  for (const m of PAD_MODS) {
+    const b = document.createElement('button')
+    b.textContent = m[0]?.toUpperCase() + m.slice(1)
+    b.title = `hold ${m} for every tap, hold and wheel action until tapped again`
+    b.style.cssText =
+      // The same box as the toggle on every side: a border of unequal widths under one radius
+      // draws the inner edge as an egg. The negative margin closes the doubled gap instead.
+      'height:32px;padding:0 8px;border:6px solid transparent;margin-left:-6px;' +
+      'border-radius:22px;box-shadow:0 0 0 1px #555 inset;background-clip:padding-box;' +
+      'font:11px ui-monospace,monospace;box-sizing:content-box'
+    modBtns.set(m, b)
+    modRow.appendChild(b)
+  }
+  paintMods()
+  ov.appendChild(modRow)
+  const flipMod = (m: PadMod): void => {
+    Object.assign(padMod, padModToggled(padMod, m))
+    paintMods()
+    const on = padMods()
+    log(`vPad ${m} ${padMod[m] ? 'ON' : 'off'} — latched=${on.length ? on.join('+') : 'none'}`)
+  }
+
   /** One table of the pad's own chrome (the ✕, the scroll toggle, the button pills) with the
    *  action each performs. Every exemption in this overlay reads this table and nothing else.
    *
@@ -341,6 +398,12 @@ export function openVPad(): void {
     // The toggle's only entry point: two entry points would flip it twice (see where `natBtn`
     // is built).
     { el: natBtn, act: flipScrollNat },
+    ...PAD_MODS.map(m => ({
+      el: modBtns.get(m) as HTMLElement,
+      act: () => {
+        flipMod(m)
+      },
+    })),
   ]
   const controlAt = (x: number, y: number): { act: () => void } | null => {
     for (const c of controls) {
@@ -367,11 +430,6 @@ export function openVPad(): void {
   /** The latched button in words, not only as an inverted pill. */
   const hintBtn = document.createElement('div')
   hintBtn.style.cssText = 'color:#e5e5e5;margin-bottom:4px'
-  /** An armed Ctrl/Alt. Amber, because unlike the latched button it is one-shot. */
-  const hintMod = document.createElement('div')
-  hintMod.style.cssText = 'color:#ffd479;margin-bottom:4px'
-  padArmedEl = hintMod
-  renderPadArmed()
   // A table, gesture on the left and what it does on the right: the pad is used by glancing
   // at it, and a column of gestures can be scanned where sentences have to be read. Tap-then-
   // drag points at press-and-hold instead of repeating it: they reach the same state.
@@ -411,10 +469,12 @@ export function openVPad(): void {
   // Wider than the table: it runs into the hint's side padding, which a short centred
   // paragraph does not need.
   hintFoot.style.cssText = 'color:#888;font-size:12px;line-height:1.5;margin:8px -8px 0'
+  // Two sentences, two lines: left to wrap, the second starts with a lone ✕ at a line's end.
+  hintFoot.style.whiteSpace = 'pre-line'
   hintFoot.textContent =
-    'Ctrl / Alt armed in keys go with the next tap, hold or wheel. ' +
+    'Ctrl / Alt / Shift at the top stay on until tapped again.\n' +
     '✕ closes; the pointer is drawn on the glasses too.'
-  hint.append(hintHead, hintBtn, hintMod, hintRest, hintFoot)
+  hint.append(hintHead, hintBtn, hintRest, hintFoot)
   ov.appendChild(hint)
 
   // A marker at the virtual pointer, placed over the preview canvas, so the phone gives
@@ -476,12 +536,12 @@ export function openVPad(): void {
     padMove(cursor.x, cursor.y)
     refreshCursorTiles() // re-bake the pointer into the affected tiles only
   }
-  /** A click, optionally under the armed modifiers: `keydown ctrl` → `clickat` → `keyup ctrl`.
+  /** A click, optionally under the lit modifiers: `keydown ctrl` → `clickat` → `keyup ctrl`.
    *
-   *  The modifiers are taken (and disarmed) synchronously here, not inside the queued step, so
-   *  two quick taps cannot both claim the same one-shot arm. */
+   *  The modifiers are read synchronously here, not inside the queued step, so a pill tapped
+   *  after this tap does not change it. */
   const clickAt = (btn: PadButton): void => {
-    const mods = takeKeyMods()
+    const mods = padMods()
     const tag = `${modPrefix(mods)}click (${padButtonName(btn)})`
     padQueue(async () => {
       await padPress(null, mods, tag)
@@ -489,10 +549,10 @@ export function openVPad(): void {
       await padRelease(tag)
     })
   }
-  /** Open a hold: the armed modifiers, then the latched button, left down until a release.
+  /** Open a hold: the lit modifiers, then the latched button, left down until a release.
    *  `padPress` records before it injects and `padRelease` is the single way out. */
   const holdDown = (why: string): void => {
-    const mods = takeKeyMods()
+    const mods = padMods()
     const tag = `${modPrefix(mods)}press-and-hold (${padButtonName(padButton)})${why}`
     dragging = true
     padQueue(() => padPress(padButton, mods, tag))
@@ -658,13 +718,13 @@ export function openVPad(): void {
     // Aim first. A wheel click lands on the window under the pointer; `move` is coalesced, so
     // this forces one out.
     sendMove(true)
-    // Ctrl/Alt armed in `keys` compose with the whole drag (ctrl+wheel is zoom in most clients).
-    // Taken synchronously, pressed through `padPress` and released through the single guard, so
+    // The lit modifiers go with the whole drag (ctrl+wheel is zoom in most clients).
+    // Read synchronously, pressed through `padPress` and released through the single guard, so
     // a close, a cancel or a failed injection mid-drag cannot leave Ctrl down.
     //
     // Unconditional rather than `if (mods.length)`: with an empty arm `padPress` presses nothing
     // but still releases anything the pad was holding.
-    const mods = takeKeyMods()
+    const mods = padMods()
     padQueue(() => padPress(null, mods, `${modPrefix(mods)}wheel drag`))
   }
 
@@ -778,10 +838,12 @@ export function openVPad(): void {
       active = false
       moved = false
       clearHold()
-      // The scroll path carries neither the latched button nor an armed modifier, and a second
-      // finger must not leave the first one's hold down.
+      // The scroll path does not carry the latched button, and a second finger must not leave
+      // the first one's hold down: `padPress` releases whatever is held before it presses. It
+      // does carry the lit modifiers, for the whole scroll, like a drag on the strip.
       dragging = false
-      padQueue(() => padRelease('two-finger scroll'))
+      const mods = padMods()
+      padQueue(() => padPress(null, mods, `${modPrefix(mods)}two-finger scroll`))
       scrolling = true
       scrollAccum = 0
       scrollLast = midY()
@@ -906,6 +968,7 @@ export function openVPad(): void {
       if (ptrs.size < 2) {
         scrolling = false
         scrollAccum = 0
+        padQueue(() => padRelease('two-finger scroll ended'))
       }
       return
     }
@@ -996,7 +1059,8 @@ export function closeVPad(): void {
   // handlers live on, so the `pointerup` that would have released a held button or Ctrl may
   // never arrive. `padRelease` is a no-op when nothing is held.
   padQueue(() => padRelease('pad closed'))
-  padArmedEl = null
+  // A modifier that outlived the pad would be latched with nothing on screen to show it.
+  for (const m of PAD_MODS) padMod[m] = false
   if (vpadEl) {
     vpadEl.remove()
     vpadEl = null

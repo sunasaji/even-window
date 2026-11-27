@@ -205,10 +205,13 @@ hole over the mirror.
   taps and holds use. Default left; the choice persists across taps and across reopening the
   pad, and the hint line names it.
   Rationale: [modal button selector](decisions/phone-vpad-button-selector.md).
-- Held modifiers: Ctrl/Alt armed in the keys panel before opening the pad compose with the
-  next tap (`ctrl+click`), hold (how xterm's own menus open) or wheel drag (`ctrl+wheel`).
-  They are sent as separate `keydown` / `keyup` injections around the action and are
-  one-shot; a second modified action needs the pad closed and the modifier re-armed.
+- Modifiers: `Ctrl`, `Alt` and `Shift` pills in the top row, after the scroll-direction
+  toggle. A lit pill goes with every tap (`ctrl+click`), hold (how xterm's own menus open),
+  strip drag and two-finger scroll (`ctrl+wheel`) until it is tapped again; lit pills combine,
+  and closing the pad clears them. Each action sends its own `keydown` / `keyup` around it,
+  so nothing is held in the desktop between actions. A Ctrl/Alt armed in the keys panel
+  before opening the pad arrives as a lit pill.
+  Rationale: [latched modifiers](decisions/phone-vpad-latched-modifiers.md).
 
 ### Wheel
 

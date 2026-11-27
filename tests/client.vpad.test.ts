@@ -19,6 +19,7 @@ import {
   padButtonLabel,
   padButtonName,
   padClickatArg,
+  padModToggled,
   padWheelButton,
 } from '../src/client/vpad.ts'
 import { xdoArgs } from '../src/server/platform/x11/input.ts'
@@ -29,16 +30,7 @@ const src = clientSource()
 const PAD = src.fn('openVPad')
 /** The press/release machinery, which lives at module scope so `closeVPad` can reach it (the
  *  pad's closure dies with the overlay). */
-const HOLD = src.fns(
-  'padDown',
-  'padSeq',
-  'padQueue',
-  'padTry',
-  'padPress',
-  'padRelease',
-  'padArmedEl',
-  'renderPadArmed',
-)
+const HOLD = src.fns('padDown', 'padSeq', 'padQueue', 'padTry', 'padPress', 'padRelease')
 /** `closeVPad`'s body, and only that: the audits below are about what close's own release does
  *  and does not do. */
 const CLOSE = src.fn('closeVPad')
@@ -298,16 +290,43 @@ describe('source audit: the held modifier cannot be left down', () => {
     expect(cancel.has('if (dragging)')).toBe(false)
   })
 
-  it('the arm is one-shot: taken (and disarmed) synchronously at the gesture', () => {
-    // Inside the queued step it would be taken after the fact, so two quick taps could both
-    // claim the same arm and the overlay's armed line would lag the gesture.
-    expect(PAD.has('const mods = takeKeyMods()')).toBe(true)
-    // The click, the hold and the wheel drag: every gesture that injects takes the arm.
-    expect(PAD.count('takeKeyMods()')).toBe(3)
+  it('the lit modifiers are read synchronously at the gesture, and stay lit', () => {
+    // Inside the queued step they would be read after the fact, so a pill tapped after the
+    // gesture could change it.
+    expect(PAD.has('const mods = padMods()')).toBe(true)
+    // The click, the hold, the wheel drag and the two-finger scroll: every gesture that injects
+    // carries them.
+    expect(PAD.count('const mods = padMods()')).toBe(4)
     for (const m of PAD.matches(/padQueue\(async\(\)=>\{[\s\S]*?\}\)/)) {
-      expect(m).not.toContain('takeKeyMods')
+      expect(m).not.toContain('padMods')
     }
+    // Reading does not disarm: only a tap on the pill, or closing the pad, does.
+    expect(codeOnly(src.fn('padMods')).has('= false')).toBe(false)
+    expect(CLOSE.has('for (const m of PAD_MODS) padMod[m] = false')).toBe(true)
+  })
+
+  it('a Ctrl / Alt armed in keys comes along as a lit pill, and leaves keys', () => {
+    expect(
+      PAD.has("for (const m of takeKeyMods()) if (m === 'ctrl' || m === 'alt') padMod[m] = true"),
+    ).toBe(true)
+    // Taken once, at open: the gestures read the pills, not the keys panel.
+    expect(PAD.count('takeKeyMods()')).toBe(1)
     expect(src.has('keyMod.ctrl = false; keyMod.alt = false; syncMods()')).toBe(true)
+  })
+
+  it('each pill is its own toggle, and they combine', () => {
+    const off = { ctrl: false, alt: false, shift: false }
+    const ctrl = padModToggled(off, 'ctrl')
+    expect(ctrl).toEqual({ ctrl: true, alt: false, shift: false })
+    expect(padModToggled(ctrl, 'shift')).toEqual({ ctrl: true, alt: false, shift: true })
+    expect(padModToggled(ctrl, 'ctrl')).toEqual(off)
+  })
+
+  it('the pills are acted on through the controls table only', () => {
+    // A control with a click listener as well would run twice on a touch, and a toggle that
+    // runs twice does nothing.
+    expect(PAD.has('...PAD_MODS.map(m => ({ el: modBtns.get(m) as HTMLElement,')).toBe(true)
+    expect(codeOnly(PAD).has("b.addEventListener('click'")).toBe(false)
   })
 
   it('the log line and the overlay both name the armed modifier', () => {
@@ -317,16 +336,21 @@ describe('source audit: the held modifier cannot be left down', () => {
       true,
     )
     expect(PAD.has('`${modPrefix(mods)}click (${padButtonName(btn)})`')).toBe(true)
-    expect(PAD.has("armed=${armed.join('+')} (one-shot)")).toBe(true)
-    expect(HOLD.has('armed (one-shot) — next tap = ')).toBe(true)
-    // The keys panel's green fill is behind a full-screen overlay, so the pad renders it itself
-    // and `syncMods` drives that too (one state, two readouts).
-    expect(src.fn('syncMods').has('renderPadArmed()')).toBe(true)
+    expect(PAD.has("latched=${armed.join('+')}")).toBe(true)
+    // The pills show the state on the pad itself, lit in the green of an armed key in `keys`.
+    expect(PAD.has("b.style.backgroundColor = padMod[m] ? '#2b6' : '#222'")).toBe(true)
   })
 
   it('a second finger releases any hold before the two-finger scroll starts', () => {
     const down = PAD.between('const onDown', 'const onMove')
-    expect(down.has("padQueue(() => padRelease('two-finger scroll'))")).toBe(true)
+    // `padPress` releases whatever is held before it presses, and presses the lit modifiers
+    // for the scroll (nothing, when none is lit).
+    expect(
+      down.has('padQueue(() => padPress(null, mods, `${modPrefix(mods)}two-finger scroll`))'),
+    ).toBe(true)
+    expect(src.fn('padPress').has("if (padDown) await padRelease('superseded')")).toBe(true)
+    // And they are released when the second finger lifts.
+    expect(PAD.has("padQueue(() => padRelease('two-finger scroll ended'))")).toBe(true)
     // The desktop mouse wheel over the pad is onSwipe, which never sees a modifier or a button.
     expect(PAD.has('onSwipe(dir)')).toBe(true)
   })
@@ -375,7 +399,7 @@ describe('source audit: the wheel strip', () => {
     const start = STRIP.between('const wheelStart', 'const wheelMove')
     expect(start.has('sendMove(true)')).toBe(true)
     expect(start.indexOf('sendMove(true)')).toBeGreaterThan(-1)
-    expect(start.indexOf('sendMove(true)')).toBeLessThan(start.indexOf('takeKeyMods()'))
+    expect(start.indexOf('sendMove(true)')).toBeLessThan(start.indexOf('padMods()'))
   })
 
   it("injects through the pad's own queue, so a notch cannot overtake the move that aimed it", () => {

@@ -5,7 +5,6 @@
 
 import { KEY_CHROME } from './chrome.ts'
 import { x11Inject } from './gestures.ts'
-import { renderPadArmed } from './vpad.ts'
 
 // Two blocks:
 //
@@ -143,8 +142,6 @@ let altBtnEl: HTMLButtonElement | null = null
 function syncMods(): void {
   if (ctrlBtnEl) ctrlBtnEl.style.background = keyMod.ctrl ? '#2b6' : '#e9e9e9'
   if (altBtnEl) altBtnEl.style.background = keyMod.alt ? '#2b6' : '#e9e9e9'
-  // The pad is a full-screen overlay that hides these keys, so vPad prints the arm in words.
-  renderPadArmed()
 }
 
 /** The armed modifiers as xdotool keysyms, in a fixed order (`ctrl` before `alt`). Read-only;
@@ -350,13 +347,14 @@ export function buildKeyPad(): HTMLDivElement {
   const note = document.createElement('div')
   note.style.cssText = 'font:11px/1.4 system-ui;color:#888'
   // The note states the touch-rate ceiling (~1.6 taps/s, docs/phone-ui.md) and the full reach
-  // of the one-shot: vPad's next tap or hold consumes the arm, Submit does not, Shift is sticky.
+  // of the one-shot: vPad takes the arm as a lit pill, Submit does not, Shift is sticky.
   note.textContent =
     'On-screen taps register at ~1.6/s max (about one per 600ms) — a platform ' +
     'limit of the WebView touch layer, not a bug here. For more than a few keys, use the text ' +
     'box above; it sends the whole string in one injection. Ctrl/Alt are one-shot: they arm, ' +
-    'and the next key here — or the next tap, press-and-hold or wheel drag on vPad — uses them and ' +
-    'disarms them. Submit is not modified by them. Shift is sticky until you tap it off.'
+    'and the next key here uses them and disarms them. Opening vPad with one armed lights its ' +
+    'pill there, where it stays on until tapped. Submit is not modified by them. Shift is ' +
+    'sticky until you tap it off.'
   box.appendChild(note)
   return box
 }

@@ -57,6 +57,7 @@ alternatives considered, consequences.
 - [Phone UI: relative vPad, absolute mirror touch](decisions/phone-pointer-surfaces.md)
 - [Phone UI: the submit key is a closed, per-app list](decisions/phone-submit-key.md)
 - [Phone UI: vPad uses a modal button selector and one-shot modifiers](decisions/phone-vpad-button-selector.md)
+- [Phone UI: vPad modifiers are latched on the pad](decisions/phone-vpad-latched-modifiers.md)
 - [Neutral route and field names, X keysym names for keys](decisions/platform-wire-vocabulary.md)
 - [Quadrant tiles](decisions/quadrant-tiles.md)
 - [Revocation is immediate: the registry is cached behind a stat](decisions/registry-stat-cache.md)
