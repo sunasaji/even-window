@@ -76,7 +76,7 @@ every responsive site is already below its 768 px breakpoint and shows a single
 column with a desktop user agent. A mobile user agent matters only on sites that
 choose the variant on the server, where fixed headers and "open in app" banners cost
 height. `meta viewport` handling stays off because enabling it draws a second,
-inset scrollbar (measured in heimterm).
+inset scrollbar (measured earlier).
 
 To restore it locally, in `user-local.js`:
 
@@ -98,7 +98,7 @@ user_pref("dom.w3c_touch_events.enabled", 1);
   from the `ui.systemUsesDarkTheme` preferences, black from `userChrome.css`.
 - The runtime profile is under `$HOME`, not `/tmp`, because WSL clears `/tmp`.
 
-## Not adopted (present in heimterm)
+## Not adopted
 
 - Bundled Dark Reader. It is the practical way to darken sites without a dark theme.
   Known traps: forcing black unconditionally makes Dark Reader decide the page is

@@ -4,7 +4,7 @@ Snapshot — not maintained. Conditions: Even G2 with an iPhone, Even App develo
 
 Reference: [glasses.md](../glasses.md#establishing-the-page).
 
-## Why a rebuild always follows create (inherited from heimterm)
+## Why a rebuild always follows create
 
 `updateImageRawData` repaints only containers that a `rebuildPageContainer` has made live.
 `createStartUpPageContainer` may be called once per glasses-UI lifetime (SDK: "cannot be called
@@ -22,7 +22,7 @@ create => 1 (REFUSED …)      138 ms after config; rebuild false 1 ms later
 establish => NOT established (streaming anyway)
 ```
 
-Rebuilding a live page during streaming blacks out the right lens (heimterm history); this is
+Rebuilding a live page during streaming blacks out the right lens (observed earlier); this is
 why the rebuild is restricted to pages that are not established.
 
 ## The push ladder against absent glasses

@@ -156,8 +156,8 @@ node scripts/ew-auth.mjs pair 'http://127.0.0.1:5273/?server=http://127.0.0.1:87
 
 ## コントリビュート
 
-[CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。一部は作者の以前のプロジェクト
-heimterm に由来します。[NOTICE.md](NOTICE.md) を参照してください。
+[CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。引用している第三者プロジェクトと
+商標については [NOTICE.md](NOTICE.md) を参照してください。
 
 ## ライセンス
 

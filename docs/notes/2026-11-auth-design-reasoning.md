@@ -3,18 +3,16 @@
 Snapshot — not maintained. Conditions: reasoning recorded up to 2026-11; the code in
 `src/server/auth.ts` is authoritative.
 
-## Origin of the code
+## Design points
 
-The authentication code was ported nearly verbatim from heimterm (same author, MIT):
-`src/server/auth.ts`, the client auth module and `scripts/ew-auth.mjs`. Differences from the
-original:
+The authentication code is `src/server/auth.ts`, the client auth module and
+`scripts/ew-auth.mjs`. Choices worth recording:
 
 - The state directory is `~/.even-window`, overridable with `EW_STATE_DIR` and resolved per
   call, so the caches are keyed by the resolved path.
 - The gate checks the registry on every request, so a revoked key stops working at once.
-  heimterm's stateless token survives for its full lifetime after revocation.
-- heimterm's connection-history functions were not ported; nothing here could reach them.
-- heimterm reloads the page after pairing. even-window must not: a reload re-creates the
+  A stateless token would survive for its full lifetime after revocation.
+- The page is not reloaded after pairing: a reload re-creates the
   glasses page, and doing that while streaming blacks out a lens.
 - The client's key loader invalidates a cached "no identity" when the bridge store is wired
   up, because this client opens the stream before the bridge is ready.

@@ -3,9 +3,8 @@
 ## Context
 
 The phone UI must fit six pills per row on a 360–390 px screen and still be tappable. A first
-version restyled the buttons from a description of the heimterm phone companion
-(`min-height: 44px`, `padding: 0 15px`, pill radius) and fitted four per row. The reference fits
-six because it applies no CSS to those buttons at all.
+version styled the buttons (`min-height: 44px`, `padding: 0 15px`, pill radius) and fitted
+four per row. Six fit when no CSS is applied to those buttons at all.
 
 ## Decision
 
@@ -16,7 +15,7 @@ six because it applies no CSS to those buttons at all.
 - Controls that need a guaranteed target (overlay `✕`, palette `✕`, the scroll-direction
   toggle) have a 44x44 hit box with 32 px of ink, made with a transparent border and
   `background-clip: padding-box`.
-- CSS is imported from heimterm (MIT) rather than re-approximated. Deliberate exceptions: the
+- The rest of the chrome follows the same rounded look. Deliberate exceptions: the
   mirror and the overlay "hole" are rectangular (they stand for a physical 576x288 panel),
   vPad selector pills use the key chrome with square corners, and `Submit` carries
   touch-callout suppression for its hold gesture.

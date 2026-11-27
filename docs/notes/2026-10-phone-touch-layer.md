@@ -1,11 +1,11 @@
 # Phone touch layer findings
 
 Snapshot — not maintained. Conditions: iPhone, Even App WebView (WKWebView), 2026-10; simulator
-is WebKitGTK driven with `xdotool`; some observations inherited from the heimterm project.
+is WebKitGTK driven with `xdotool`; some observations predate this repository.
 
 ## Tap rate ceiling
 
-- Measured in heimterm: on-screen taps register at about 1.6 per second (one per ~600 ms).
+- Measured before this repository: on-screen taps register at about 1.6 per second (one per ~600 ms).
   Dropped taps never reach the DOM; no handler or library can recover them.
 - Consequences drawn: on-screen keys are structurally slow (one tap per key); the text box
   sends a whole line per injection; ring and temple gestures arrive over BLE and bypass the
@@ -15,7 +15,7 @@ is WebKitGTK driven with `xdotool`; some observations inherited from the heimter
 
 ## Timers fire early
 
-- heimterm observed a 320 ms `setTimeout` firing after ~5 ms under frame-forwarding load.
+- A 320 ms `setTimeout` was observed firing after ~5 ms under frame-forwarding load.
 - vRing therefore decides at `touchend` without delay and separates tap from double-tap by
   screen half, not by time.
 - vPad's hold timer re-checks `Date.now() - startAt` when it fires and re-arms for the rest.

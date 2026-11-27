@@ -124,7 +124,7 @@ container type is whether an incremental update API exists.
 
 ## Image container size limit (2026-10-16)
 
-The 288x144 limit in `geom.ts` was inherited from heimterm without a measurement, and was doubted
+The 288x144 limit in `geom.ts` was adopted without a measurement, and was doubted
 because text containers of 576x288 work. A page with one oversized image container was
 submitted (`?probe=1`, since deleted); the Even Hub validator printed the rule:
 

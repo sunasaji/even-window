@@ -1,23 +1,20 @@
 # Phone UI chrome and layout
 
 Snapshot — not maintained. Conditions: 2026-10-10 to 2026-11-23; iPhone (390 px class) in the
-Even App, simulator (WebKitGTK); heimterm phone companion as the reference (MIT).
+Even App, simulator (WebKitGTK).
 
-## Ported from heimterm
+## Keys and controls
 
-Layout and CSS of the page, `#tkeys` / `#oskb`, vRing, vPad and the toast come from heimterm's
-phone companion. Differences introduced by the port:
-
-| | heimterm | even-window |
+| | Value | Why |
 | --- | --- | --- |
-| Key names | tmux (`Enter`, `IC`, `PPage`, `BSpace`) via `send-keys` | xdotool spellings (`Return`, `Insert`, `Page_Up`, `BackSpace`) |
-| Character keys | `termSendText` | `type`, or `key` with X keysym names when Ctrl/Alt is armed (`ctrl+minus`; `ctrl+-` is not parsed) |
-| Key min-width | 56 / 54 / 44 / 42 | 52 / 54 / 40 / 40: heimterm's longest row is 360 px and overflows a 360 px viewport; trimmed to 332 px inside 336 px |
-| vRing input | touch only | touch plus a mouse path for the simulator and desktop |
-| Mirror corners | 8 px radius | square, like the physical panel |
+| Key names | xdotool spellings (`Return`, `Insert`, `Page_Up`, `BackSpace`) | they are passed to `xdotool` unchanged |
+| Character keys | `type`, or `key` with X keysym names when Ctrl/Alt is armed | `ctrl+minus` is parsed; `ctrl+-` is not |
+| Key min-width | 52 / 54 / 40 / 40 | with 56 / 54 / 44 / 42 the longest row is 360 px and overflows a 360 px viewport; trimmed to 332 px inside 336 px |
+| vRing input | touch plus a mouse path | the mouse path serves the simulator and desktop |
+| Mirror corners | square | like the physical panel |
 
-The reference applies no CSS to its key buttons, so they render as the platform's native
-buttons; see [decisions/phone-native-button-chrome.md](../decisions/phone-native-button-chrome.md).
+No CSS is applied to the key buttons, so they render as the platform's native buttons; see
+[decisions/phone-native-button-chrome.md](../decisions/phone-native-button-chrome.md).
 
 ## Layout choices and why
 

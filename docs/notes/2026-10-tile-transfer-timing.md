@@ -11,12 +11,12 @@ Reference: [glasses.md](../glasses.md#cost-model).
 | G2, SDK 0.0.16, small tiles (up to 600 B) | 75 ms + 0.038 ms/byte (about 26 KB/s) | 565 B tile about 96 ms; four about 390 ms |
 | G2, SDK 0.0.16, large tiles (1.2-8.9 KB), 2026-10-11 | 13 ms + 0.057 ms/byte (about 17 KB/s) | 7960 B about 470 ms; four about 1.9 s |
 | All 8 points of 2026-10-11 | 70 ms + 0.0484 ms/byte (about 20 KB/s) | see points below |
-| heimterm, SDK 0.0.10 | 85 ms + 0.09 ms/byte (about 11 KB/s) | comparison only; do not use |
+| G2, SDK 0.0.10 (earlier measurement) | 85 ms + 0.09 ms/byte (about 11 KB/s) | comparison only; do not use |
 
 The 8 points (bytes -> ms): 280 -> 118, 327 -> 88, 371 -> 86, 1176 -> 89, 1457 -> 161,
 4321 -> 238, 6064 -> 375, 7960 -> 470.
 
-- The 2.4x gap to heimterm matches the LZ4 compression SDK 0.0.12 added to
+- The 2.4x gap to the SDK 0.0.10 measurement matches the LZ4 compression SDK 0.0.12 added to
   `updateImageRawData`.
 - A fit made on one range fails outside it: the small-tile line predicts 377 ms for 7960 B
   (measured 470); the large-tile line predicts 29-34 ms for 280-371 B (measured 86-118).

@@ -5,9 +5,8 @@ The page the Even App WebView loads is two things at once: the bridge that drive
 control surface: every control, what it sends to the server, and the invariants an implementer
 must keep. Routes and bodies are defined in [protocol.md](protocol.md).
 
-The UI is built by `mountUi()` in `src/client/`; base CSS lives in `index.html`. The look is
-imported from the heimterm phone companion (MIT), not re-approximated
-([decision](decisions/phone-native-button-chrome.md)).
+The UI is built by `mountUi()` in `src/client/`; base CSS lives in `index.html`. Key buttons
+are unstyled native controls ([decision](decisions/phone-native-button-chrome.md)).
 
 ## Layout
 

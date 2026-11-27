@@ -156,8 +156,8 @@ Per-feature verification and known limitations: [docs/status.md](docs/status.md)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Portions derive from the author's earlier
-project heimterm; see [NOTICE.md](NOTICE.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Third-party citations and trademarks:
+[NOTICE.md](NOTICE.md).
 
 ## Licence
 
