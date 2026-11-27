@@ -445,6 +445,9 @@ packer is `@evenrealities/evenhub-cli`, a dev dependency; nothing else is needed
 - The packer stamps `min_app_version` from the newest SDK published on npm, not from the one
   installed here. If a newer SDK has appeared since the pinned one, add
   `--sdk-ver <installed version>`: `npm run pack -- --sdk-ver 0.0.16`.
+- `icon.png` in the repository root is the 24x24 listing icon, passed to `evenhub create` with
+  `--icon icon.png`. It is not part of the package. Even Hub accepts only transparent or opaque
+  `#F4F4F4` pixels, lit in 2x2 blocks, so the icon is drawn on a 12x12 grid.
 - `npx evenhub pack --check app.json dist` asks Even Hub whether the package id is free; it
   needs a network connection and `evenhub login`.
 - A packaged app is served from the Even App's own origin, not from the server, so it starts
