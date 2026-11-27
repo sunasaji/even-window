@@ -206,8 +206,8 @@ describe('source audit: a long press is not a right click', () => {
     // Pinned on the wording, not the line breaks: where the hint wraps is a layout decision.
     // What must not drift is that both entrances are named in one statement and the result is
     // stated once.
-    expect(PAD.has('press and hold — or tap, then drag — =')).toBe(true)
-    expect(PAD.has('hold the button down and keep moving')).toBe(true)
+    expect(PAD.has("['press and hold', 'button down, keep moving']")).toBe(true)
+    expect(PAD.has("['tap, then drag', 'the same as press and hold']")).toBe(true)
     expect(PAD.has('press-and-hold (or tap-then-drag)=button held, tracking')).toBe(true)
     expect(PAD.has('long-press = right-click')).toBe(false)
   })
@@ -219,8 +219,8 @@ describe('source audit: a long press is not a right click', () => {
     expect(code.has('tap then drag = hold-drag')).toBe(false)
     expect(code.has('hold-drag')).toBe(false)
     // Exactly one line of the hint is about holding the button.
-    const hint = PAD.between('hintRest.innerHTML', 'hint.append')
-    expect(hint.count('hold the button down')).toBe(1)
+    const hint = PAD.between('const hintRows', 'hint.append')
+    expect(hint.count('button down')).toBe(1)
   })
 })
 
@@ -544,14 +544,14 @@ describe('source audit: the wheel strip', () => {
   })
 
   it('the hint says it is the wheel, and that it lands at the pointer', () => {
-    const hint = PAD.between('hintRest.innerHTML', 'hint.append')
-    expect(hint.has('right-edge strip = wheel (buttons 4/5) where the pointer is')).toBe(true)
+    const hint = PAD.between('const hintRows', 'hint.append')
+    expect(hint.has("['right-edge strip', 'wheel at the pointer']")).toBe(true)
     // The two-finger drag is the same X11 wheel, and the hint says so.
-    expect(hint.has('two-finger drag = wheel scroll')).toBe(true)
+    expect(hint.has("['two-finger drag', 'wheel;")).toBe(true)
     expect(hint.has('Up/Down keys')).toBe(false)
     // The hint names the control; the button carries the state, which changes while the pad is
     // open.
-    expect(hint.has('the corner button sets which way')).toBe(true)
+    expect(hint.has('corner button flips it')).toBe(true)
     expect(hint.has('scrollNatLabel')).toBe(false)
     // The open log line may carry the state: it is a timestamped record.
     expect(PAD.has('two fingers=wheel scroll (${scrollNatLabel(padScrollNatural)})')).toBe(true)

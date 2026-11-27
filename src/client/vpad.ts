@@ -372,27 +372,49 @@ export function openVPad(): void {
   hintMod.style.cssText = 'color:#ffd479;margin-bottom:4px'
   padArmedEl = hintMod
   renderPadArmed()
-  const hintRest = document.createElement('div')
-  // One clause per line, so a 390px screen does not wrap mid-clause. Press-and-hold and
-  // tap-then-drag share a line because they reach the same state; the long clause breaks
-  // after its `=`.
-  hintRest.innerHTML =
-    'tap = click · drag = move the pointer<br>' +
-    'press and hold — or tap, then drag — =<br>' +
-    '&nbsp;hold the button down and keep moving<br>' +
+  // A table, gesture on the left and what it does on the right: the pad is used by glancing
+  // at it, and a column of gestures can be scanned where sentences have to be read. Tap-then-
+  // drag points at press-and-hold instead of repeating it: they reach the same state.
+  const hintRows: readonly (readonly [string, string])[] = [
+    ['drag', 'move the pointer'],
+    ['tap', 'click'],
+    ['press and hold', 'button down, keep moving'],
+    ['tap, then drag', 'the same as press and hold'],
     // Names the control, not the state: the state is on the corner button's face and changes
     // while this overlay is up.
-    'two-finger drag = wheel scroll — the corner button sets which way<br>' +
+    ['two-finger drag', 'wheel; corner button flips it'],
     // The strip aims the same wheel by the pointer.
-    'right-edge strip = wheel (buttons 4/5) where the pointer is<br>' +
+    ['right-edge strip', 'wheel at the pointer'],
     // A mouse / trackpad behaves differently from a finger here, so the hint says so.
-    '<b>a mouse / trackpad moves the arrow without pressing</b>, anywhere on the screen — ' +
-    "the OS cursor's own position is ignored<br>" +
-    '<span style="color:#888">Tap ✕ to exit. The pointer is drawn on the glasses.</span><br>' +
-    '<span style="color:#888">Ctrl/Alt armed in <b>keys</b> before opening compose with the ' +
-    "next tap, hold or wheel drag — ctrl+press-and-hold is how xterm's own menus open, " +
-    'and ctrl+wheel is zoom in most clients.</span>'
-  hint.append(hintHead, hintBtn, hintMod, hintRest)
+    ['mouse / trackpad', 'moves the arrow, no press'],
+  ]
+  const hintRest = document.createElement('div')
+  hintRest.style.cssText =
+    'display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;text-align:left;' +
+    'max-width:340px;margin:6px auto 0'
+  for (const [gesture, effect] of hintRows) {
+    // The mouse row is a size down: it is for the few who pair a pointing device, and its
+    // label is the widest, which sets the width of the whole left column. The two longest
+    // effects are a size down too; with their wording they fit one line on a 390px screen.
+    const smallRow = gesture === 'mouse / trackpad'
+    const smallEffect = smallRow || gesture === 'press and hold' || gesture === 'two-finger drag'
+    const k = document.createElement('span')
+    k.style.cssText =
+      'color:#e5e5e5;font-weight:600;white-space:nowrap' + (smallRow ? ';font-size:12px' : '')
+    k.textContent = gesture
+    const v = document.createElement('span')
+    if (smallEffect) v.style.fontSize = '12px'
+    v.textContent = effect
+    hintRest.append(k, v)
+  }
+  const hintFoot = document.createElement('div')
+  // Wider than the table: it runs into the hint's side padding, which a short centred
+  // paragraph does not need.
+  hintFoot.style.cssText = 'color:#888;font-size:12px;line-height:1.5;margin:8px -8px 0'
+  hintFoot.textContent =
+    'Ctrl / Alt armed in keys go with the next tap, hold or wheel. ' +
+    '✕ closes; the pointer is drawn on the glasses too.'
+  hint.append(hintHead, hintBtn, hintMod, hintRest, hintFoot)
   ov.appendChild(hint)
 
   // A marker at the virtual pointer, placed over the preview canvas, so the phone gives
