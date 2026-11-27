@@ -36,6 +36,7 @@ alternatives considered, consequences.
 - [Blank the tiles under the overlay](decisions/blank-tiles-under-overlay.md)
 - [Enrolled keys are capped, and an over-cap registry refuses to start](decisions/client-cap.md)
 - [Client-drawn glasses menu instead of the firmware menu](decisions/client-drawn-glasses-menu.md)
+- [The CORS default follows authentication](decisions/cors-follows-auth.md)
 - [The default application is a dark xterm with a bold bitmap font](decisions/default-terminal-client.md)
 - [The display session outlives the server](decisions/display-session-outlives-server.md)
 - [The env file is a parsed subset of systemd's EnvironmentFile](decisions/env-file-format.md)

@@ -179,7 +179,8 @@ The app is one web page (`index.html`, described by `app.json`).
   which is packaged together with `app.json` using the Even Hub tooling. A packaged
   app runs on its own origin, so it has no default server: open **connection** and
   enter the server URL, or paste a pairing URL, which carries the server address.
-  The API must then allow the app's origin through `EW_ORIGINS`.
+  The server allows any origin while authentication is on, so no CORS setting is needed;
+  with `EW_AUTH=0` the app's origin must be listed in `EW_ORIGINS`.
 
 - **From the store.** Once even-window is published, find it in the Even App,
   install it and open it from the app list, like any other app. That is the packaged

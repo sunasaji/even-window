@@ -218,7 +218,7 @@ describe('a real session gets through', () => {
     expect(r.headers.get('content-type')).toContain('text/event-stream')
     // EventSource is subject to CORS too, and the SSE response goes out through writeHead()
     // rather than sendJson(): the centrally-set headers must survive it.
-    expect(r.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5273')
+    expect(r.headers.get('access-control-allow-origin')).toBe('*')
     // Read the first chunk (the `: open` comment + the primed avail event) and let go.
     const reader = r.body?.getReader()
     const first = await reader?.read()
@@ -323,63 +323,108 @@ describe('POST /api/spawn — launches a launcher entry by id, and nothing else'
 
 describe('CORS', () => {
   it('echoes a loopback origin (Vite dev server, simulator WebView)', () => {
-    expect(corsOrigin('http://127.0.0.1:5273', '127.0.0.1:8787', undefined)).toBe(
+    expect(corsOrigin('http://127.0.0.1:5273', '127.0.0.1:8787', undefined, false)).toBe(
       'http://127.0.0.1:5273',
     )
-    expect(corsOrigin('http://localhost:5273', 'localhost:8787', undefined)).toBe(
+    expect(corsOrigin('http://localhost:5273', 'localhost:8787', undefined, false)).toBe(
       'http://localhost:5273',
     )
   })
 
   it('echoes a different port on the same host — the phone-on-the-LAN topology', () => {
-    expect(corsOrigin('http://192.168.1.5:5273', '192.168.1.5:8787', undefined)).toBe(
+    expect(corsOrigin('http://192.168.1.5:5273', '192.168.1.5:8787', undefined, false)).toBe(
       'http://192.168.1.5:5273',
     )
-    expect(corsOrigin('https://box.tail1234.ts.net', 'box.tail1234.ts.net:8787', undefined)).toBe(
-      'https://box.tail1234.ts.net',
-    )
+    expect(
+      corsOrigin('https://box.tail1234.ts.net', 'box.tail1234.ts.net:8787', undefined, false),
+    ).toBe('https://box.tail1234.ts.net')
   })
 
   it('refuses a third-party origin', () => {
-    expect(corsOrigin('https://evil.example', '192.168.1.5:8787', undefined)).toBe('')
-    expect(corsOrigin('null', '192.168.1.5:8787', undefined)).toBe('')
-    expect(corsOrigin('http://127.0.0.1.evil.example', '127.0.0.1:8787', undefined)).toBe('')
+    expect(corsOrigin('https://evil.example', '192.168.1.5:8787', undefined, false)).toBe('')
+    expect(corsOrigin('null', '192.168.1.5:8787', undefined, false)).toBe('')
+    expect(corsOrigin('http://127.0.0.1.evil.example', '127.0.0.1:8787', undefined, false)).toBe('')
   })
 
   it('sends nothing when there is no Origin (curl/node are not CORS clients)', () => {
-    expect(corsOrigin(undefined, '127.0.0.1:8787', undefined)).toBe('')
+    expect(corsOrigin(undefined, '127.0.0.1:8787', undefined, false)).toBe('')
   })
 
-  it('honours EW_ORIGINS, including an explicit `*` opt-in', () => {
-    expect(corsOrigin('https://app.example', 'host:8787', 'https://app.example')).toBe(
-      'https://app.example',
-    )
-    expect(corsOrigin('https://other.example', 'host:8787', 'https://app.example')).toBe('')
-    expect(corsOrigin('https://anything.example', 'host:8787', '*')).toBe('*')
+  it('allows any origin by default while auth is enforced (the packaged app)', () => {
+    expect(corsOrigin('https://anything.example', 'host:8787', undefined, true)).toBe('*')
+    expect(corsOrigin('null', 'host:8787', '', true)).toBe('*')
   })
 
-  it('live: an allowed origin gets ACAO + Vary, a foreign one gets neither', async () => {
-    const ok = await req('GET', '/api/auth/challenge', { origin: 'http://127.0.0.1:5273' })
-    expect(ok.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5273')
-    expect(ok.headers.get('vary')).toBe('origin')
-    const bad = await req('GET', '/api/auth/challenge', { origin: 'https://evil.example' })
-    expect(bad.headers.get('access-control-allow-origin')).toBeNull()
+  it('honours EW_ORIGINS with or without auth, including an explicit `*`', () => {
+    for (const auth of [true, false]) {
+      expect(corsOrigin('https://app.example', 'host:8787', 'https://app.example', auth)).toBe(
+        'https://app.example',
+      )
+      // A list replaces the wildcard default: this is how an operator narrows CORS under auth.
+      expect(corsOrigin('https://other.example', 'host:8787', 'https://app.example', auth)).toBe('')
+      expect(corsOrigin('http://127.0.0.1:5273', 'host:8787', 'https://app.example', auth)).toBe(
+        'http://127.0.0.1:5273',
+      )
+      expect(corsOrigin('https://anything.example', 'host:8787', '*', auth)).toBe('*')
+    }
   })
 
-  it('live: the OPTIONS preflight is 204 for an allowed origin and carries no ACAO for a foreign one', async () => {
-    const ok = await req('OPTIONS', '/api/spawn', { origin: 'http://127.0.0.1:5273' })
-    expect(ok.status).toBe(204)
-    expect(ok.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5273')
-    expect(ok.headers.get('access-control-allow-headers')).toContain('authorization')
-    const bad = await req('OPTIONS', '/api/spawn', { origin: 'https://evil.example' })
-    // 204 either way (a preflight performs nothing), but with no ACAO the browser refuses to
-    // send the real request — which for a JSON POST means it is never sent at all.
-    expect(bad.headers.get('access-control-allow-origin')).toBeNull()
+  it('live: with auth enforced any origin is allowed, preflight included', async () => {
+    const res = await req('GET', '/api/auth/challenge', { origin: 'https://packaged.example' })
+    expect(res.headers.get('access-control-allow-origin')).toBe('*')
+    // `*` does not vary by request, so there is nothing for a cache to key on.
+    expect(res.headers.get('vary')).toBeNull()
+    const pre = await req('OPTIONS', '/api/spawn', { origin: 'https://packaged.example' })
+    expect(pre.status).toBe(204)
+    expect(pre.headers.get('access-control-allow-origin')).toBe('*')
+    expect(pre.headers.get('access-control-allow-headers')).toContain('authorization')
   })
 
   it('live: the 401 from the gate still carries CORS, or the browser sees an opaque failure', async () => {
-    const res = await req('GET', '/api/health', { origin: 'http://127.0.0.1:5273' })
+    const res = await req('GET', '/api/health', { origin: 'https://packaged.example' })
     expect(res.status).toBe(401)
-    expect(res.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5273')
+    expect(res.headers.get('access-control-allow-origin')).toBe('*')
+  })
+
+  it('live: EW_ORIGINS narrows CORS under auth', async () => {
+    process.env.EW_ORIGINS = 'https://app.example'
+    try {
+      const ok = await req('GET', '/api/auth/challenge', { origin: 'https://app.example' })
+      expect(ok.headers.get('access-control-allow-origin')).toBe('https://app.example')
+      expect(ok.headers.get('vary')).toBe('origin')
+      const bad = await req('GET', '/api/auth/challenge', { origin: 'https://evil.example' })
+      expect(bad.headers.get('access-control-allow-origin')).toBeNull()
+    } finally {
+      delete process.env.EW_ORIGINS
+    }
+  })
+
+  describe('with EW_AUTH=0', () => {
+    beforeEach(() => {
+      process.env.EW_AUTH = '0'
+    })
+    afterEach(() => {
+      delete process.env.EW_AUTH
+    })
+
+    it('live: an allowed origin gets ACAO + Vary, a foreign one gets neither', async () => {
+      const ok = await req('GET', '/api/auth/challenge', { origin: 'http://127.0.0.1:5273' })
+      expect(ok.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5273')
+      expect(ok.headers.get('vary')).toBe('origin')
+      const bad = await req('GET', '/api/auth/challenge', { origin: 'https://evil.example' })
+      expect(bad.headers.get('access-control-allow-origin')).toBeNull()
+    })
+
+    it('live: the OPTIONS preflight is 204 for an allowed origin and carries no ACAO for a foreign one', async () => {
+      const ok = await req('OPTIONS', '/api/spawn', { origin: 'http://127.0.0.1:5273' })
+      expect(ok.status).toBe(204)
+      expect(ok.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5273')
+      expect(ok.headers.get('access-control-allow-headers')).toContain('authorization')
+      const bad = await req('OPTIONS', '/api/spawn', { origin: 'https://evil.example' })
+      // 204 either way (a preflight performs nothing), but with no ACAO the browser refuses to
+      // send the real request — which for a JSON POST means it is never sent at all. With the
+      // gate off this refusal is the only thing between a web page and /api/spawn.
+      expect(bad.headers.get('access-control-allow-origin')).toBeNull()
+    })
   })
 })

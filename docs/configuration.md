@@ -22,7 +22,7 @@ every setting it took from the file. Changes take effect when the server restart
 | `EW_AUTH` | enforced | Authentication is disabled only by `0`, `off`, `false` or `no`. Any other value, including a typo, keeps it enforced. |
 | `EW_ORIGIN` | unset | The URL the device dials, for example `https://host.ts.net:8443`. When set, the server refuses session signatures made out to any other origin. Unset means signatures are verified but the origin is not compared. A value that is not an absolute URL, such as `*` or a bare host name, is unusable and leaves the comparison off. The banner states which case applies. |
 | `EW_MAX_CLIENTS` | `1` | Maximum number of enrolled device keys. `0`, `unlimited`, `off` or `none` removes the limit. Any value that is not a plain decimal number counts as `1`. If more keys are enrolled than the limit allows, the server refuses to start. |
-| `EW_ORIGINS` | unset | Extra origins allowed by CORS, comma-separated; `*` allows any. Loopback origins and the server's own host are always allowed. Unrelated to `EW_ORIGIN`. |
+| `EW_ORIGINS` | unset | Origins allowed by CORS, comma-separated; `*` allows any. Unset allows any origin while authentication is enforced, and only loopback origins and the server's own host with `EW_AUTH=0`. A list narrows CORS to those two plus the listed origins. Unrelated to `EW_ORIGIN`. See [security.md](security.md#cors). |
 
 ### Mirrored desktop (X11 backend)
 

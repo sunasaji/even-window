@@ -353,6 +353,7 @@ Background: [decision record](decisions/wire-additions-are-optional.md),
 | Request | Result |
 | --- | --- |
 | `EW_ORIGINS` contains `*` | `access-control-allow-origin: *` |
+| `EW_ORIGINS` unset or empty, authentication enforced | `access-control-allow-origin: *` |
 | No `Origin` header | No CORS headers; not a browser cross-origin request |
 | `Origin` listed in `EW_ORIGINS` (comma-separated) | Allowed |
 | `Origin` host is loopback (`localhost`, `127.0.0.1`, `::1`) | Allowed |
@@ -363,10 +364,14 @@ An allowed origin is echoed with `vary: origin`, `access-control-allow-methods: 
 OPTIONS` and `access-control-allow-headers: content-type, authorization`. The headers are set
 once, before dispatch, so the stream and error responses carry them too.
 
+The rows are tried in order. The first two return `*` whether or not the request has an
+`Origin`; a `*` answer carries no `vary`.
+
 The same-host rule covers a phone that loads the page from one port of a host and calls the API
-on another. The policy keeps a foreign web page away from the open routes and from a server
-running with `EW_AUTH=0`: a JSON `POST` needs a preflight, and a refused preflight means the
-request is never sent.
+on another. With `EW_AUTH=0` and no `EW_ORIGINS`, the policy keeps a foreign web page away
+from an unauthenticated server: a JSON `POST` needs a preflight, and a refused preflight means
+the request is never sent. With authentication enforced the gate does that, so the default is
+open and the packaged app, whose origin is chosen by the Even App, needs no configuration.
 
 ## Rate limiting of open routes
 

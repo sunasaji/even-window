@@ -326,16 +326,21 @@ async function publishApps(force = false): Promise<void> {
 
 // ── CORS (docs/security.md) ────────────────────────────────────────────────────────────
 //
-// With bearer tokens a foreign page has no credential to ride on, but an open preflight would
-// still let any web page send a JSON POST to an `EW_AUTH=0` server or to the open pairing
-// routes. So the policy is the narrowest one that keeps the real topologies working:
+// Tokens are Bearer headers, so a foreign page has no credential to ride on, and the gate is
+// what protects every route. CORS adds something only where the gate is absent, so the default
+// follows `EW_AUTH` (docs/decisions/cors-follows-auth.md):
+//   * auth enforced, `EW_ORIGINS` unset → any origin. The packaged app runs on an origin of
+//     the Even App's choosing, which is not knowable here.
+//   * `EW_AUTH=0`, `EW_ORIGINS` unset → the narrow policy below, because then an open
+//     preflight would let any web page send a JSON POST to an unauthenticated server.
+//   * `EW_ORIGINS` set → exactly what it says, in both cases, on top of the narrow policy.
+//     `*` is the wildcard; any other list replaces the wildcard default.
+// The narrow policy:
 //   * no Origin header → allowed: not a browser, so there is no same-origin policy to satisfy;
 //   * loopback origin  → allowed: the dev server and the simulator load the app from
 //     127.0.0.1 on another port;
 //   * same host as the request was addressed to, any port/scheme → allowed: the phone loads
-//     the app and calls the API on the same host, and a third-party site is never that host;
-//   * anything in `EW_ORIGINS` (comma-separated) → allowed; `EW_ORIGINS=*` is an explicit
-//     wildcard for a packaged build whose origin is not knowable here.
+//     the app and calls the API on the same host, and a third-party site is never that host.
 // Everything else gets no CORS headers, so the browser refuses the exchange.
 
 /** Host part of an `Origin` / `Host` header value, lowercased, port stripped. '' if unparseable.
@@ -354,17 +359,19 @@ function hostOf(v: string): string {
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 
 /** The value to echo in `access-control-allow-origin`, or '' to send no CORS headers.
- *  Pure — `origin` is the request's Origin header, `host` its Host header. */
+ *  Pure — `origin` is the request's Origin header, `host` its Host header, `auth` whether the
+ *  gate is enforced. */
 export function corsOrigin(
   origin: string | undefined,
   host: string | undefined,
   configured: string | undefined = process.env.EW_ORIGINS,
+  auth: boolean = authEnabled(),
 ): string {
   const list = (configured ?? '')
     .split(',')
     .map(s => s.trim())
     .filter(s => s !== '')
-  if (list.includes('*')) return '*'
+  if (list.includes('*') || (auth && list.length === 0)) return '*'
   if (!origin) return '' // no Origin ⇒ not a CORS request; nothing to echo
   if (list.includes(origin)) return origin
   const oh = hostOf(origin)

@@ -448,7 +448,8 @@ packer is `@evenrealities/evenhub-cli`, a dev dependency; nothing else is needed
 - `npx evenhub pack --check app.json dist` asks Even Hub whether the package id is free; it
   needs a network connection and `evenhub login`.
 - A packaged app is served from the Even App's own origin, not from the server, so it starts
-  without a server address and the API must allow its origin through `EW_ORIGINS`. See
+  without a server address. CORS allows it by default while authentication is enforced; with
+  `EW_AUTH=0` its origin must be in `EW_ORIGINS`. See
   [getting-started.md](getting-started.md#load-the-app-in-the-even-app).
 
 ## Vite rules

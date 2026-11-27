@@ -214,12 +214,19 @@ background: [decisions/open-route-rate-limit.md](decisions/open-route-rate-limit
 
 ### CORS
 
-Tokens are Bearer headers, not cookies, so a foreign page has no ambient credential. The
-policy still refuses foreign origins, which keeps drive-by pages away from the open routes
-and from a server running with `EW_AUTH=0`. Allowed: requests with no `Origin`, loopback
-origins, an origin on the same host the request was addressed to, and origins listed in
-`EW_ORIGINS` (`*` restores a wildcard). CORS is a browser policy and not an authorisation
-decision. Details: [protocol.md](protocol.md#cors).
+Tokens are Bearer headers, not cookies, so a foreign page has no ambient credential, and the
+gate is what protects the routes. The CORS default therefore follows `EW_AUTH`:
+
+- **Authentication enforced (default):** any origin is allowed. The packaged app runs on an
+  origin chosen by the Even App, and a foreign page still gets only the four open routes.
+- **`EW_AUTH=0`:** foreign origins are refused, because a refused preflight is then the only
+  thing between a web page and `POST /api/spawn`. Allowed: requests with no `Origin`,
+  loopback origins, and an origin on the same host the request was addressed to.
+
+Setting `EW_ORIGINS` to a list replaces the default in both cases with the narrow policy plus
+the listed origins; `*` is a wildcard. CORS is a browser policy and not an authorisation
+decision. Details: [protocol.md](protocol.md#cors). Background:
+[decisions/cors-follows-auth.md](decisions/cors-follows-auth.md).
 
 ## Enrolled clients
 
