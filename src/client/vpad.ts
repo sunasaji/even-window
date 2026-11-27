@@ -230,6 +230,15 @@ export function padModToggled(
 
 export let vpadOpen = false
 
+/** The pending end-of-window move (see `sendMove`). At module scope so `closeVPad` can cancel
+ *  it: fired after a close it would move the pointer with no pad on screen. */
+let padMoveTimer: ReturnType<typeof setTimeout> | null = null
+function clearPadMoveTimer(): void {
+  if (padMoveTimer === null) return
+  clearTimeout(padMoveTimer)
+  padMoveTimer = null
+}
+
 /** A hover step: the previous hover sample plus the new point → the nested-X pixel the cursor
  *  moves to, or `null` when there is no previous sample (a position is not a move).
  *
@@ -531,7 +540,20 @@ export function openVPad(): void {
 
   const sendMove = (force: boolean): void => {
     const now = Date.now()
-    if (!force && now - lastSend < PAD_MOVE_MS) return
+    const wait = PAD_MOVE_MS - (now - lastSend)
+    if (!force && wait > 0) {
+      // Throttled, but not dropped: the position a movement ends on must go out, or the arrow
+      // and the X pointer stay one sample behind the dot until the next gesture. One timer at
+      // the end of the window sends wherever the pointer is by then.
+      if (padMoveTimer === null) {
+        padMoveTimer = setTimeout(() => {
+          padMoveTimer = null
+          sendMove(true)
+        }, wait)
+      }
+      return
+    }
+    clearPadMoveTimer()
     lastSend = now
     padMove(cursor.x, cursor.y)
     refreshCursorTiles() // re-bake the pointer into the affected tiles only
@@ -1059,6 +1081,7 @@ export function closeVPad(): void {
   // handlers live on, so the `pointerup` that would have released a held button or Ctrl may
   // never arrive. `padRelease` is a no-op when nothing is held.
   padQueue(() => padRelease('pad closed'))
+  clearPadMoveTimer()
   // A modifier that outlived the pad would be latched with nothing on screen to show it.
   for (const m of PAD_MODS) padMod[m] = false
   if (vpadEl) {

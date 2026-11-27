@@ -3,7 +3,7 @@
 // The client modules import each other freely, but only use each other from inside functions:
 // nothing here may touch another non-leaf module while this one is still loading.
 
-import { SCREEN_H, SCREEN_W, tileOrigin } from '../shared/geom.ts'
+import { SCREEN_H, SCREEN_W, TILE_H, TILE_W, tileOrigin } from '../shared/geom.ts'
 import { PANEL_LINES, wrapGlassLines } from '../shared/voiceDialog.ts'
 import { keysAlert } from './clients.ts'
 import { type ConnFold, connFoldStep, connFoldTouched } from './connFold.ts'
@@ -193,6 +193,12 @@ export function drawMirror(i: number, data: ImageData): void {
   const at = cursorTilePixel(cursor.x, cursor.y, i)
   if (!at) return
   ctx.save()
+  // Clipped to the tile, as the arrow baked into the lens tile is. Unclipped, an arrow near a
+  // seam reaches into the next tile, which is not repainted when the pointer moves on, and its
+  // tip stays there until the server next changes that tile.
+  ctx.beginPath()
+  ctx.rect(x, y, TILE_W, TILE_H)
+  ctx.clip()
   ctx.translate(x + at[0], y + at[1])
   ctx.lineWidth = 2
   ctx.lineJoin = 'round'

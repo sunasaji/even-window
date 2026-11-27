@@ -664,3 +664,26 @@ describe('source audit: the pad keeps the cursor on the panel and on whole pixel
     expect(mirror.has('ctx.translate(cursor.x, cursor.y)')).toBe(false)
   })
 })
+
+// The pointer's last position, and the arrow on the preview.
+describe('pointer moves end where the finger did', () => {
+  it('a throttled move is sent at the end of its window, not dropped', () => {
+    const send = PAD.between('const sendMove', 'const clickAt')
+    // Dropped, the arrow and the X pointer stay a sample behind the dot until the next gesture.
+    expect(
+      send.has('padMoveTimer = setTimeout(() => { padMoveTimer = null; sendMove(true) }, wait)'),
+    ).toBe(true)
+    // One timer per window, and a real send cancels it.
+    expect(send.has('if (padMoveTimer === null)')).toBe(true)
+    expect(send.has('clearPadMoveTimer()')).toBe(true)
+    // After a close it would move the pointer with no pad on screen.
+    expect(CLOSE.has('clearPadMoveTimer()')).toBe(true)
+  })
+
+  it('the preview arrow is clipped to its tile, as on the lens', () => {
+    // Unclipped, the tip reaches into the next tile and stays there when the pointer moves on.
+    const draw = src.fn('drawMirror')
+    expect(draw.has('ctx.rect(x, y, TILE_W, TILE_H)')).toBe(true)
+    expect(draw.indexOf('ctx.clip()')).toBeLessThan(draw.indexOf('ctx.stroke(cursorArrow())'))
+  })
+})
