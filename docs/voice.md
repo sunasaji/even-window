@@ -38,7 +38,7 @@ PCM in `audioEvent` frames.
 | Source | SDK constant | Used when | Frame | Requires |
 | --- | --- | --- | --- | --- |
 | Glasses microphone | `AudioInputSource.Glasses` | The glasses link is up | 1600 bytes (50 ms) | `g2-microphone` in the `permissions` of `app.json` |
-| Phone microphone | `AudioInputSource.Phone` | The glasses link is down | 3200 bytes (100 ms) | The OS microphone permission for the Even App, asked on first use |
+| Phone microphone | `AudioInputSource.Phone` | The glasses link is down | 3200 bytes (100 ms) | `phone-microphone` in the `permissions` of `app.json`, and the OS microphone permission for the Even App, asked on first use |
 
 - Both deliver 16 kHz, signed 16-bit little-endian, mono.
 - The microphone is chosen once, when a recording starts (`voiceMicFor`). A link that drops

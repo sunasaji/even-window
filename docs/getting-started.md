@@ -188,7 +188,7 @@ The app is one web page (`index.html`, described by `app.json`).
   install it and open it from the app list, like any other app. That is the packaged
   build, so the notes above apply.
 
-The glasses microphone permission (`g2-microphone`) is declared in `app.json`.
+The microphone permissions (`g2-microphone`, `phone-microphone`) and `network` are declared in `app.json`.
 
 ## Run as a systemd user service
 

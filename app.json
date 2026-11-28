@@ -10,6 +10,15 @@
     {
       "name": "g2-microphone",
       "desc": "Voice input: speech is recognized on your own PC and typed into the mirrored window."
+    },
+    {
+      "name": "phone-microphone",
+      "desc": "Voice input when the glasses are not connected: speech is recognized on your own PC and typed into the mirrored window."
+    },
+    {
+      "name": "network",
+      "desc": "Connects to the even-window server you run on your own PC, at the address you enter. No other host is contacted.",
+      "whitelist": []
     }
   ],
   "supported_languages": ["en", "ja"]
