@@ -30,7 +30,10 @@ directly. The simulator harness and a pairing link rely on it; the packaged app 
 and always starts at the list.
 
 Every address somebody chose (typed, pasted in a pairing URL, recovered from the durable store)
-is added to the list. The list holds nine, which is what the panel shows under its header.
+is added to the list. The list has no limit, since nothing about a server makes nine a natural
+number and other kinds of target may join it. The lens shows nine rows under its header and
+pages a longer list by the cursor: swiping past the last row of a page turns it, and the
+header shows the page (`2/3`). On the phone the rows scroll inside the card.
 
 ## Alternatives considered
 

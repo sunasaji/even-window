@@ -5,12 +5,14 @@
 // and keeps every gesture inside a server meaning what it always did
 // (docs/decisions/root-is-the-server-list.md). No DOM and no network here.
 
+import { fitUnits, ROW_LABEL_UNITS } from '../shared/glassMenu.ts'
 import { keep } from './durableKv.ts'
 
 /** Where the list is kept: localStorage, mirrored to the bridge's durable store (durableKv.ts). */
 export const TARGETS_KEY = 'ew.targets'
-/** The header and nine rows fill the panel, so the list has no pages. */
-export const TARGETS_MAX = 9
+/** Rows of the lens under its header. A longer list is shown a page at a time: the page is
+ *  the one the cursor is on, so swiping past the last row of a page turns it. */
+export const ROOT_PAGE_ROWS = 9
 
 /** One server this device can open. `name` is what the person calls it; without one the row
  *  shows the origin. */
@@ -48,18 +50,14 @@ export function parseTargets(raw: string | null): Target[] {
       out.push(name ? { server: o.server, name } : { server: o.server })
     }
   }
-  return out.slice(0, TARGETS_MAX)
+  return out
 }
 
-/** The longest label a row shows whole. A tailnet origin with its scheme and port is about 40
- *  characters; anything longer is cut so the firmware does not fold the row. */
-const ROW_CHARS = 46
-
-/** Pure: the list with `server` in it. An address already listed stays where it is, with its
- *  name; a full list drops its oldest entry. */
+/** Pure: the list with `server` in it, at the end. An address already listed stays where it
+ *  is, with its name. The list has no limit: the lens pages it and the phone scrolls it. */
 export function withTarget(list: readonly Target[], server: string): Target[] {
   if (!server || list.some(t => t.server === server)) return [...list]
-  return [...list, { server }].slice(-TARGETS_MAX)
+  return [...list, { server }]
 }
 
 /** Pure: the list without `server`. */
@@ -79,12 +77,31 @@ export function originLabel(server: string): string {
   return server.replace(/\/$/, '')
 }
 
-/** Pure: how a server is named in a row: its name, or its origin when it has none. */
+/** Pure: how a server is named in one word: its name, or its origin when it has none. */
 export function targetLabel(t: Target): string {
   return t.name || originLabel(t.server)
 }
 
-/** Pure: the lens text of the list. A label wider than a line is cut, since the firmware would
+/** Pure: a row of the lens: the name with the address in brackets after it, or the address
+ *  alone. The panel is wide enough for both in the usual case, and the name comes first so that
+ *  what is cut off, when something is, is the end of the address. */
+export function lensLabel(t: Target): string {
+  const origin = originLabel(t.server)
+  return t.name ? `${t.name} (${origin})` : origin
+}
+
+/** Pure: how many pages a list of `n` takes on the lens (at least one). */
+export function rootPages(n: number): number {
+  return Math.max(1, Math.ceil(n / ROOT_PAGE_ROWS))
+}
+
+/** Pure: the page the cursor is on. */
+export function rootPageOf(sel: number, n: number): number {
+  if (n <= 0) return 0
+  return Math.floor(Math.max(0, Math.min(n - 1, sel)) / ROOT_PAGE_ROWS)
+}
+
+/** Pure: the lens text of the list: the page the cursor is on. A label wider than a line is cut, since the firmware would
  *  fold it and push the last rows off the panel. */
 export function rootText(list: readonly Target[], sel: number, name = 'PinholeWindow'): string {
   if (list.length === 0)
@@ -98,12 +115,15 @@ export function rootText(list: readonly Target[], sel: number, name = 'PinholeWi
       '',
       'double-tap: exit',
     ].join('\n')
-  const rows = list.map((t, i) => {
-    const label = targetLabel(t)
-    const shown = label.length > ROW_CHARS ? `${label.slice(0, ROW_CHARS - 1)}…` : label
-    return `${i === sel ? '>' : ' '} ${shown}`
-  })
-  return [`${name}  (tap=open  dbl=exit)`, ...rows].join('\n')
+  const pages = rootPages(list.length)
+  const page = rootPageOf(sel, list.length)
+  const from = page * ROOT_PAGE_ROWS
+  const rows = list
+    .slice(from, from + ROOT_PAGE_ROWS)
+    .map((t, k) => `${from + k === sel ? '>' : ' '} ${fitUnits(lensLabel(t), ROW_LABEL_UNITS)}`)
+  // The page number appears only when there is more than one page, as in the Tasks list.
+  const at = pages > 1 ? ` ${String(page + 1)}/${String(pages)}` : ''
+  return [`${name}${at}  (tap=open  dbl=exit)`, ...rows].join('\n')
 }
 
 let targets: Target[] = []

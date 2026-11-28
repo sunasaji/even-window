@@ -232,7 +232,10 @@ Container 6 shows one text at a time. `overlayContent()` picks it in this order:
 menu, server list, setup notice, `X unavailable` notice, `mirror paused` notice, startup hint, blank (`' '`).
 
 The server list is the top of the app (`rootText()` in `src/client/targets.ts`): a header and
-one row per known server, or the steps to add one when there is none. It is up whenever no
+one row per known server (its name with the address in brackets after it, or the address alone;
+a row too wide for the panel is cut at its end), or the steps to add one
+when there is none. Nine rows fit; a longer list is shown a page at a time, the page the cursor
+is on, with the page number in the header. It is up whenever no
 server is open, and its gestures are its own: swipe moves the cursor, tap opens, double tap
 leaves the app, long press does nothing (`rootGesture()` in `src/client/root.ts`).
 Decision: [the app starts at the server list](decisions/root-is-the-server-list.md).

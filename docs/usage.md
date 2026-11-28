@@ -10,12 +10,13 @@ you operate it with gestures on the glasses and with the phone screen.
 
 The app starts at the list of servers it knows, on the glasses and on the phone. Nothing is
 mirrored until you open one, even when there is only one. On the glasses, swipe to the server
-and tap; on the phone, tap its row. The cursor starts on the server you used last.
+and tap; on the phone, tap its row. The cursor starts on the server you used last. A list longer
+than nine is shown on the glasses a page at a time: swipe past the last row to turn the page.
 
 To add a server, type its URL under **connection** and tap **apply**, or tap **pair** and paste
 a pairing URL. To come back to the list, choose `Disconnect` in the menu on the glasses, or tap
 **disconnect** under **connection** on the phone. **…** beside a row offers **name**, which gives the server a name that the
-glasses show instead of its address, and **forget**, which removes the server from this phone
+glasses show in front of its address, and **forget**, which removes the server from this phone
 and this phone's key from the server. Forget asks for a second tap. If the
 server cannot be reached it asks again, since this phone's key would then stay enrolled there
 until you revoke it on the PC.

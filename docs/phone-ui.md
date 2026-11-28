@@ -360,12 +360,13 @@ it works until a server is open.
 | --- | --- |
 | A server row | `openTarget()`: connects, and the mirror takes the card's place. A named row shows the address under the name |
 | `…` | Shows `name` and `forget` under the row. Both are rare, so the row itself is one target to open |
-| `name` | Turns the row into a field: a name of up to 24 characters, shown on the lens instead of the address. An empty name shows the address again |
+| `name` | Turns the row into a field: a name of up to 24 characters, shown on the lens in front of the address (`desk (https://…)`). An empty name shows the address again |
 | `forget` | Two taps: the first arms it for four seconds. The second asks the server to remove this phone's key, discards the key here and removes the row ([one key per server](decisions/one-key-per-server.md)). When the server does not answer within six seconds, nothing is discarded: a question under the row says that the key on the server would stay enrolled and names the `ew-auth.mjs revoke` that removes it, with `keep it`, `try again` and `forget anyway` |
 | `disconnect` (inside a server, in the `connection` fold) | `enterRoot()`: stops the stream and returns to the list. It is in the fold because leaving a server is rare |
 
 The list is `ew.targets`, a JSON array of `{server, name?}`, kept like the settings (localStorage,
-mirrored to the bridge's storage). It holds nine. An address becomes a row when somebody
+mirrored to the bridge's storage). It has no limit: past about five rows they scroll inside
+the card, which keeps the row under the glasses' cursor in view. An address becomes a row when somebody
 chooses it: `apply`, a pasted pairing URL, the server-address card, a `?server=` that was
 adopted. The address stored as `ew.server` by an earlier version becomes the first row, and
 so does the app's own origin when it is served from a real one (the dev server).

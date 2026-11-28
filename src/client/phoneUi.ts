@@ -57,6 +57,7 @@ import {
   rootOpen,
   rootSel,
   serverLabel,
+  type Target,
   targetLabel,
   targetList,
 } from './targets.ts'
@@ -188,9 +189,43 @@ export function renderRootPanel(): void {
   const head = line(list.length ? 'Choose a server to open' : 'No server yet', '#e5e5e5')
   head.style.cssText += ';font-weight:600;font-size:15px'
   top.append(head)
+  // The rows scroll inside the card once there are more than about five, so that a long list
+  // does not push the text box and the buttons down the page. `top` is shadowed below: every
+  // row goes into this box.
+  const rowsBox = document.createElement('div')
+  rowsBox.style.cssText =
+    `max-height:${String(ROOT_ROWS_MAX_PX)}px;overflow-y:auto;overscroll-behavior:contain;` +
+    '-webkit-overflow-scrolling:touch;padding-right:2px'
+  top.append(rowsBox)
+  let cursorRow: HTMLElement | null = null
+  renderRows(list, rowsBox, row => {
+    cursorRow = row
+  })
+  // Keep the row under the glasses' cursor in view when the list is longer than the box.
+  ;(cursorRow as HTMLElement | null)?.scrollIntoView({ block: 'nearest' })
+  const foot = line(
+    list.length
+      ? 'To add one: under connection below, type its URL and apply, or tap pair and paste a pairing URL.'
+      : 'Under connection below: type the server URL and apply, or tap pair and paste a pairing URL.',
+  )
+  foot.style.cssText += ';margin-top:8px'
+  top.append(foot)
+}
+
+/** The height the rows may take before they scroll: about five rows. */
+const ROOT_ROWS_MAX_PX = 290
+
+/** One row per server, with its `…` actions, into `top`. `onCursor` is given the row the
+ *  glasses' cursor is on. */
+function renderRows(
+  list: readonly Target[],
+  top: HTMLElement,
+  onCursor: (row: HTMLElement) => void,
+): void {
   list.forEach((t, i) => {
     const row = document.createElement('div')
     row.style.cssText = 'display:flex;align-items:stretch;gap:6px;margin-top:8px'
+    if (i === rootSel) onCursor(row)
     if (renaming === t.server) {
       const field = document.createElement('input')
       field.value = t.name ?? ''
@@ -363,13 +398,6 @@ export function renderRootPanel(): void {
     top.append(ask)
     return
   })
-  const foot = line(
-    list.length
-      ? 'To add one: under connection below, type its URL and apply, or tap pair and paste a pairing URL.'
-      : 'Under connection below: type the server URL and apply, or tap pair and paste a pairing URL.',
-  )
-  foot.style.cssText += ';margin-top:8px'
-  top.append(foot)
 }
 export let logEl: HTMLElement | null = null
 export let logCountEl: HTMLElement | null = null
@@ -439,7 +467,7 @@ export function mountUi(): void {
   title.textContent = 'PinholeWindow'
   // Ellipsised rather than wrapped: on a narrow phone the title gives way to the buttons.
   title.style.cssText =
-    'font-size:16px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;' +
+    'font-size:14px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;' +
     'text-overflow:ellipsis'
   // `?`: the tour (tour.ts), which also opens by itself on a device's first run. Beside the
   // title rather than among the palette openers: it is about the page, not an action.
