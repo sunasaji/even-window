@@ -19,6 +19,10 @@ Taken in the Even Hub simulator with a terminal on the mirrored desktop.
 | --- | --- | --- |
 | <img src="docs/img/phone.png" width="260" alt="Phone screen: live preview of the mirrored window, text box with Submit, gesture buttons and tool buttons"> | <img src="docs/img/phone-keys.png" width="260" alt="Phone screen with the on-screen keyboard: modifier, navigation and arrow keys above a full key layout"> | <img src="docs/img/glasses.png" width="288" alt="The same terminal as drawn on the G2 lens, 576x288 in green"> |
 
+| Tasks: switch windows, launch apps | The menu | Pairing steps on first start |
+| --- | --- | --- |
+| <img src="docs/img/glasses-tasks.png" width="288" alt="Glasses: the Tasks list with four open windows, the cursor on xclock, and launcher rows"> | <img src="docs/img/glasses-menu.png" width="288" alt="Glasses: the menu with Keys, Window, Launch, Invert, Close Window and Exit"> | <img src="docs/img/glasses-pairing.png" width="288" alt="Glasses: the pairing steps shown while the phone is not paired"> |
+
 The phone screen shows a live preview of the mirrored window, a text box that types into it,
 buttons for the glasses gestures, and tools: an on-screen keyboard with modifiers (`keys`),
 a virtual ring and trackpad (`vRing`, `vPad`), and palettes for tasks, window actions and

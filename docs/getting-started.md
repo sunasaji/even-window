@@ -80,6 +80,13 @@ route. Pairing enrols the key pair that the device generates for itself.
 4. The terminal shows the pattern it received. If both screens show the same pattern,
    answer `y`. The client connects without a reload.
 
+The packaged app cannot be opened at a URL. There, scan the QR code with the phone's
+camera, tap **Copy** on the page that opens, and paste into the pair dialog of the app.
+
+While the phone is not paired, the glasses show the same steps:
+
+<img src="img/glasses-pairing.png" width="288" alt="The pairing steps on the lens: start the server, run ew-auth.mjs pair, scan the QR code, copy and paste the pairing URL">
+
 Other commands:
 
 | Command | Purpose |

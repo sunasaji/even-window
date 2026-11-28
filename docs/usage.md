@@ -23,10 +23,14 @@ five swipes arrives as five key presses.
 On the first few launches, the lens lists these gestures when the app starts. The list
 stays until you make a gesture: any gesture closes it, and a double tap also opens the menu.
 
+<img src="img/glasses-hint.png" width="288" alt="The gesture list on the lens: double-tap for the menu, swipe for Up and Down, tap for Enter">
+
 ## The on-glasses menu
 
 Double tap to open it. While the menu is shown the mirror is hidden; it comes back
 when the menu closes.
+
+<img src="img/glasses-tasks.png" width="288" alt="The Tasks list: Menu..., four open windows with the cursor on xclock, and four launcher rows">
 
 The first level, headed `Tasks`, lists, in this order:
 
@@ -56,6 +60,10 @@ Under `Menu...`:
 | `Close Window` | Ask the focused window to close |
 | `Exit...` | Quit the app on the glasses, after a confirmation row |
 | `Prev Page` / `Next Page` | Only with several pages, last: turn the first level's page |
+
+| `Menu...` | `Keys...` | `Launch...` |
+| --- | --- | --- |
+| <img src="img/glasses-menu.png" width="240" alt="The menu: Keys, Window, Launch, Invert, Close Window, Exit"> | <img src="img/glasses-menu-keys.png" width="240" alt="Keys: Mods, Move, Edit, Func, Chars, Clicks"> | <img src="img/glasses-menu-launch.png" width="240" alt="Launch: applications grouped by name range, six rows"> |
 
 A double tap goes up one level, and closes the menu from the first one. Only the two
 confirmation levels (`Exit...`, `Kill (force)...`) have a `< Back` row.

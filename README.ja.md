@@ -19,6 +19,10 @@ Even Hub シミュレータで、ミラーデスクトップにターミナル�
 | --- | --- | --- |
 | <img src="docs/img/phone.png" width="260" alt="スマホ画面：ミラー中ウィンドウのライブプレビュー、Submit 付きのテキストボックス、ジェスチャボタンとツールボタン"> | <img src="docs/img/phone-keys.png" width="260" alt="オンスクリーンキーボードを開いたスマホ画面：修飾キー・移動キー・矢印キーとフルキー配列"> | <img src="docs/img/glasses.png" width="288" alt="同じターミナルを G2 のレンズに描いたもの（576x288、緑）"> |
 
+| タスク一覧：ウィンドウの切り替えとアプリの起動 | メニュー | 初回起動時のペアリング手順 |
+| --- | --- | --- |
+| <img src="docs/img/glasses-tasks.png" width="288" alt="グラス：開いている 4 つのウィンドウと起動用の行が並ぶタスク一覧。カーソルは xclock"> | <img src="docs/img/glasses-menu.png" width="288" alt="グラス：Keys、Window、Launch、Invert、Close Window、Exit が並ぶメニュー"> | <img src="docs/img/glasses-pairing.png" width="288" alt="グラス：未ペアリングのあいだ表示されるペアリング手順"> |
+
 スマホ画面には、ミラー中のウィンドウのライブプレビュー、そのウィンドウに文字を入力する
 テキストボックス、グラスのジェスチャを送るボタン、各種ツールが並びます。ツールは、修飾キー
 付きのオンスクリーンキーボード（`keys`）、仮想リングとトラックパッド（`vRing`、`vPad`）、

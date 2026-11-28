@@ -24,9 +24,13 @@
 ジェスチャをするまで消えません。どの
 ジェスチャでも閉じられ、ダブルタップならそのままメニューも開きます。
 
+<img src="img/glasses-hint.png" width="288" alt="レンズに出るジェスチャの一覧：ダブルタップでメニュー、スワイプで上下キー、タップで Enter">
+
 ## グラス上のメニュー
 
 ダブルタップで開きます。メニューが出ている間はミラーは隠れ、メニューを閉じると戻ります。
+
+<img src="img/glasses-tasks.png" width="288" alt="タスク一覧：Menu...、開いている 4 つのウィンドウ（カーソルは xclock）、起動用の 4 行">
 
 最初の階層（見出しは `Tasks`）には、次の順で行が並びます。
 
@@ -57,6 +61,10 @@
 | `Close Window` | フォーカス中のウィンドウに閉じるよう求める |
 | `Exit...` | 確認の行を経て、グラス上のアプリを終了する |
 | `Prev Page` / `Next Page` | ページが複数あるときだけ末尾に出る: 最初の階層のページを送る |
+
+| `Menu...` | `Keys...` | `Launch...` |
+| --- | --- | --- |
+| <img src="img/glasses-menu.png" width="240" alt="メニュー：Keys、Window、Launch、Invert、Close Window、Exit"> | <img src="img/glasses-menu-keys.png" width="240" alt="Keys：Mods、Move、Edit、Func、Chars、Clicks"> | <img src="img/glasses-menu-launch.png" width="240" alt="Launch：名前の範囲ごとにまとめたアプリケーションの 6 行"> |
 
 ダブルタップで 1 階層戻り、最初の階層ではメニューを閉じます。`< Back` の行があるのは
 確認の階層（`Exit...`、`Kill (force)...`）だけです。
