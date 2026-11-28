@@ -100,6 +100,19 @@
 スマホとペアリングしたハードウェアキーボードは、ページ上のテキスト欄にフォーカスが
 無いとき、フォーカス中のウィンドウに入力されます。
 
+Bluetooth のマウスやトラックパッド（キーボードに内蔵のものを含む）は、iPhone では
+AssistiveTouch を通して使えます。
+
+1. **設定 → Bluetooth**、または **設定 → アクセシビリティ → タッチ → AssistiveTouch →
+   デバイス** でペアリングします。
+2. 同じ画面で **AssistiveTouch** をオンにします。iOS がポインタを表示します。
+3. ポインタは、このページのどの操作部品でも指と同じようにクリックできます。**vPad** では、
+   ポインタを動かすとデスクトップのポインタが押下なしで動き、スマホ画面の端で止まります。
+
+ポインタの大きさとスクロールの速さは **設定 → アクセシビリティ → ポインタコントロール** で
+変えられます。Apple の説明: [iPhone で AssistiveTouch を使う](https://support.apple.com/guide/iphone/use-assistivetouch-iph96b21954/ios)、
+[ポインタの設定](https://support.apple.com/guide/iphone/adjust-pointer-settings-iphec6e1e60b/ios)。
+
 ### テキストを送る
 
 テキスト欄に入力して **Submit** をタップするか、欄の中で `Ctrl+Enter` を押します。文字が

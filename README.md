@@ -77,7 +77,9 @@ It can:
 - send keys from glasses gestures, with per-application swipe bindings;
 - switch, close and launch applications from the glasses or the phone;
 - type by voice, recognised by a service on your own PC;
-- give the phone a keyboard, a trackpad and a touchable preview of the mirror.
+- give the phone a keyboard, a trackpad and a touchable preview of the mirror;
+- take a Bluetooth keyboard, mouse or trackpad paired with the phone
+  ([setup on iPhone](docs/usage.md#the-phone-screen)).
 
 It cannot:
 

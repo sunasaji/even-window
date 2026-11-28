@@ -101,6 +101,19 @@ the title row shows the tour again.
 A hardware keyboard paired with the phone types into the focused window whenever no
 text field on the page has focus.
 
+A Bluetooth mouse or trackpad, including one built into a keyboard, works on an iPhone
+through AssistiveTouch:
+
+1. Pair the device in **Settings → Bluetooth**, or under **Settings → Accessibility →
+   Touch → AssistiveTouch → Devices**.
+2. Turn **AssistiveTouch** on in the same place. iOS then draws a pointer.
+3. The pointer clicks like a finger on every control of this page. In **vPad**, moving it
+   moves the desktop's pointer without pressing, and stops at the edge of the phone screen.
+
+Pointer size and scrolling speed are under **Settings → Accessibility → Pointer Control**.
+Apple documents both: [Use AssistiveTouch on iPhone](https://support.apple.com/guide/iphone/use-assistivetouch-iph96b21954/ios),
+[pointer settings](https://support.apple.com/guide/iphone/adjust-pointer-settings-iphec6e1e60b/ios).
+
 ### Sending text
 
 Type into the text box and tap **Submit**, or press `Ctrl+Enter` in the box. The text
