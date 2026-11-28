@@ -24,12 +24,13 @@ An install made under the old name has to be moved by hand: stop the server, ren
 `~/.even-window`, `~/.config/even-window` and `~/.local/share/even-window`, disable the
 `even-window@…` unit and enable the new one. Until then the server starts as a fresh install.
 
-Two things keep the old spelling:
+The package id changes too, to `dev.sunasaji.pinholewindow`. Even Hub treats a new id as a
+new app, so the beta listed as `dev.sunasaji.evenwindow` is retired and the app is created
+again: its testers are invited again, and a phone pairs again unless the Even App keeps the
+key across the two. The id cannot be changed once an app is public, and during the beta the
+cost was one tester.
 
-| Kept | Why |
-| --- | --- |
-| `package_id` `dev.sunasaji.evenwindow` | Even Hub treats a new id as a new app; testers and enrolled keys would not carry over |
-| `EW_*` variables, `ew.*` storage keys, `ew-auth.mjs` | They never spelled the old name out |
+`EW_*` variables, `ew.*` storage keys and `ew-auth.mjs` stay: they never spelled the old name.
 
 ## Alternatives considered
 
@@ -37,13 +38,14 @@ Two things keep the old spelling:
   than one during beta, with one tester.
 - Keep reading the old paths as a fallback: it protects existing installs, but there were
   almost none during the beta, and the fallback would stay in the code for good.
-- Change the package id too: it would be a different app on Even Hub.
+- Keep the package id, as other renamed apps did: it would have carried the old name for good,
+  and a later app under the new id could not have taken the same display name.
 - eye-window, following-window and others: "following" reads as "the window below" in running
   text; "pinhole" is a noun that does not blend into a sentence, and no project or package of
   that name was found on npm or GitHub.
 
 ## Consequences
 
-- `even-window` no longer appears in the code or the paths; only the package id carries it.
+- `even-window` no longer appears in the code, the paths or the package id.
 - GitHub redirects the old repository URL.
-- The Even Hub display name has to be changed to match `app.json`.
+- The old Even Hub app is deleted once the new one is confirmed on a phone.
