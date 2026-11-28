@@ -27,7 +27,7 @@ has been verified; the reference documents describe how each one works.
 | Window switching (double tap → window list) | Hardware (G2) | Works; windows are listed most recently focused first | [glasses.md](glasses.md) |
 | Text drawn in front of the tiles (`zOrderIndex`) | Hardware (G2) | Works; always on | [glasses.md](glasses.md) |
 | Hierarchical menu under `Menu...` | Simulator (key delivery checked against a real session) | Works; moving between levels pushes no images | [glasses.md](glasses.md) |
-| Firmware context menu | Removed | Cannot coexist with `zOrderIndex` on hardware, and no gesture opens it | [glasses.md](glasses.md) |
+| Firmware context menu | Not used; hardware (G2), 2026-11-28 | Opens with a tap followed by a long press and now coexists with `zOrderIndex`. The app registers nothing in it | [note](notes/2026-11-context-menu-on-hardware.md) |
 | Voice input from the glasses (long press → speak → tap → `Send`) | Hardware (G2), 2026-10-17 | Works with the glasses microphone | [voice.md](voice.md) |
 | Voice input started with the phone's **voice** button, glasses microphone | Unverified on hardware | No hardware record | [voice.md](voice.md) |
 | Stopping a recording with the phone's **stop** button | Hardware (iPhone), 2026-11-23 | Works | [voice.md](voice.md) |
@@ -40,6 +40,10 @@ has been verified; the reference documents describe how each one works.
 | Stopping updates when the link drops | Hardware (G2) | Stops. The reconnect path is unverified. | [glasses.md](glasses.md) |
 | Launching applications (full list on the phone, recent ones on the glasses) | Simulator | Works | [usage.md](usage.md) |
 | Phone **task** and **window** palettes | Simulator | Work without the glasses | [phone-ui.md](phone-ui.md) |
+| Leaving the app (double tap at the server list → system dialog) | Hardware (G2, iPhone), 2026-11-28 | Works; confirming also closes the page on the phone, and the phone page is covered while the dialog is up | [usage.md](usage.md) |
+| Server list and keys kept across a restart of the Even App (packaged app) | Hardware (iPhone), 2026-11-29, 0.1.5 | Kept; no second pairing | [security.md](security.md) |
+| Gestures after two minutes without input | Hardware (G2, iPhone), 2026-11-29, 0.1.5 | A double tap opens the window list | [glasses.md](glasses.md) |
+| Mirroring while the phone is locked | Hardware (G2, iPhone), 2026-11-29, 0.1.5 | A clock kept counting through five minutes of lock, and a double tap worked before the phone was touched | [glasses.md](glasses.md) |
 | Phone controls (keys, vRing, vPad, apps) | Hardware (iPhone) | In daily use. Suppression of the platform's touch defaults cannot be verified in the simulator. | [phone-ui.md](phone-ui.md) |
 | Touch on the preview | Simulator | Works; left button only | [phone-ui.md](phone-ui.md) |
 | Hardware keyboard | Hardware (iPhone) | In daily use; arrow keys are not delivered | [phone-ui.md](phone-ui.md) |
