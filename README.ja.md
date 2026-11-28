@@ -6,8 +6,8 @@ pinhole-window は、PC 上のデスクトップセッションを Even Realitie
 ミラーし、グラスとスマホから操作できるようにします。Even Hub アプリ（公式 Even App の
 中で動く WebView ページ）と、PC 上の小さなサーバで構成されています。
 
-バージョン 0.1.4 までは even-window という名前でした。`~/.even-window` などのパスには
-旧名が残っています（[理由](docs/decisions/rename-to-pinhole-window.md)）。
+バージョン 0.1.4 までは even-window という名前でした。当時の環境はそのまま動きます。
+`~/.even-window` は引き続き読み込まれます（[詳細](docs/decisions/rename-to-pinhole-window.md)）。
 
 サーバは専用の 576×288 のミラーデスクトップを動かし、それをキャプチャしてグラスへ
 配信します。テンプルやリングのジェスチャがキーを送り返し、グラス上のメニューで

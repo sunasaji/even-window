@@ -128,7 +128,7 @@ killed. Response `{"ok":true}` or `{"ok":false,"msg":"close failed"}`.
   "recent": ["x11:xfontsel", "desktop:debian-xterm"],
   "counts": { "desktopFiles": 28, "desktopApps": 20, "sectionX11": 75, "sectionX11Kept": 28,
               "denied": 47, "user": 0, "hidden": 0, "duplicates": 2, "total": 46 },
-  "overrides": "/home/you/.even-window/apps.conf",
+  "overrides": "/home/you/.pinhole-window/apps.conf",
   "errors": [] }
 ```
 
@@ -182,7 +182,7 @@ name, including `long` and `longRelease`, is `400 {"handled":false,"msg":"bad ge
                           "down": { "mods": [], "key": "Page_Down" },
                           "submit": "ctrl+Return", "newline": "shift+Return" } },
   "default": { "up": { "mods": [], "key": "Up" }, "down": { "mods": [], "key": "Down" } },
-  "file": "/home/you/.even-window/bindings.json",
+  "file": "/home/you/.pinhole-window/bindings.json",
   "errors": [] }
 ```
 

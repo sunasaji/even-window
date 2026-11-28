@@ -17,6 +17,7 @@
 import { readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { LEGACY_NAME } from './stateDir.ts'
 
 export interface EnvFileParse {
   /** Accepted `EW_*` assignments, in file order (a later line wins, as in systemd). */
@@ -82,7 +83,8 @@ export function parseEnvFile(text: string): EnvFileParse {
 
 /** Where to look, highest precedence first. `EW_ENV_FILE` overrides: a path means exactly that
  *  file (and a complaint if it is missing); empty means no file and no search. The defaults
- *  are `~/.even-window/env`, then `$XDG_CONFIG_HOME/even-window/env`; both are read. The lookup does not follow
+ *  are `~/.pinhole-window/env`, then `$XDG_CONFIG_HOME/pinhole-window/env`, then the same two under
+ *  the former name `even-window`; all that exist are read. The lookup does not follow
  *  `EW_STATE_DIR`: the file may set it. */
 export function envFileCandidates(env: NodeJS.ProcessEnv = process.env): string[] {
   const explicit = env.EW_ENV_FILE
@@ -92,7 +94,14 @@ export function envFileCandidates(env: NodeJS.ProcessEnv = process.env): string[
   const home = env.HOME && env.HOME !== '' ? env.HOME : homedir()
   const xdg =
     env.XDG_CONFIG_HOME && env.XDG_CONFIG_HOME !== '' ? env.XDG_CONFIG_HOME : join(home, '.config')
-  return [join(home, '.even-window', 'env'), join(xdg, 'even-window', 'env')]
+  // The two files under the former name come last: an install made before the rename still
+  // finds its settings, and a file under the new name wins any key both set.
+  return [
+    join(home, '.pinhole-window', 'env'),
+    join(xdg, 'pinhole-window', 'env'),
+    join(home, `.${LEGACY_NAME}`, 'env'),
+    join(xdg, LEGACY_NAME, 'env'),
+  ]
 }
 
 export interface EnvFileReport {

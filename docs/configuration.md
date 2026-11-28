@@ -44,7 +44,7 @@ transparent and a light background lights the whole lens.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `EW_STATE_DIR` | `~/.even-window` | The state directory. Use an absolute path. The default keeps the project's former name ([why](decisions/rename-to-pinhole-window.md)). |
+| `EW_STATE_DIR` | `~/.pinhole-window` | The state directory. Use an absolute path. `~/.even-window`, the former name, is used while it is the only one of the two ([details](decisions/rename-to-pinhole-window.md)). |
 | `EW_ENV_FILE` | unset | An explicit env file. Empty means "read no file". |
 | `EW_QUIET` | unset | `1` silences the per-request access log. |
 
@@ -76,7 +76,7 @@ Read by `vite.config.ts`, not by the server, and not from the env file.
 | --- | --- | --- | --- |
 | `EW_APP_URL` | `ew-auth.mjs` | unset | App URL used by `pair` and `open` when none is given as an argument. |
 | `EW_PAIR_TTL_MS` | `ew-auth.mjs open` | `300000` | Lifetime of a pairing window opened with `open`. `pair` always uses two minutes. |
-| `EW_FIREFOX_PROFILE` | `ew-firefox.sh` | `~/.local/share/even-window/firefox` | Runtime Firefox profile directory. |
+| `EW_FIREFOX_PROFILE` | `ew-firefox.sh` | `~/.local/share/pinhole-window/firefox` | Runtime Firefox profile directory. |
 | `EW_FIREFOX_URL` | `ew-firefox.sh` | unset | URL to open instead of the profile's home page. |
 | `EW_FIREFOX_BIN` | `ew-firefox.sh` | `firefox` | Firefox binary. |
 | `EW_SIM_DISPLAY`, `EW_SIM_SCREEN`, `EW_AUTOMATION_PORT`, `EW_SETTLE_MS`, `EW_APP_QUERY` | `sim.sh` | `:180`, `608x1150`, `9899`, `6000`, unset | Simulator harness settings; see [development.md](development.md). |
@@ -90,8 +90,8 @@ is set by the server for its child processes; do not set it.
 With `EW_ENV_FILE` set, the server reads exactly that file. Otherwise it reads both of these,
 and a key set in both takes the value from the first:
 
-1. `~/.even-window/env`;
-2. `$XDG_CONFIG_HOME/even-window/env` (by default `~/.config/even-window/env`).
+1. `~/.pinhole-window/env`;
+2. `$XDG_CONFIG_HOME/pinhole-window/env` (by default `~/.config/pinhole-window/env`).
 
 The systemd unit lists the same two files and produces the same result, so the settings do
 not depend on how the server was started.
@@ -99,7 +99,7 @@ not depend on how the server was started.
 The location does not follow `EW_STATE_DIR`. Start from `systemd/env.example`:
 
 ```bash
-install -m 600 systemd/env.example ~/.even-window/env
+install -m 600 systemd/env.example ~/.pinhole-window/env
 ```
 
 The format is a strict subset of systemd's `EnvironmentFile=`, so the same file works
@@ -124,7 +124,7 @@ Background: [the env file format](decisions/env-file-format.md).
 
 ## The state directory
 
-`~/.even-window`, or `EW_STATE_DIR`. It is created with mode `700`; the server warns
+`~/.pinhole-window`, or `EW_STATE_DIR`. It is created with mode `700`; the server warns
 when an existing directory is readable by others, and does not change it for you.
 
 | File | Written by | Contents |

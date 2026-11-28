@@ -42,9 +42,9 @@ normal run in these ways:
 
 - Authentication is on. Pair each browser profile once with the `ew-auth.mjs pair` command the
   script prints; the key persists in that profile.
-- The auth registry is its own: `EW_STATE_DIR=.ew-x11/state`. `~/.even-window` is not touched.
+- The auth registry is its own: `EW_STATE_DIR=.ew-x11/state`. `~/.pinhole-window` is not touched.
   Point `scripts/ew-auth.mjs` at the same directory (the printed command does).
-- `~/.even-window/env` is not read. A `dev.env` in the repo root (git-ignored, mode `600`,
+- `~/.pinhole-window/env` is not read. A `dev.env` in the repo root (git-ignored, mode `600`,
   same format as the env file in [configuration.md](configuration.md)) is read if present.
   `EW_ENV_FILE=<path>` overrides both; `EW_ENV_FILE=` reads nothing. `EW_PORT`,
   `EW_X11_DISPLAY`, `EW_AUTH` and `EW_STATE_DIR` come from the script and win over any file.
@@ -114,7 +114,7 @@ scripts/sim.sh --headless --screenshot /tmp/glasses.png   # one-shot: up, settle
 drawn. Reach the simulator's display over TCP: `DISPLAY=127.0.0.1:<N>`.
 
 Like `dev.sh`, `sim.sh` uses its own auth registry, reads `dev.env` but not
-`~/.even-window/env`, and refuses to start on a busy server or Vite port. It also refuses when
+`~/.pinhole-window/env`, and refuses to start on a busy server or Vite port. It also refuses when
 the automation port already answers `/api/ping`: a second simulator would be a second client
 on the same server and the two would fight over the mirror.
 

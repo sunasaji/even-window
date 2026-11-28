@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ew-firefox.sh — launch Firefox as an pinhole-window X11 client, tuned for the G2.
 #
-# Point ~/.even-window/apps.conf at this script so that the launcher lists it:
+# Point ~/.pinhole-window/apps.conf at this script so that the launcher lists it:
 #
 #     app Firefox (G2) = /abs/path/to/scripts/ew-firefox.sh
 #
@@ -18,7 +18,7 @@
 # Background: docs/firefox.md.
 #
 # Environment:
-#   EW_FIREFOX_PROFILE  runtime profile dir (default ~/.local/share/even-window/firefox)
+#   EW_FIREFOX_PROFILE  runtime profile dir (default ~/.local/share/pinhole-window/firefox)
 #   EW_FIREFOX_URL      open this URL instead of the profile's homepage
 #   EW_FIREFOX_BIN      firefox binary (default: firefox)
 set -euo pipefail
@@ -27,7 +27,12 @@ SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 TEMPLATE="$SCRIPT_DIR/firefox-profile"
 # Persistent and under $HOME, not /tmp: WSL clears /tmp, and the profile holds logins
 # and site storage.
-PROFILE="${EW_FIREFOX_PROFILE:-$HOME/.local/share/even-window/firefox}"
+PROFILE="${EW_FIREFOX_PROFILE:-$HOME/.local/share/pinhole-window/firefox}"
+# A profile made under the project's former name is used where it is the only one.
+if [ -z "${EW_FIREFOX_PROFILE:-}" ] && [ ! -d "$PROFILE" ] \
+  && [ -d "$HOME/.local/share/even-window/firefox" ]; then
+  PROFILE="$HOME/.local/share/even-window/firefox"
+fi
 FIREFOX_BIN="${EW_FIREFOX_BIN:-firefox}"
 
 [ -d "$TEMPLATE" ] || { echo "ew-firefox: template not found: $TEMPLATE" >&2; exit 1; }
@@ -94,5 +99,5 @@ exec env -u WAYLAND_DISPLAY \
   GDK_BACKEND=x11 \
   MOZ_ENABLE_WAYLAND=0 \
   MOZ_DBUS_REMOTE=0 \
-  "$FIREFOX_BIN" --no-remote --new-instance --class even-window-firefox \
+  "$FIREFOX_BIN" --no-remote --new-instance --class pinhole-window-firefox \
   --profile "$PROFILE" "${URL[@]}"

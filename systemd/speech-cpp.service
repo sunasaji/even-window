@@ -4,7 +4,7 @@
 # here is specific to pinhole-window: any server answering POST /v1/audio/transcriptions
 # will do, and this unit reads nothing from the repository.
 #
-# Separate from even-window@.service: the mirror works without a recogniser (voice input
+# Separate from pinhole-window@.service: the mirror works without a recogniser (voice input
 # is offered only when GET /api/health reports `stt: true`), and restarting one must not
 # drop the other.
 Description=speech.cpp recogniser (OpenAI audio API on loopback)

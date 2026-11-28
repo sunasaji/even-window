@@ -89,7 +89,7 @@ export function slotLine(
       `${used} of ${max} slot(s) used — NO FREE SLOT, so approving this device will be` +
       ' REFUSED. On the server, either revoke the key it replaces' +
       ' (`ew-auth list` then `ew-auth revoke <id>`), or raise the cap for the whole run' +
-      ' (EW_MAX_CLIENTS=2 in ~/.even-window/env, then restart).',
+      ' (EW_MAX_CLIENTS=2 in ~/.pinhole-window/env, then restart).',
     blocked: true,
   }
 }
@@ -203,11 +203,11 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     '<ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">' +
     '<li>Start the server:' +
     `<pre style="${pS}">cd pinhole-window &amp;&amp; npm install\nnode src/server/main.ts</pre>` +
-    `(or install the unit: <code style="${cS}">systemd/even-window@.service</code>)</li>` +
+    `(or install the unit: <code style="${cS}">systemd/pinhole-window@.service</code>)</li>` +
     '<li>Put TLS in front — this server terminates none:' +
     `<pre style="${pS}">tailscale serve --bg --yes --https 8443 \\\n  --set-path /api http://127.0.0.1:8787/api\ntailscale serve --bg --yes --https 8443 http://127.0.0.1:5273</pre>` +
     'it prints an https URL that works inside your tailnet only.</li>' +
-    `<li>Put that URL in <code style="${cS}">~/.even-window/env</code> as` +
+    `<li>Put that URL in <code style="${cS}">~/.pinhole-window/env</code> as` +
     ` <code style="${cS}">EW_ORIGIN=…</code> and restart the server.</li>` +
     '<li>Open a pairing window:' +
     `<pre style="${pS}">node scripts/ew-auth.mjs pair '&lt;that https URL&gt;'</pre>` +

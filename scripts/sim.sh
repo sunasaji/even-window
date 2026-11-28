@@ -113,7 +113,7 @@ LOG_DIR="${RUNTIME_DIR}/logs"
 # (or be refused by) the registry that serves the real phone.
 STATE_DIR="${EW_STATE_DIR:-${RUNTIME_DIR}/state}"
 # The untracked dev.env in the checkout is read when it exists; the operator's
-# ~/.even-window/env is not. An explicit EW_ENV_FILE wins, and an empty one means
+# ~/.pinhole-window/env is not. An explicit EW_ENV_FILE wins, and an empty one means
 # "no file".
 HARNESS_ENV="${REPO_ROOT}/dev.env"
 if [ "${EW_ENV_FILE+set}" = set ]; then ENV_FILE="${EW_ENV_FILE}"
@@ -485,7 +485,7 @@ if [ "${KEEP}" = 1 ] || [ -z "${SHOT}" ]; then
 sim.sh: up. Ctrl-C to stop.
   app        ${APP_URL}
   auth       EW_AUTH=${EW_AUTH_VAL} $([ "${AUTH}" = 1 ] && echo '(ENFORCED)' || echo '(DISABLED for this run)')
-  state      ${STATE_DIR} (this run's own registry; ~/.even-window is untouched)
+  state      ${STATE_DIR} (this run's own registry; ~/.pinhole-window is untouched)
   env        ${ENV_FILE:-none — create dev.env (mode 600) for persistent EW_* in harness runs}
   api        http://127.0.0.1:${API_PORT}/api/health
   automation http://127.0.0.1:${AUTOMATION_PORT}/api/{ping,screenshot/glasses,screenshot/webview,console}

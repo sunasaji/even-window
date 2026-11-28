@@ -44,7 +44,7 @@ The server:
 - listens on `127.0.0.1:8787` (`EW_HOST`, `EW_PORT`);
 - starts the mirrored desktop on display `:100` (`EW_X11_DISPLAY`) with one dark
   terminal in it (`EW_SPAWN`);
-- keeps its state in `~/.even-window` and reads settings from `~/.even-window/env`.
+- keeps its state in `~/.pinhole-window` and reads settings from `~/.pinhole-window/env`.
 
 The start-up banner states whether authentication is enforced, how many devices are
 enrolled, which settings came from the env file, and whether session binding
@@ -57,7 +57,7 @@ npm run dev
 ```
 
 `scripts/dev.sh` starts both, but it is a development harness with its own device
-registry (`.ew-x11/state`) and it does not read `~/.even-window/env`. Use it for
+registry (`.ew-x11/state`) and it does not read `~/.pinhole-window/env`. Use it for
 development only; see [development.md](development.md).
 
 ## Pair a device
@@ -137,9 +137,9 @@ Any free port works in place of 8443. Then:
    then refuses session signatures made out to any other origin.
 
    ```bash
-   install -d -m 700 ~/.even-window
-   install -m 600 /dev/null ~/.even-window/env
-   echo 'EW_ORIGIN=https://host.ts.net:8443' >> ~/.even-window/env
+   install -d -m 700 ~/.pinhole-window
+   install -m 600 /dev/null ~/.pinhole-window/env
+   echo 'EW_ORIGIN=https://host.ts.net:8443' >> ~/.pinhole-window/env
    ```
 
 2. If you use the Vite dev server, tell its hot-reload client where to dial back:
@@ -199,17 +199,17 @@ The microphone permissions (`g2-microphone`, `phone-microphone`) and `network` a
 
 ## Run as a systemd user service
 
-`systemd/even-window@.service` is a template unit whose instance name is the
+`systemd/pinhole-window@.service` is a template unit whose instance name is the
 absolute path of the checkout, and `systemd/env.example` is a commented env file.
 
 ```bash
 # in the repository root
-mkdir -p ~/.config/systemd/user ~/.even-window && chmod 700 ~/.even-window
-cp systemd/even-window@.service ~/.config/systemd/user/
-install -m 600 systemd/env.example ~/.even-window/env
-${EDITOR:-vi} ~/.even-window/env          # set EW_ORIGIN at least
+mkdir -p ~/.config/systemd/user ~/.pinhole-window && chmod 700 ~/.pinhole-window
+cp systemd/pinhole-window@.service ~/.config/systemd/user/
+install -m 600 systemd/env.example ~/.pinhole-window/env
+${EDITOR:-vi} ~/.pinhole-window/env          # set EW_ORIGIN at least
 
-unit="even-window@$(systemd-escape --path "$PWD").service"
+unit="pinhole-window@$(systemd-escape --path "$PWD").service"
 systemctl --user daemon-reload
 systemctl --user enable --now "$unit"
 systemctl --user status "$unit"
@@ -243,7 +243,7 @@ Do this also when you want to switch between the Xephyr and Xvfb backends: a liv
 session is re-attached before any backend choice is made.
 
 To remove everything else: `tailscale serve --https=8443 off`, and delete
-`~/.even-window` (enrolled devices, bindings, settings) and `.ew-x11/` in the
+`~/.pinhole-window` (enrolled devices, bindings, settings) and `.ew-x11/` in the
 checkout (runtime files and logs).
 
 ## Optional: speech-to-text
@@ -268,7 +268,7 @@ any compatible server works. How voice input works is in [voice.md](voice.md).
    curl -s http://127.0.0.1:8757/v1/models | grep -o '"id":"[^"]*"'
    ```
 
-3. Point pinhole-window at it in `~/.even-window/env` and restart the server:
+3. Point pinhole-window at it in `~/.pinhole-window/env` and restart the server:
 
    ```
    EW_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions

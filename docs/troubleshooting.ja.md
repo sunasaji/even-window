@@ -9,7 +9,7 @@
 | 出どころ | 場所 |
 | --- | --- |
 | 手で起動したサーバ | そのターミナル。行は `[ew]` で始まり、Linux バックエンドは `[x11]` を使います。 |
-| systemd ユニットのサーバ | `journalctl --user -u 'even-window@*' -f` |
+| systemd ユニットのサーバ | `journalctl --user -u 'pinhole-window@*' -f` |
 | `scripts/dev.sh` で起動したサーバ | `.ew-x11/logs/dev-api.log`（と `dev-vite.log`） |
 | クライアント | スマホ画面の **log** パネル。**copy** ボタンがあります |
 | アプリが落ちたあとのクライアント | あらかじめ `?debug=1` を付けてアプリを読み込んでおきます。クライアントの行が `[ew] CLIENT …` としてサーバのログに転送されます。まとめて送られるので、落ちる直前の数行は欠けることがあります。 |

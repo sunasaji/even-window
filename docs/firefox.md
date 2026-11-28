@@ -13,7 +13,7 @@ process with a Firefox on your desktop.
 
 ## Set-up
 
-Add one line to `~/.even-window/apps.conf` ([configuration.md](configuration.md#appsconf)),
+Add one line to `~/.pinhole-window/apps.conf` ([configuration.md](configuration.md#appsconf)),
 with the absolute path of your checkout:
 
 ```
@@ -30,18 +30,18 @@ snap package cannot connect to the mirrored desktop
 ## What the launcher does
 
 1. Copies the profile template in `scripts/firefox-profile/` into the runtime
-   profile (`~/.local/share/even-window/firefox`) on every launch. Edit the
+   profile (`~/.local/share/pinhole-window/firefox`) on every launch. Edit the
    template, not the runtime copy. Cookies, history and logins live in the runtime
    profile and survive.
 2. Appends `<profile>/user-local.js` to the profile's `user.js`. The script creates
    this file once and never overwrites it. Put settings that belong to this machine
    there, such as a home page that carries a token.
 3. Starts Firefox as its own instance (`--no-remote --new-instance`,
-   `MOZ_DBUS_REMOTE=0`), on X11, with window class `even-window-firefox`.
+   `MOZ_DBUS_REMOTE=0`), on X11, with window class `pinhole-window-firefox`.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `EW_FIREFOX_PROFILE` | `~/.local/share/even-window/firefox` | Runtime profile directory |
+| `EW_FIREFOX_PROFILE` | `~/.local/share/pinhole-window/firefox` | Runtime profile directory |
 | `EW_FIREFOX_URL` | unset | Open this URL instead of the home page |
 | `EW_FIREFOX_BIN` | `firefox` | Firefox binary |
 
@@ -82,7 +82,7 @@ On the mirrored desktop (display `:100` by default; use `127.0.0.1:100` where th
 server logs that address):
 
 ```bash
-win=$(DISPLAY=:100 xdotool search --onlyvisible --class even-window-firefox | head -1)
+win=$(DISPLAY=:100 xdotool search --onlyvisible --class pinhole-window-firefox | head -1)
 DISPLAY=:100 xprop -id "$win" WM_NORMAL_HINTS WM_CLASS
 DISPLAY=:100 xwininfo -id "$win" | grep -E 'Width|Height'
 ```

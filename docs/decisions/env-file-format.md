@@ -10,7 +10,7 @@ code execution, and the env file is the first thing the server reads.
 
 ## Decision
 
-- `~/.even-window/env` is read by a small parser (`src/server/envFile.ts`) whose
+- `~/.pinhole-window/env` is read by a small parser (`src/server/envFile.ts`) whose
   format is a strict subset of systemd's `EnvironmentFile=`: `KEY=VALUE`, comments,
   one layer of quotes. No `export`, no expansion, no continuation lines, no spaces
   around `=`, `EW_*` keys only. Lines that break a rule are refused with a message.

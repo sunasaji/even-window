@@ -5,7 +5,7 @@
 The server enforces authentication by default, and pairing deliberately needs a human to
 compare a randomart out of band. `scripts/sim.sh` starts a fresh WebView on every run, often
 unattended; `scripts/dev.sh` is an interactive loop with a browser profile that persists.
-Both run on machines that may also host the real, paired instance in `~/.even-window`.
+Both run on machines that may also host the real, paired instance in `~/.pinhole-window`.
 
 ## Decision
 
@@ -14,7 +14,7 @@ Both run on machines that may also host the real, paired instance in `~/.even-wi
 - `dev.sh` keeps auth on by default (one pairing per browser profile); `--no-auth` turns it
   off with the same notice.
 - Both use their own auth registry (`EW_STATE_DIR=<runtime>/state`), bind loopback only, and
-  do not read `~/.even-window/env`. A git-ignored `dev.env` in the repo is read if present;
+  do not read `~/.pinhole-window/env`. A git-ignored `dev.env` in the repo is read if present;
   an explicit `EW_ENV_FILE` or `EW_STATE_DIR` from the caller wins.
 - Both refuse to start on a busy server or Vite port.
 
@@ -23,7 +23,7 @@ Both run on machines that may also host the real, paired instance in `~/.even-wi
 - Auth on in `sim.sh`: puts a pairing click at fixed coordinates on the critical path of
   every screenshot check.
 - Auth off silently: this is how an insecure default ships unnoticed.
-- Sharing `~/.even-window`: a harness pairing would be refused by `EW_MAX_CLIENTS=1` (the
+- Sharing `~/.pinhole-window`: a harness pairing would be refused by `EW_MAX_CLIENTS=1` (the
   phone holds the slot), or would add keys to the registry that matters; an `EW_AUTH=0` run
   would sit next to real keys.
 - Reading the operator's env file: an inherited `EW_ORIGIN` makes every signature from

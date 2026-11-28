@@ -9,7 +9,7 @@ Start with the logs; most problems name themselves there.
 | Source | Location |
 | --- | --- |
 | Server, started by hand | The terminal. Lines start with `[ew]`; the X11 backend uses `[x11]`. |
-| Server, as a systemd unit | `journalctl --user -u 'even-window@*' -f` |
+| Server, as a systemd unit | `journalctl --user -u 'pinhole-window@*' -f` |
 | Server, under `scripts/dev.sh` | `.ew-x11/logs/dev-api.log` (and `dev-vite.log`) |
 | Client | The **log** panel on the phone screen, with a **copy** button |
 | Client, after the app crashed | Load the app with `?debug=1` beforehand. Client lines are then forwarded to the server log as `[ew] CLIENT …`. They are sent in batches, so the last lines before a crash can be missing. |

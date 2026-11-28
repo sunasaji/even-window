@@ -28,15 +28,15 @@ import {
 } from 'node:crypto'
 import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomart } from '../shared/randomart.ts'
 import { normaliseOrigin, sessionMaterial } from '../shared/sessionBinding.ts'
+import { defaultStateDir } from './stateDir.ts'
 
 /** Registry/secret/pairing state. `EW_STATE_DIR` overrides; read per call so the location is
  *  a runtime property, not a module-load one (docs/configuration.md). */
 export function stateDir(): string {
-  return process.env.EW_STATE_DIR || join(homedir(), '.even-window')
+  return process.env.EW_STATE_DIR || defaultStateDir()
 }
 const clientsFile = (): string => join(stateDir(), 'clients.json')
 const secretFile = (): string => join(stateDir(), 'server-secret')

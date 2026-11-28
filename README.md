@@ -6,8 +6,8 @@ pinhole-window mirrors a desktop session on your PC to Even Realities G2 smart g
 and lets you operate it from the glasses and from your phone. It is an Even Hub app
 (a WebView page inside the official Even App) plus a small server on the PC.
 
-It was called even-window until version 0.1.4. Paths such as `~/.even-window` keep that
-name ([why](docs/decisions/rename-to-pinhole-window.md)).
+It was called even-window until version 0.1.4. An install made then keeps working: its
+`~/.even-window` is still read ([details](docs/decisions/rename-to-pinhole-window.md)).
 
 The server runs a dedicated 576×288 mirrored desktop, captures it, and streams it to
 the glasses. Temple and ring gestures send keys back, a menu on the glasses switches

@@ -44,7 +44,7 @@ pinhole-window は `EW_*` 環境変数（env ファイルに置くこともで�
 
 | 変数 | 既定 | 意味 |
 | --- | --- | --- |
-| `EW_STATE_DIR` | `~/.even-window` | 状態ディレクトリ。絶対パスで指定します。既定値にはプロジェクトの旧名が残っています（[理由](decisions/rename-to-pinhole-window.md)）。 |
+| `EW_STATE_DIR` | `~/.pinhole-window` | 状態ディレクトリ。絶対パスで指定します。旧名の `~/.even-window` しか無いあいだは、そちらが使われます（[詳細](decisions/rename-to-pinhole-window.md)）。 |
 | `EW_ENV_FILE` | 未設定 | env ファイルの明示指定。空は「ファイルを読まない」という意味です。 |
 | `EW_QUIET` | 未設定 | `1` でリクエストごとのアクセスログを止めます。 |
 
@@ -76,7 +76,7 @@ pinhole-window は `EW_*` 環境変数（env ファイルに置くこともで�
 | --- | --- | --- | --- |
 | `EW_APP_URL` | `ew-auth.mjs` | 未設定 | `pair` と `open` で、引数に URL を渡さなかったときに使うアプリの URL。 |
 | `EW_PAIR_TTL_MS` | `ew-auth.mjs open` | `300000` | `open` で開くペアリング窓の有効時間。`pair` は常に 2 分です。 |
-| `EW_FIREFOX_PROFILE` | `ew-firefox.sh` | `~/.local/share/even-window/firefox` | Firefox のランタイムプロファイルのディレクトリ。 |
+| `EW_FIREFOX_PROFILE` | `ew-firefox.sh` | `~/.local/share/pinhole-window/firefox` | Firefox のランタイムプロファイルのディレクトリ。 |
 | `EW_FIREFOX_URL` | `ew-firefox.sh` | 未設定 | プロファイルのホームページの代わりに開く URL。 |
 | `EW_FIREFOX_BIN` | `ew-firefox.sh` | `firefox` | Firefox のバイナリ。 |
 | `EW_SIM_DISPLAY`、`EW_SIM_SCREEN`、`EW_AUTOMATION_PORT`、`EW_SETTLE_MS`、`EW_APP_QUERY` | `sim.sh` | `:180`、`608x1150`、`9899`、`6000`、未設定 | シミュレータのハーネスの設定。[development.md](development.md) を参照。 |
@@ -90,8 +90,8 @@ pinhole-window は `EW_*` 環境変数（env ファイルに置くこともで�
 `EW_ENV_FILE` を設定すると、サーバはそのファイルだけを読みます。設定しない場合は次の
 2 つを両方読み、両方にあるキーは先のファイルの値を使います。
 
-1. `~/.even-window/env`
-2. `$XDG_CONFIG_HOME/even-window/env`（既定では `~/.config/even-window/env`）
+1. `~/.pinhole-window/env`
+2. `$XDG_CONFIG_HOME/pinhole-window/env`（既定では `~/.config/pinhole-window/env`）
 
 systemd のユニットも同じ 2 つのファイルを指定していて、結果は同じです。サーバの起動方法で
 設定が変わることはありません。
@@ -99,7 +99,7 @@ systemd のユニットも同じ 2 つのファイルを指定していて、結
 この場所は `EW_STATE_DIR` には追従しません。`systemd/env.example` を出発点にしてください。
 
 ```bash
-install -m 600 systemd/env.example ~/.even-window/env
+install -m 600 systemd/env.example ~/.pinhole-window/env
 ```
 
 書式は systemd の `EnvironmentFile=` の厳密なサブセットなので、同じファイルが手動起動でも
@@ -124,7 +124,7 @@ EW_SPAWN="xterm -bg black -fg white"
 
 ## 状態ディレクトリ
 
-`~/.even-window`、または `EW_STATE_DIR`。モード `700` で作られます。既存のディレクトリが
+`~/.pinhole-window`、または `EW_STATE_DIR`。モード `700` で作られます。既存のディレクトリが
 ほかのユーザから読める場合、サーバは警告しますが、モードを勝手には変えません。
 
 | ファイル | 書き手 | 内容 |

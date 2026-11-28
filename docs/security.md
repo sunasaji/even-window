@@ -271,7 +271,7 @@ anything the server says. See [phone-ui.md](phone-ui.md).
 
 ## State directory
 
-`~/.even-window`, or `EW_STATE_DIR`. The directory is created `0700` and the files `0600`.
+`~/.pinhole-window`, or `EW_STATE_DIR`. The directory is created `0700` and the files `0600`.
 
 | File | Contents |
 | --- | --- |
@@ -285,7 +285,7 @@ useful to an attacker, so it is kept from other local accounts. Modes apply only
 if an existing directory is group- or world-accessible the banner says so and suggests
 `chmod 700`. The server does not change modes itself.
 
-The env file (`~/.even-window/env`) is ignored if others can write to it, since it could set
+The env file (`~/.pinhole-window/env`) is ignored if others can write to it, since it could set
 `EW_AUTH=0` ([configuration.md](configuration.md)).
 
 ## Secret rotation

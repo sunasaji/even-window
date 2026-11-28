@@ -40,7 +40,7 @@ export function makeP256Key(): TestKey {
 }
 
 /** Point EW_STATE_DIR at a fresh temp dir and return a disposer. Every auth test must do
- *  this: the module reads the dir per call, so the real ~/.even-window registry is never
+ *  this: the module reads the dir per call, so the real ~/.pinhole-window registry is never
  *  touched and tests cannot see each other's keys. */
 export function useTempStateDir(): () => void {
   const prev = process.env.EW_STATE_DIR

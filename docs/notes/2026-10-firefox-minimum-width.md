@@ -40,7 +40,7 @@ F11 is unrelated to the overflow; it only collapses the chrome.
 | `min-width` removed only | 500 by 120 | Yes |
 | Shipped template (plus collapsed tab strip, compact density, no bookmarks bar) | 387 by 1 | Yes, 189 px spare |
 
-`WM_CLASS(STRING) = "Firefox", "even-window-firefox"` was confirmed in the same run.
+`WM_CLASS(STRING) = "Firefox", "pinhole-window-firefox"` was confirmed in the same run.
 
 The sidebar rail is on by default in Firefox 157 and already costs 36 px of width,
 so putting the tabs there costs no extra width, while the horizontal tab strip costs

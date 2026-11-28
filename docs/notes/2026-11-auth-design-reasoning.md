@@ -8,7 +8,7 @@ Snapshot — not maintained. Conditions: reasoning recorded up to 2026-11; the c
 The authentication code is `src/server/auth.ts`, the client auth module and
 `scripts/ew-auth.mjs`. Choices worth recording:
 
-- The state directory is `~/.even-window`, overridable with `EW_STATE_DIR` and resolved per
+- The state directory is `~/.pinhole-window`, overridable with `EW_STATE_DIR` and resolved per
   call, so the caches are keyed by the resolved path.
 - The gate checks the registry on every request, so a revoked key stops working at once.
   A stateless token would survive for its full lifetime after revocation.

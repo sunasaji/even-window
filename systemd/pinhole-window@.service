@@ -14,11 +14,14 @@ Type=simple
 # back into a filesystem path.
 WorkingDirectory=%f
 # Both files are read, here and by the server itself, with the same result: a key set in
-# both takes the value from ~/.even-window/env. The later file wins in systemd, so that
+# both takes the value from ~/.pinhole-window/env. The later file wins in systemd, so that
 # one comes last.
 # The leading `-` tolerates a missing file.
+# The first two are the paths under the project's former name, for an install made then.
 EnvironmentFile=-%h/.config/even-window/env
 EnvironmentFile=-%h/.even-window/env
+EnvironmentFile=-%h/.config/pinhole-window/env
+EnvironmentFile=-%h/.pinhole-window/env
 ExecStart=/usr/bin/env node %f/src/server/main.ts
 # Stop and restart signal the server only. The mirrored desktop (X server, window manager,
 # applications) is in the same control group and must outlive the server, so that a restart

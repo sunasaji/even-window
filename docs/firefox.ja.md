@@ -12,7 +12,7 @@
 
 ## セットアップ
 
-`~/.even-window/apps.conf`（[configuration.ja.md](configuration.ja.md#appsconf)）に、
+`~/.pinhole-window/apps.conf`（[configuration.ja.md](configuration.ja.md#appsconf)）に、
 チェックアウトの絶対パスを使って 1 行追加します。
 
 ```
@@ -29,18 +29,18 @@ WSL2 では、snap パッケージはミラーデスクトップに接続でき�
 ## ランチャがすること
 
 1. `scripts/firefox-profile/` にあるプロファイルのテンプレートを、起動のたびにランタイム
-   プロファイル（`~/.local/share/even-window/firefox`）へコピーします。編集するのは
+   プロファイル（`~/.local/share/pinhole-window/firefox`）へコピーします。編集するのは
    テンプレートで、ランタイム側のコピーではありません。cookie、履歴、ログイン状態は
    ランタイムプロファイルにあり、消えません。
 2. `<profile>/user-local.js` をプロファイルの `user.js` の末尾に追記します。このファイルは
    スクリプトが一度だけ作り、以後は上書きしません。トークンを含むホームページのように、
    このマシンに固有の設定はここに書きます。
 3. Firefox を独立したインスタンスとして（`--no-remote --new-instance`、
-   `MOZ_DBUS_REMOTE=0`）、X11 で、ウィンドウクラス `even-window-firefox` で起動します。
+   `MOZ_DBUS_REMOTE=0`）、X11 で、ウィンドウクラス `pinhole-window-firefox` で起動します。
 
 | 変数 | 既定 | 意味 |
 | --- | --- | --- |
-| `EW_FIREFOX_PROFILE` | `~/.local/share/even-window/firefox` | ランタイムプロファイルのディレクトリ |
+| `EW_FIREFOX_PROFILE` | `~/.local/share/pinhole-window/firefox` | ランタイムプロファイルのディレクトリ |
 | `EW_FIREFOX_URL` | 未設定 | ホームページの代わりに開く URL |
 | `EW_FIREFOX_BIN` | `firefox` | Firefox のバイナリ |
 
@@ -82,7 +82,7 @@ user_pref("browser.startup.homepage", "https://<host>:<port>/?token=<token>");
 表示している場合はそのアドレス）で:
 
 ```bash
-win=$(DISPLAY=:100 xdotool search --onlyvisible --class even-window-firefox | head -1)
+win=$(DISPLAY=:100 xdotool search --onlyvisible --class pinhole-window-firefox | head -1)
 DISPLAY=:100 xprop -id "$win" WM_NORMAL_HINTS WM_CLASS
 DISPLAY=:100 xwininfo -id "$win" | grep -E 'Width|Height'
 ```

@@ -1,6 +1,6 @@
 // Vitest setup — runs before every test file.
 //
-// It makes the env-file loader hermetic. `src/server/env.boot.ts` applies `~/.even-window/env`
+// It makes the env-file loader hermetic. `src/server/env.boot.ts` applies `~/.pinhole-window/env`
 // as an import side effect, so importing src/server/main.ts in a test would otherwise pick up
 // the developer's own env file. `EW_ENV_FILE=''` means "use no file and do not search".
 //

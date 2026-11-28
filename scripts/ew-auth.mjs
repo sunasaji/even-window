@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
-// ew-auth.mjs — operator CLI for the client auth registry (~/.even-window/clients.json).
+// ew-auth.mjs — operator CLI for the client auth registry (~/.pinhole-window/clients.json).
 //
 // Runs without the TypeScript toolchain: node builtins only, plus one optional dynamic
 // import (the QR encoder, for `pair`) that falls back to `qrencode`, then to the URL alone.
@@ -27,7 +27,7 @@ import { execFileSync } from 'node:child_process'
 // src/server/auth.ts, src/client/authClient.ts and src/shared/sessionBinding.ts byte for
 // byte (docs/security.md). Accepts Ed25519 (OKP, only `x`) and ECDSA P-256 (EC, `x`+`y`).
 import { createHash, createPrivateKey, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
-import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -94,7 +94,13 @@ const loadEnvFile = () => {
   const xdg = process.env.XDG_CONFIG_HOME || join(homedir(), '.config')
   const candidates = explicit
     ? [explicit]
-    : [join(homedir(), '.even-window', 'env'), join(xdg, 'even-window', 'env')]
+    : [
+        join(homedir(), '.pinhole-window', 'env'),
+        join(xdg, 'pinhole-window', 'env'),
+        // the former name: an install made before the rename
+        join(homedir(), '.even-window', 'env'),
+        join(xdg, 'even-window', 'env'),
+      ]
   for (const file of candidates) {
     let text
     try {
@@ -132,7 +138,13 @@ const loadEnvFile = () => {
 }
 loadEnvFile()
 
-const DIR = process.env.EW_STATE_DIR || join(homedir(), '.even-window')
+// As src/server/stateDir.ts: the former name's directory is used while it is the only one.
+const defaultStateDir = () => {
+  const now = join(homedir(), '.pinhole-window')
+  const old = join(homedir(), '.even-window')
+  return !existsSync(now) && existsSync(old) ? old : now
+}
+const DIR = process.env.EW_STATE_DIR || defaultStateDir()
 const CLIENTS = join(DIR, 'clients.json')
 const PENDING = join(DIR, 'pending.json')
 const PAIRING = join(DIR, 'pairing.json')
@@ -236,7 +248,7 @@ const printSlotRemedy = (clients, max) => {
     console.error(`  node scripts/ew-auth.mjs revoke ${c.id.slice(0, 12)}   # ${c.name}`)
   console.error('')
   console.error(`…or raise the cap on purpose, for the whole run: EW_MAX_CLIENTS=${max + 1}`)
-  console.error('(put it in ~/.even-window/env and restart the server; it says so at start-up).')
+  console.error('(put it in ~/.pinhole-window/env and restart the server; it says so at start-up).')
 }
 
 /** Enforce the cap before writing. `id` is the key about to be enrolled; an already

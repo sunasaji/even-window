@@ -65,11 +65,11 @@ done
 
 LOG_DIR="${EW_X11_RUNTIME_DIR:-${REPO_ROOT}/.ew-x11}/logs"
 
-# The run has its own auth registry instead of ~/.even-window: pairing into the real
+# The run has its own auth registry instead of ~/.pinhole-window: pairing into the real
 # registry would be refused by EW_MAX_CLIENTS (default 1) when a phone already holds the
 # slot, and an EW_AUTH=0 run must not touch the real keys. An explicit EW_STATE_DIR wins.
 STATE_DIR="${EW_STATE_DIR:-${EW_X11_RUNTIME_DIR:-${REPO_ROOT}/.ew-x11}/state}"
-# The operator's ~/.even-window/env is not read: an EW_ORIGIN naming the tailnet URL
+# The operator's ~/.pinhole-window/env is not read: an EW_ORIGIN naming the tailnet URL
 # would refuse every signature a browser makes at 127.0.0.1. The untracked dev.env in
 # the checkout is read when it exists, for per-developer settings. An explicit
 # EW_ENV_FILE wins, and an empty one means "no file".
@@ -256,7 +256,7 @@ dev.sh: both up. Ctrl-C to stop.
   app   http://127.0.0.1:${VITE_PORT}/?server=http://127.0.0.1:${API_PORT}
   api   http://127.0.0.1:${API_PORT}/api/health
   auth  EW_AUTH=${EW_AUTH_VAL} $([ "${AUTH}" = 1 ] && echo '(ENFORCED)' || echo '(DISABLED for this run)')
-  state ${STATE_DIR} (this run's own registry; ~/.even-window is untouched)
+  state ${STATE_DIR} (this run's own registry; ~/.pinhole-window is untouched)
   env   ${ENV_FILE:-none — create dev.env (mode 600) for persistent EW_* in dev runs}
 EOF
 

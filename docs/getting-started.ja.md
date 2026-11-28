@@ -44,7 +44,7 @@ npm run server          # node src/server/main.ts と同じ
 - `127.0.0.1:8787` で待ち受ける（`EW_HOST`、`EW_PORT`）
 - ディスプレイ `:100`（`EW_X11_DISPLAY`）でミラーデスクトップを起動し、暗い背景のターミナルを
   1 つ入れる（`EW_SPAWN`）
-- 状態を `~/.even-window` に置き、設定を `~/.even-window/env` から読む
+- 状態を `~/.pinhole-window` に置き、設定を `~/.pinhole-window/env` から読む
 
 起動時のバナーは、認証が強制されているか、登録済みの端末数、env ファイルから取った設定、
 セッション束縛（`EW_ORIGIN`）が強制されているかを表示します。設定を変えたら一度は
@@ -57,7 +57,7 @@ npm run dev
 ```
 
 `scripts/dev.sh` は両方を起動しますが、これは開発用のハーネスで、専用の端末レジストリ
-（`.ew-x11/state`）を使い、`~/.even-window/env` を読みません。開発にだけ使ってください。
+（`.ew-x11/state`）を使い、`~/.pinhole-window/env` を読みません。開発にだけ使ってください。
 [development.md](development.md) を参照してください。
 
 ## 端末をペアリングする
@@ -135,9 +135,9 @@ https://host.ts.net:8443 (tailnet only)
    ほかのオリジン宛てに作られたセッション署名を拒否します。
 
    ```bash
-   install -d -m 700 ~/.even-window
-   install -m 600 /dev/null ~/.even-window/env
-   echo 'EW_ORIGIN=https://host.ts.net:8443' >> ~/.even-window/env
+   install -d -m 700 ~/.pinhole-window
+   install -m 600 /dev/null ~/.pinhole-window/env
+   echo 'EW_ORIGIN=https://host.ts.net:8443' >> ~/.pinhole-window/env
    ```
 
 2. Vite の開発サーバを使う場合は、ホットリロードのクライアントに戻り先を教えます。
@@ -198,17 +198,17 @@ tailnet 内の別の端末から結果を確認します。
 
 ## systemd のユーザサービスとして動かす
 
-`systemd/even-window@.service` はテンプレートユニットで、インスタンス名はチェックアウトの
+`systemd/pinhole-window@.service` はテンプレートユニットで、インスタンス名はチェックアウトの
 絶対パスです。`systemd/env.example` はコメントつきの env ファイルです。
 
 ```bash
 # リポジトリのルートで
-mkdir -p ~/.config/systemd/user ~/.even-window && chmod 700 ~/.even-window
-cp systemd/even-window@.service ~/.config/systemd/user/
-install -m 600 systemd/env.example ~/.even-window/env
-${EDITOR:-vi} ~/.even-window/env          # 少なくとも EW_ORIGIN を設定する
+mkdir -p ~/.config/systemd/user ~/.pinhole-window && chmod 700 ~/.pinhole-window
+cp systemd/pinhole-window@.service ~/.config/systemd/user/
+install -m 600 systemd/env.example ~/.pinhole-window/env
+${EDITOR:-vi} ~/.pinhole-window/env          # 少なくとも EW_ORIGIN を設定する
 
-unit="even-window@$(systemd-escape --path "$PWD").service"
+unit="pinhole-window@$(systemd-escape --path "$PWD").service"
 systemctl --user daemon-reload
 systemctl --user enable --now "$unit"
 systemctl --user status "$unit"
@@ -241,7 +241,7 @@ rm -f .ew-x11/session.json             # セッションの記録を消す
 Xephyr と Xvfb のバックエンドを切り替えたいときも同じ手順が必要です。生きている
 セッションがあると、バックエンドを選ぶ前にそれへ再アタッチするためです。
 
-そのほかを消すには、`tailscale serve --https=8443 off` を実行し、`~/.even-window`
+そのほかを消すには、`tailscale serve --https=8443 off` を実行し、`~/.pinhole-window`
 （登録済みの端末、割り当て、設定）とチェックアウト内の `.ew-x11/`（ランタイムファイルと
 ログ）を削除します。
 
@@ -268,7 +268,7 @@ Xephyr と Xvfb のバックエンドを切り替えたいときも同じ手順�
    curl -s http://127.0.0.1:8757/v1/models | grep -o '"id":"[^"]*"'
    ```
 
-3. `~/.even-window/env` で pinhole-window にその場所を教え、サーバを再起動します。
+3. `~/.pinhole-window/env` で pinhole-window にその場所を教え、サーバを再起動します。
 
    ```
    EW_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions
