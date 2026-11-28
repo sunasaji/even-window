@@ -18,8 +18,12 @@ Linux マシンで、チェックアウトした直後の状態からグラス�
 | 音声認識サービス | 任意。OpenAI の `POST /v1/audio/transcriptions` に応答するサーバなら何でも使えます。 |
 
 ```bash
-sudo apt install -y xserver-xephyr xvfb ratpoison ffmpeg xdotool x11-utils xterm
+sudo apt install -y xvfb ratpoison ffmpeg xdotool x11-utils xterm
 ```
+
+`xserver-xephyr` は任意です。これがあり、PC にデスクトップがあれば、ミラーデスクトップは
+PC のウィンドウにも表示されます。なければサーバは Xvfb を使い、デスクトップはアプリ越しに
+だけ見えます。`scripts/sim.sh` は、`--headless` を付けない場合にこれを必要とします。
 
 Linux バックエンドは、ミラーデスクトップをネストした X サーバ（ホストのディスプレイが
 あれば Xephyr、なければ Xvfb）の上に用意し、ウィンドウを ratpoison で管理し、ffmpeg で

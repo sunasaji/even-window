@@ -205,7 +205,8 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     '<ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">' +
     '<li>On a Linux PC with Node.js 22.18 or newer, install what the server drives' +
     ' (Debian or Ubuntu; elsewhere, the same programs under their own package names):' +
-    `<pre style="${pS}">sudo apt install -y xserver-xephyr xvfb ratpoison \\\n  ffmpeg xdotool x11-utils xterm</pre></li>` +
+    `<pre style="${pS}">sudo apt install -y xvfb ratpoison ffmpeg \\\n  xdotool x11-utils xterm</pre>` +
+    `(optional: <code style="${cS}">xserver-xephyr</code>, to see the desktop in a window on the PC)</li>` +
     '<li>Get the server and start it:' +
     `<pre style="${pS}">git clone https://github.com/sunasaji/pinhole-window\ncd pinhole-window &amp;&amp; npm install\nnode src/server/main.ts</pre>` +
     `(or install the unit: <code style="${cS}">systemd/pinhole-window@.service</code>)</li>` +

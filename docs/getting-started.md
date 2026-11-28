@@ -18,8 +18,12 @@ glasses. Day-to-day operation is in [usage.md](usage.md); every setting is in
 | Speech-to-text service | Optional. Any server that answers OpenAI's `POST /v1/audio/transcriptions`. |
 
 ```bash
-sudo apt install -y xserver-xephyr xvfb ratpoison ffmpeg xdotool x11-utils xterm
+sudo apt install -y xvfb ratpoison ffmpeg xdotool x11-utils xterm
 ```
+
+`xserver-xephyr` is optional. With it, and with a desktop on the PC, the mirrored desktop
+also appears in a window there; without it the server uses Xvfb and the desktop is visible
+only through the app. `scripts/sim.sh` needs it unless it is run with `--headless`.
 
 The X11 backend hosts the mirrored desktop in a nested X server (Xephyr when a host
 display exists, otherwise Xvfb), manages its windows with ratpoison, captures with

@@ -96,7 +96,8 @@ flowchart TB
 ## 必要なもの
 
 - Linux（WSL2 + WSLg でも動作）と Node.js 22.18 以降
-- `sudo apt install -y xserver-xephyr xvfb ratpoison ffmpeg xdotool x11-utils xterm`
+- `sudo apt install -y xvfb ratpoison ffmpeg xdotool x11-utils xterm`
+  （任意: `xserver-xephyr`。ミラーデスクトップを PC のウィンドウでも見る場合）
 - Even Realities G2 グラスと、開発中のアプリを読み込める Even App
 - スマホからサーバへ届くための TLS フロントエンド（`tailscale serve` など）
 - 任意: 音声入力のための OpenAI 互換の音声認識サービス

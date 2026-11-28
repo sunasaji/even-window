@@ -97,7 +97,8 @@ It cannot:
 ## Requirements
 
 - Linux (WSL2 with WSLg works) and Node.js 22.18 or newer
-- `sudo apt install -y xserver-xephyr xvfb ratpoison ffmpeg xdotool x11-utils xterm`
+- `sudo apt install -y xvfb ratpoison ffmpeg xdotool x11-utils xterm`
+  (optional: `xserver-xephyr`, to see the mirrored desktop in a window on the PC)
 - Even Realities G2 glasses and the Even App, able to load a development app
 - A TLS front end such as `tailscale serve` to reach the server from a phone
 - Optional: an OpenAI-compatible speech-to-text service for voice input
