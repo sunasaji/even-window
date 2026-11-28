@@ -96,6 +96,8 @@ export function syncServerField(): void {
 }
 /** The server list at the top of the page, shown only at the root (`renderRootPanel`). */
 let rootPanelEl: HTMLElement | null = null
+/** The card's content; the card itself also holds the cell that gives it the mirror's height. */
+let rootListEl: HTMLElement | null = null
 /** Where the open server and `disconnect` are shown: the first row inside `connection`. */
 let connServerEl: HTMLElement | null = null
 
@@ -151,11 +153,11 @@ const FORGET_ARM_MS = 4000
  *  the mirror is back and the open server, with `disconnect`, is the first row of the
  *  `connection` fold, because leaving a server is rare. */
 export function renderRootPanel(): void {
-  const top = rootPanelEl
-  if (!top) return
+  const top = rootListEl
+  if (!top || !rootPanelEl) return
   top.replaceChildren()
   connServerEl?.replaceChildren()
-  top.style.display = rootOpen ? '' : 'none'
+  rootPanelEl.style.display = rootOpen ? 'grid' : 'none'
   if (mirrorEl) mirrorEl.style.display = rootOpen ? 'none' : 'block'
   if (connServerEl) connServerEl.style.display = rootOpen ? 'none' : ''
   renderConnSummary() // it names the open server
@@ -570,8 +572,16 @@ export function mountUi(): void {
   rootPanelEl = document.createElement('div')
   rootPanelEl.id = 'pw-servers'
   rootPanelEl.style.cssText =
-    `max-width:${String(SCREEN_W)}px;box-sizing:border-box;padding:12px;` +
+    `max-width:${String(SCREEN_W)}px;box-sizing:border-box;display:grid;` +
     'border:1px solid #a78bfa;border-radius:8px;background:#161616'
+  // At least as tall as the mirror it stands in for, so the rows below do not jump when a
+  // server is opened or left. An empty cell with the mirror's proportions shares the grid cell
+  // with the content: the card is as tall as the taller of the two, so a long list still grows.
+  const sizer = document.createElement('div')
+  sizer.style.cssText = `grid-area:1/1;aspect-ratio:${String(SCREEN_W)}/${String(SCREEN_H)};visibility:hidden`
+  rootListEl = document.createElement('div')
+  rootListEl.style.cssText = 'grid-area:1/1;padding:12px;min-width:0'
+  rootPanelEl.append(sizer, rootListEl)
   ui.appendChild(rootPanelEl)
   renderRootPanel()
   wireMirrorTouch(mirrorEl)
