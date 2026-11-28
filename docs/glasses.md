@@ -236,7 +236,7 @@ is never a black panel (`setupNoticeText()` in `src/client/hints.ts`). It has th
 
 | Auth state | Notice |
 | --- | --- |
-| `unpaired`, `unauthorized` | Pair this phone: start the server, run `ew-auth.mjs pair URL` on the PC, open the pairing URL on the phone |
+| `unpaired`, `unauthorized` | Pair this phone: start the server, run `ew-auth.mjs pair URL` on the PC, scan the QR code it prints, copy the pairing URL from the page that opens, paste it into the pair dialog |
 | `offline` on the built-in default address | Set the server address in the card on the phone |
 | `offline` on an address a person gave | Server unreachable: the address, two things to check, where to change it |
 

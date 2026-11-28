@@ -83,8 +83,9 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
       '1. PC: start the server (npm run server)',
       '2. PC: node scripts/ew-auth.mjs pair URL',
       '    URL = how the phone reaches the PC',
-      '3. Phone: open the pairing URL it prints',
-      '    or paste it in the dialog in this app',
+      '3. Phone: scan the QR code it prints,',
+      '    tap Copy on the page that opens,',
+      '    paste into the pair dialog in this app',
       '',
       last,
     ].join('\n')
@@ -95,7 +96,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
       '- paired before: enter the server URL',
       '- first time, on the PC:',
       '    node scripts/ew-auth.mjs pair URL',
-      '    then paste the pairing URL it prints',
+      '    scan its QR code, tap Copy, paste here',
       '',
       last,
     ].join('\n')
