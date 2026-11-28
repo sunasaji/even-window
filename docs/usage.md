@@ -23,7 +23,9 @@ until you revoke it on the PC.
 
 A double tap at the list leaves the app, after the system's confirmation.
 
-<img src="img/glasses-servers.png" width="288" alt="The server list on the lens: a header with tap=open and dbl=exit, and one server under the cursor">
+| On the glasses | On the phone |
+| --- | --- |
+| <img src="img/glasses-servers.png" width="288" alt="The server list on the lens: a header with tap=open and dbl=exit, and one server under the cursor"> | <img src="img/phone-servers.png" width="300" alt="The phone at the server list: a card with one server row and its … button, in place of the mirror"> |
 
 ## Glasses gestures
 

@@ -23,7 +23,9 @@
 
 一覧でダブルタップすると、システムの確認を経てアプリを終了します。
 
-<img src="img/glasses-servers.png" width="288" alt="レンズに出る接続先の一覧：tap=open と dbl=exit を示す見出しと、カーソルが載った接続先 1 件">
+| グラス | スマホ |
+| --- | --- |
+| <img src="img/glasses-servers.png" width="288" alt="レンズに出る接続先の一覧：tap=open と dbl=exit を示す見出しと、カーソルが載った接続先 1 件"> | <img src="img/phone-servers.png" width="300" alt="接続先の一覧を表示したスマホ画面：ミラーの位置に、接続先 1 行と … ボタンのあるカード"> |
 
 ## グラスのジェスチャ
 
