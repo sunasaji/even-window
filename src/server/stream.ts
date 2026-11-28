@@ -121,7 +121,7 @@ export function onAppsChanged(list: LauncherEntry[], recentIds: string[]): void 
 }
 
 /** main.ts calls this at boot and whenever the client registry's contents change (it polls the
- *  stat-gated registry on the 1 Hz window tick; `ew-auth` is the only writer). Retained so a
+ *  stat-gated registry on the 1 Hz window tick; `pw-auth` is the only writer). Retained so a
  *  later subscriber is primed with it. The event only informs: nothing on the wire can change
  *  the registry. */
 export function onClientsChanged(list: EnrolledClient[], enforced: boolean): void {

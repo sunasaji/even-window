@@ -37,4 +37,4 @@ refused.
 - `EventSource` reconnects by itself with the same URL, so a reconnect after 60 seconds gets
   a 401. The client must fetch a new ticket and reopen the stream (debounced by
   `STREAM_REOPEN_MS`); this is the only recovery path, not a fallback.
-- With `EW_AUTH=0` the ticket route answers an empty ticket and the stream is open.
+- With `PINHOLE_AUTH=0` the ticket route answers an empty ticket and the stream is open.

@@ -44,7 +44,7 @@ export interface ServerConfirmOpts {
 
 /** The confirm card. Nothing is adopted until `onAccept` fires. */
 export function confirmServerChange(o: ServerConfirmOpts): void {
-  const existing = document.getElementById('ew-server-confirm')
+  const existing = document.getElementById('pw-server-confirm')
   if (existing) existing.remove()
 
   // Above the pairing card (99999): when `?pair=` and `?server=` arrive together, where the
@@ -53,7 +53,7 @@ export function confirmServerChange(o: ServerConfirmOpts): void {
     'div',
     'position:fixed;inset:0;z-index:100000;background:#151515e8;color:#e5e5e5;display:flex;align-items:flex-start;justify-content:center;font:14px/1.4 system-ui,sans-serif;padding:16px;box-sizing:border-box;overflow:auto',
   )
-  back.id = 'ew-server-confirm'
+  back.id = 'pw-server-confirm'
   const card = el(
     'div',
     'max-width:520px;width:100%;background:#232323;border:1px solid #b4402f;border-radius:10px;padding:18px;text-align:center',

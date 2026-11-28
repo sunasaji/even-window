@@ -20,7 +20,7 @@ export interface PumpStats {
   pushMs: number[]
   deriveMs: number[]
   /** How long a tile arrival takes: the inflate to indices plus the colour mirror. Its rate is
-   *  the server's emit rate, which EW_FPS controls. */
+   *  the server's emit rate, which PINHOLE_FPS controls. */
   decodeMs: number[]
   /** How long `encodeTilePng` takes. Sampled at dequeue, so its rate is the push rate. */
   encodeMs: number[]

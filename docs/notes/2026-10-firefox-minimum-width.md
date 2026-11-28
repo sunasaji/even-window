@@ -91,7 +91,7 @@ user_pref("dom.w3c_touch_events.enabled", 1);
   the nested X listens on TCP only, and snap confinement forbids TCP X connections
   (`cannot open display`).
 - `user.js` values are written into `prefs.js` and persist after the line is removed
-  from the template; hence `RETIRED_PREFS` in `ew-firefox.sh`.
+  from the template; hence `RETIRED_PREFS` in `pw-firefox.sh`.
 - The Firefox 157 deb keeps profiles under `~/.config/mozilla/firefox/`, not `~/.mozilla`.
 - `extensions.activeThemeID` has no effect on a new profile: the add-on manager
   re-enables the default theme and writes the preference back. Dark chrome comes

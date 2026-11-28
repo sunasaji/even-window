@@ -18,7 +18,7 @@ export const HINT_SHOWS = 3
 
 export type HintId = 'startup' | 'submit-off'
 
-const storeKey = (id: HintId): string => `ew.hint.${id}`
+const storeKey = (id: HintId): string => `pw.hint.${id}`
 
 /** Pure: should a hint already shown `shown` times be shown again? */
 export function hintDue(shown: number, max = HINT_SHOWS): boolean {
@@ -81,7 +81,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
     return [
       'PinholeWindow — pair this phone',
       '1. PC: start the server (npm run server)',
-      '2. PC: node scripts/ew-auth.mjs pair URL',
+      '2. PC: node scripts/pw-auth.mjs pair URL',
       '    URL = how the phone reaches the PC',
       '3. Phone: scan the QR code it prints,',
       '    tap Copy on the page that opens,',
@@ -95,7 +95,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
       'Use the card on the phone.',
       '- paired before: enter the server URL',
       '- first time, on the PC:',
-      '    node scripts/ew-auth.mjs pair URL',
+      '    node scripts/pw-auth.mjs pair URL',
       '    scan its QR code, tap Copy, paste here',
       '',
       last,

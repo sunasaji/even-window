@@ -6,8 +6,8 @@ import { defineConfig } from 'vitest/config'
 // Vite refuses requests whose Host header it does not recognise, which protects the dev
 // server against DNS rebinding, so the check is narrowed and not switched off. `.ts.net`
 // covers any Tailscale MagicDNS name (what `tailscale serve` puts in front);
-// EW_ALLOWED_HOSTS (comma-separated) adds more.
-const extraHosts = (process.env.EW_ALLOWED_HOSTS ?? '')
+// PINHOLE_ALLOWED_HOSTS (comma-separated) adds more.
+const extraHosts = (process.env.PINHOLE_ALLOWED_HOSTS ?? '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean)
@@ -20,11 +20,11 @@ export default defineConfig({
     allowedHosts: ['.ts.net', ...extraHosts],
     // Behind a TLS proxy the browser reaches the page on the proxy's port, not on 5273, so
     // the HMR client must be told where to dial back; otherwise hot reload fails silently.
-    hmr: process.env.EW_HMR_HOST
+    hmr: process.env.PINHOLE_HMR_HOST
       ? {
           protocol: 'wss',
-          host: process.env.EW_HMR_HOST,
-          clientPort: Number(process.env.EW_HMR_PORT) || 443,
+          host: process.env.PINHOLE_HMR_HOST,
+          clientPort: Number(process.env.PINHOLE_HMR_PORT) || 443,
         }
       : undefined,
     // The WebView inside the Even App cannot be hard-reloaded, so nothing served to it may

@@ -35,12 +35,12 @@ afterAll(async () => {
 
 beforeEach(() => {
   dispose = useTempStateDir()
-  prevAuth = process.env.EW_AUTH
-  process.env.EW_AUTH = '0'
+  prevAuth = process.env.PINHOLE_AUTH
+  process.env.PINHOLE_AUTH = '0'
 })
 afterEach(() => {
-  if (prevAuth === undefined) delete process.env.EW_AUTH
-  else process.env.EW_AUTH = prevAuth
+  if (prevAuth === undefined) delete process.env.PINHOLE_AUTH
+  else process.env.PINHOLE_AUTH = prevAuth
   dispose()
 })
 

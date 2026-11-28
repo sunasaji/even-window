@@ -69,7 +69,7 @@ describe('InstanceBook — the newest page load owns the glasses', () => {
   })
 
   it('identities are independent — two paired devices do not fight', () => {
-    // `EW_MAX_CLIENTS` is 1 by default, but it can be raised, and a second enrolled device is
+    // `PINHOLE_MAX_CLIENTS` is 1 by default, but it can be raised, and a second enrolled device is
     // a different user-visible thing from a second WebView on the same phone.
     const b = new InstanceBook()
     b.adopt('phone', 'A')

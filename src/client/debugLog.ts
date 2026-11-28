@@ -168,7 +168,7 @@ export function log(line: string): void {
   logLines.push(e)
   if (logLines.length > LOG_BUFFER_MAX) logLines.shift()
   appendLogLine(e)
-  console.log('[ew]', line)
+  console.log('[pw]', line)
   if (DEBUG_EVENTS) logForwarder.push(e)
 }
 

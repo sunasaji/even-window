@@ -5,7 +5,7 @@ English | [日本語](firefox.ja.md)
 Firefox needs a dedicated profile to be usable on a 576×288, 16-level display. With
 a default profile its window is laid out wider than the screen and the right edge is
 cut off; its toolbars are grey, which on the glasses is a permanently lit band; and
-its scrollbars disappear. `scripts/ew-firefox.sh` starts Firefox with a profile that
+its scrollbars disappear. `scripts/pw-firefox.sh` starts Firefox with a profile that
 fixes these.
 
 Only the Firefox started by this script is affected. It never shares a profile or a
@@ -17,7 +17,7 @@ Add one line to `~/.pinhole-window/apps.conf` ([configuration.md](configuration.
 with the absolute path of your checkout:
 
 ```
-app Firefox (G2) = /home/you/src/pinhole-window/scripts/ew-firefox.sh
+app Firefox (G2) = /home/you/src/pinhole-window/scripts/pw-firefox.sh
 ```
 
 No restart is needed. `Firefox (G2)` appears in the phone's **apps** palette, and on
@@ -41,9 +41,9 @@ snap package cannot connect to the mirrored desktop
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `EW_FIREFOX_PROFILE` | `~/.local/share/pinhole-window/firefox` | Runtime profile directory |
-| `EW_FIREFOX_URL` | unset | Open this URL instead of the home page |
-| `EW_FIREFOX_BIN` | `firefox` | Firefox binary |
+| `PINHOLE_FIREFOX_PROFILE` | `~/.local/share/pinhole-window/firefox` | Runtime profile directory |
+| `PINHOLE_FIREFOX_URL` | unset | Open this URL instead of the home page |
+| `PINHOLE_FIREFOX_BIN` | `firefox` | Firefox binary |
 
 ### Choosing the start page
 
@@ -54,7 +54,7 @@ The launcher passes no arguments from the application list, so set the home page
 user_pref("browser.startup.homepage", "https://<host>:<port>/?token=<token>");
 ```
 
-For a one-off run from a shell: `EW_FIREFOX_URL=https://example.org scripts/ew-firefox.sh`.
+For a one-off run from a shell: `PINHOLE_FIREFOX_URL=https://example.org scripts/pw-firefox.sh`.
 
 ## What the profile changes
 
@@ -68,7 +68,7 @@ For a one-off run from a shell: `EW_FIREFOX_URL=https://example.org scripts/ew-f
 | `user.js` | Desktop user agent; `meta viewport` handling off | At 576 px most responsive sites already use their single-column layout. Mobile variants add fixed headers that cost height. |
 | `userContent.css` | 3 px green focus ring, dashed outline on text fields | A thin default ring disappears at 16 levels |
 | `userContent.css` | Blank pages are black | A white flash lights the whole lens |
-| `ew-firefox.sh` | `GTK_THEME=Adwaita:dark` | Native dialogs such as the file picker are not reached by CSS |
+| `pw-firefox.sh` | `GTK_THEME=Adwaita:dark` | Native dialogs such as the file picker are not reached by CSS |
 
 Antialiasing is already off for every application on the mirrored desktop, so the
 launcher does nothing about fonts.
@@ -96,7 +96,7 @@ throwaway server:
 export DISPLAY=:199
 Xvfb :199 -screen 0 576x288x24 -nolisten tcp &
 until xdpyinfo >/dev/null 2>&1; do sleep 0.2; done
-EW_FIREFOX_URL=about:blank scripts/ew-firefox.sh &
+PINHOLE_FIREFOX_URL=about:blank scripts/pw-firefox.sh &
 ```
 
 ## If the window is still too wide
@@ -114,7 +114,7 @@ back over 576. In `<profile>/user-local.js`, in order of preference:
 
 - Removing a preference from `user.js` does not unset it in a profile that has
   already run, because Firefox copies `user.js` values into `prefs.js`. Add the
-  preference name to `RETIRED_PREFS` in `ew-firefox.sh` so the launcher removes it.
+  preference name to `RETIRED_PREFS` in `pw-firefox.sh` so the launcher removes it.
 - To use a mobile user agent, set `general.useragent.override` in `user-local.js`.
   It applies to every site; Firefox no longer supports per-site overrides.
 

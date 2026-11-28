@@ -130,7 +130,7 @@ describe('setup notice', () => {
       for (const l of lines) expect(glassWidth(l)).toBeLessThan(LINE_UNITS)
       expect(lines.at(-1)).toContain('Disconnect')
     }
-    expect(setupNoticeText('pair', long)).toContain('ew-auth.mjs pair')
+    expect(setupNoticeText('pair', long)).toContain('pw-auth.mjs pair')
     expect(setupNoticeText('address', long)).toContain('server URL')
     expect(setupNoticeText('unreachable', 'http://pc:8787/')).toContain('pc:8787')
   })

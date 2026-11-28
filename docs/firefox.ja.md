@@ -5,7 +5,7 @@
 576×288・16 階調の表示で Firefox を実用的に使うには、専用のプロファイルが必要です。
 既定のプロファイルでは、ウィンドウが画面より広くレイアウトされて右端が切れます。
 ツールバーは灰色で、グラスの上では常に光る帯になります。スクロールバーも消えます。
-`scripts/ew-firefox.sh` は、これらを直したプロファイルで Firefox を起動します。
+`scripts/pw-firefox.sh` は、これらを直したプロファイルで Firefox を起動します。
 
 影響を受けるのは、このスクリプトが起動した Firefox だけです。デスクトップの Firefox と
 プロファイルやプロセスを共有することはありません。
@@ -16,7 +16,7 @@
 チェックアウトの絶対パスを使って 1 行追加します。
 
 ```
-app Firefox (G2) = /home/you/src/pinhole-window/scripts/ew-firefox.sh
+app Firefox (G2) = /home/you/src/pinhole-window/scripts/pw-firefox.sh
 ```
 
 再起動は不要です。`Firefox (G2)` がスマホの **apps** パレットに現れ、一度起動したあとは
@@ -40,9 +40,9 @@ WSL2 では、snap パッケージはミラーデスクトップに接続でき�
 
 | 変数 | 既定 | 意味 |
 | --- | --- | --- |
-| `EW_FIREFOX_PROFILE` | `~/.local/share/pinhole-window/firefox` | ランタイムプロファイルのディレクトリ |
-| `EW_FIREFOX_URL` | 未設定 | ホームページの代わりに開く URL |
-| `EW_FIREFOX_BIN` | `firefox` | Firefox のバイナリ |
+| `PINHOLE_FIREFOX_PROFILE` | `~/.local/share/pinhole-window/firefox` | ランタイムプロファイルのディレクトリ |
+| `PINHOLE_FIREFOX_URL` | 未設定 | ホームページの代わりに開く URL |
+| `PINHOLE_FIREFOX_BIN` | `firefox` | Firefox のバイナリ |
 
 ### 起動時のページを決める
 
@@ -54,7 +54,7 @@ user_pref("browser.startup.homepage", "https://<host>:<port>/?token=<token>");
 ```
 
 シェルから 1 回だけ別の URL で起動するには:
-`EW_FIREFOX_URL=https://example.org scripts/ew-firefox.sh`。
+`PINHOLE_FIREFOX_URL=https://example.org scripts/pw-firefox.sh`。
 
 ## プロファイルが変えるもの
 
@@ -68,7 +68,7 @@ user_pref("browser.startup.homepage", "https://<host>:<port>/?token=<token>");
 | `user.js` | デスクトップのユーザエージェント。`meta viewport` の処理は無効 | 576 px では、ほとんどのレスポンシブなサイトがすでに 1 カラムのレイアウトになります。モバイル版は固定ヘッダが加わり、高さを消費します。 |
 | `userContent.css` | 3 px の緑のフォーカスリング、テキスト欄に破線の枠 | 既定の細いリングは 16 階調では消えます |
 | `userContent.css` | 空白ページを黒にする | 白いフラッシュはレンズ全体を光らせます |
-| `ew-firefox.sh` | `GTK_THEME=Adwaita:dark` | ファイル選択などのネイティブのダイアログには CSS が届きません |
+| `pw-firefox.sh` | `GTK_THEME=Adwaita:dark` | ファイル選択などのネイティブのダイアログには CSS が届きません |
 
 アンチエイリアスは、ミラーデスクトップ上のすべてのアプリケーションですでに無効なので、
 ランチャはフォントについては何もしません。
@@ -95,7 +95,7 @@ DISPLAY=:100 xwininfo -id "$win" | grep -E 'Width|Height'
 export DISPLAY=:199
 Xvfb :199 -screen 0 576x288x24 -nolisten tcp &
 until xdpyinfo >/dev/null 2>&1; do sleep 0.2; done
-EW_FIREFOX_URL=about:blank scripts/ew-firefox.sh &
+PINHOLE_FIREFOX_URL=about:blank scripts/pw-firefox.sh &
 ```
 
 ## それでもウィンドウが広すぎるとき
@@ -112,7 +112,7 @@ EW_FIREFOX_URL=about:blank scripts/ew-firefox.sh &
 ## テンプレートを変更する
 
 - `user.js` から設定を消しても、一度起動したプロファイルでは解除されません。Firefox が
-  `user.js` の値を `prefs.js` に書き写すためです。設定名を `ew-firefox.sh` の
+  `user.js` の値を `prefs.js` に書き写すためです。設定名を `pw-firefox.sh` の
   `RETIRED_PREFS` に追加すると、ランチャがそれを取り除きます。
 - モバイルのユーザエージェントを使うには、`user-local.js` で
   `general.useragent.override` を設定します。すべてのサイトに適用されます。Firefox は

@@ -245,7 +245,7 @@ is never a black panel (`setupNoticeText()` in `src/client/hints.ts`). It has th
 
 | Auth state | Notice |
 | --- | --- |
-| `unpaired`, `unauthorized` | Pair this phone: start the server, run `ew-auth.mjs pair URL` on the PC, scan the QR code it prints, copy the pairing URL from the page that opens, paste it into the pair dialog |
+| `unpaired`, `unauthorized` | Pair this phone: start the server, run `pw-auth.mjs pair URL` on the PC, scan the QR code it prints, copy the pairing URL from the page that opens, paste it into the pair dialog |
 | `offline` on the built-in default address | Set the server address in the card on the phone |
 | `offline` on an address a person gave | Server unreachable: the address, two things to check, where to change it |
 
@@ -508,7 +508,7 @@ Background: [gestures and the firmware menu](notes/2026-10-gestures-and-firmware
 
 The panel is see-through and emissive: black emits nothing and is transparent. Invert flips the
 polarity of mirrored content and is entirely client-side. It is resolved as `?invert=1`, then
-`localStorage['ew.invert']`, then off, and the winning value is stored.
+`localStorage['pw.invert']`, then off, and the winning value is stored.
 
 Invert flips the grey level (`15 - level`) during grey conversion. The PNG palette is constant.
 The synthetic pointer and the black blanking tile are not inverted. Toggling it re-marks every

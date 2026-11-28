@@ -68,7 +68,7 @@ WebKitGTK delivers real mouse and keyboard events, so `xdotool` on the simulator
 drove the probe, the `kbd` pill and absolute aiming (both since removed, see above):
 
 ```bash
-EW_X11_RUNTIME_DIR=/tmp/ew-probe-x11 scripts/sim.sh --headless --keep \
+PINHOLE_X11_RUNTIME_DIR=/tmp/pw-probe-x11 scripts/sim.sh --headless --keep \
   --api-port 8799 --port 5299 --automation-port 9909 \
   --display :140 --sim-display :186 --app-query "keyprobe=1&debug=1"
 export DISPLAY=127.0.0.1:186

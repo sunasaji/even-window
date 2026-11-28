@@ -1,7 +1,7 @@
 /* pinhole-window Firefox — web content styling for the Even G2.
  *
  * Requires toolkit.legacyUserProfileCustomizations.stylesheets=true (user.js).
- * Template: scripts/ew-firefox.sh copies it into the runtime profile on every launch,
+ * Template: scripts/pw-firefox.sh copies it into the runtime profile on every launch,
  * so edit this file, not the runtime copy. */
 
 :root {

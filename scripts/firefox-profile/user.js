@@ -1,7 +1,7 @@
 // pinhole-window Firefox profile prefs, for the Even G2 through the mirrored desktop: a
 // 576x288 screen, 16 levels of green, swipe/tap input.
 //
-// This is the template: scripts/ew-firefox.sh copies it into the runtime profile on
+// This is the template: scripts/pw-firefox.sh copies it into the runtime profile on
 // every launch, so edits to the runtime copy are lost. Machine-specific prefs (homepage,
 // scaling) go in <profile>/user-local.js, which the launcher appends.
 // Background: docs/firefox.md.
@@ -55,7 +55,7 @@ user_pref("dom.meta-viewport.enabled", false);
 // below (or set them in user-local.js); some sites gate their mobile UI on touch events.
 // The per-domain form (general.useragent.override.<host>) has no effect, and an empty
 // override yields an empty user agent, so disabling means removing the pref.
-// ew-firefox.sh strips retired prefs from prefs.js: a pref removed from this file must
+// pw-firefox.sh strips retired prefs from prefs.js: a pref removed from this file must
 // be added to RETIRED_PREFS there to take effect.
 //
 //

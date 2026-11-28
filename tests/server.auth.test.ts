@@ -69,41 +69,41 @@ function fakeReq(opts: { bearer?: string; url?: string }): IncomingMessage {
   } as unknown as IncomingMessage
 }
 
-describe('EW_AUTH — enforcement is on by default', () => {
-  const prev = process.env.EW_AUTH
+describe('PINHOLE_AUTH — enforcement is on by default', () => {
+  const prev = process.env.PINHOLE_AUTH
   afterEach(() => {
-    if (prev === undefined) delete process.env.EW_AUTH
-    else process.env.EW_AUTH = prev
+    if (prev === undefined) delete process.env.PINHOLE_AUTH
+    else process.env.PINHOLE_AUTH = prev
   })
 
-  it('is enabled when EW_AUTH is unset — the secure default', () => {
-    delete process.env.EW_AUTH
+  it('is enabled when PINHOLE_AUTH is unset — the secure default', () => {
+    delete process.env.PINHOLE_AUTH
     expect(authEnabled()).toBe(true)
   })
 
   it('is enabled for any value that is not an explicit opt-out (including "1" and typos)', () => {
     for (const v of ['1', 'on', 'true', 'yes', '', 'enforce', 'nope!']) {
-      process.env.EW_AUTH = v
-      expect(authEnabled(), `EW_AUTH=${JSON.stringify(v)}`).toBe(true)
+      process.env.PINHOLE_AUTH = v
+      expect(authEnabled(), `PINHOLE_AUTH=${JSON.stringify(v)}`).toBe(true)
     }
   })
 
   it('is disabled only by 0/off/false/no, case-insensitively', () => {
     for (const v of ['0', 'off', 'false', 'no', 'OFF', 'False', 'NO']) {
-      process.env.EW_AUTH = v
-      expect(authEnabled(), `EW_AUTH=${JSON.stringify(v)}`).toBe(false)
+      process.env.PINHOLE_AUTH = v
+      expect(authEnabled(), `PINHOLE_AUTH=${JSON.stringify(v)}`).toBe(false)
     }
   })
 })
 
-describe('EW_STATE_DIR', () => {
+describe('PINHOLE_STATE_DIR', () => {
   it('is where the registry lands, and it is read per call', () => {
     const key = makeEd25519Key()
     addClient(key.pub, 'in-temp-dir')
     const file = join(stateDir(), 'clients.json')
     const reg = JSON.parse(readFileSync(file, 'utf8')) as { clients: { name: string }[] }
     expect(reg.clients.map(c => c.name)).toContain('in-temp-dir')
-    expect(stateDir()).toBe(process.env.EW_STATE_DIR)
+    expect(stateDir()).toBe(process.env.PINHOLE_STATE_DIR)
   })
 
   it('writes the token-signing secret with 0600', () => {
@@ -240,14 +240,14 @@ describe('rotating server-secret takes effect without a restart', () => {
   it('invalidates a live token when the file is replaced', () => {
     const { token } = enrolAndSession(makeEd25519Key())
     expect(authClientId(fakeReq({ bearer: token }))).not.toBeNull()
-    // What `ew-auth rotate` does: 32 fresh bytes over the same path.
+    // What `pw-auth rotate` does: 32 fresh bytes over the same path.
     writeFileSync(join(stateDir(), 'server-secret'), randomBytes(32).toString('base64url'), 'utf8')
     expect(authClientId(fakeReq({ bearer: token }))).toBeNull()
   })
 
   it('invalidates a live token when the file is deleted (the server mints a new one)', () => {
     // The same key re-establishes, which is both what a real device does and what the default
-    // EW_MAX_CLIENTS=1 allows — a second key here would be refused by the cap, not by the
+    // PINHOLE_MAX_CLIENTS=1 allows — a second key here would be refused by the cap, not by the
     // secret, and the test would pass for the wrong reason.
     const key = makeEd25519Key()
     const { token } = enrolAndSession(key)
@@ -280,7 +280,7 @@ describe('rotating server-secret takes effect without a restart', () => {
 
 // ── the enrolled-key count on the banner ──────────────────────────────────────────────────
 //
-// `EW_STATE_DIR` decides which registry is served, and pointing at the wrong one looks exactly
+// `PINHOLE_STATE_DIR` decides which registry is served, and pointing at the wrong one looks exactly
 // like a device that lost its pairing: every request 401s and the phone opens its pairing
 // dialog. The count tells those apart in one glance, which is the only reason it earns a line.
 describe('clientCountBanner', () => {
@@ -291,12 +291,12 @@ describe('clientCountBanner', () => {
     expect(lines[0]).toContain('/some/state')
   })
 
-  it('warns, and names EW_STATE_DIR, when auth is enforced with an empty registry', () => {
+  it('warns, and names PINHOLE_STATE_DIR, when auth is enforced with an empty registry', () => {
     // "Enforced with nothing enrolled" cannot admit anybody, so it is never a working state.
     const text = clientCountBanner(0, 1, '/some/state', true).join('\n')
     expect(text).toMatch(/NO CLIENT KEYS ENROLLED/)
     expect(text).toContain('/some/state')
-    expect(text).toMatch(/EW_STATE_DIR/)
+    expect(text).toMatch(/PINHOLE_STATE_DIR/)
     expect(text).toMatch(/wrong registry/)
   })
 
@@ -310,7 +310,7 @@ describe('clientCountBanner', () => {
     expect(text).toMatch(/OVER THE CAP/)
     expect(text).toMatch(/added while running/)
     expect(text).toMatch(/REFUSE TO START/)
-    expect(text).toMatch(/EW_MAX_CLIENTS=1/)
+    expect(text).toMatch(/PINHOLE_MAX_CLIENTS=1/)
     expect(text).toMatch(/2 client key\(s\) enrolled/)
     expect(text).toMatch(/work: the cap gates enrolment/)
     expect(text).toMatch(/no restart needed/)
@@ -344,21 +344,21 @@ describe('clientCountBanner', () => {
 
 // ── over the cap: fail closed ─────────────────────────────────────────────────────────────
 //
-// Raise EW_MAX_CLIENTS, enrol, lower it again, and the gate in force is wider than the
+// Raise PINHOLE_MAX_CLIENTS, enrol, lower it again, and the gate in force is wider than the
 // configuration asks for. Lowering the cap has one intent — narrow it — and whoever edits
 // config expects a restart to matter, while nobody can be relied on to read a start-up log.
 // So a warning leaves "believed narrow, actually wide" running indefinitely.
 //
 // It is also indistinguishable from an enrolment the configuration never authorized (a
 // hand-edited clients.json), so it is not treated as benign. Refusing is affordable because
-// `ew-auth revoke` needs no server: there is no chicken-and-egg in the remedy.
+// `pw-auth revoke` needs no server: there is no chicken-and-egg in the remedy.
 describe('over the cap', () => {
-  const prevMax = process.env.EW_MAX_CLIENTS
-  const prevAuth = process.env.EW_AUTH
+  const prevMax = process.env.PINHOLE_MAX_CLIENTS
+  const prevAuth = process.env.PINHOLE_AUTH
   afterEach(() => {
     for (const [k, v] of [
-      ['EW_MAX_CLIENTS', prevMax],
-      ['EW_AUTH', prevAuth],
+      ['PINHOLE_MAX_CLIENTS', prevMax],
+      ['PINHOLE_AUTH', prevAuth],
     ] as const) {
       if (v === undefined) delete process.env[k]
       else process.env[k] = v
@@ -367,11 +367,11 @@ describe('over the cap', () => {
 
   /** Two enrolled keys with the cap raised, then the cap lowered — the operator's sequence. */
   function enrolTwoThenLowerCap(): void {
-    process.env.EW_MAX_CLIENTS = '2'
+    process.env.PINHOLE_MAX_CLIENTS = '2'
     addClient(makeEd25519Key().pub)
     addClient(makeEd25519Key().pub)
     expect(listClients()).toHaveLength(2)
-    process.env.EW_MAX_CLIENTS = '1'
+    process.env.PINHOLE_MAX_CLIENTS = '1'
   }
 
   it('is detected once the cap is below the count', () => {
@@ -380,17 +380,17 @@ describe('over the cap', () => {
   })
 
   it('is not over the cap at the cap, or when uncapped', () => {
-    process.env.EW_MAX_CLIENTS = '2'
+    process.env.PINHOLE_MAX_CLIENTS = '2'
     addClient(makeEd25519Key().pub)
     addClient(makeEd25519Key().pub)
     expect(overCap()).toBe(false)
-    process.env.EW_MAX_CLIENTS = 'unlimited'
+    process.env.PINHOLE_MAX_CLIENTS = 'unlimited'
     expect(overCap()).toBe(false)
   })
 
   it('is not a condition when auth is off — the registry is never consulted', () => {
     enrolTwoThenLowerCap()
-    process.env.EW_AUTH = '0'
+    process.env.PINHOLE_AUTH = '0'
     expect(overCap()).toBe(false)
   })
 
@@ -398,11 +398,11 @@ describe('over the cap', () => {
     const text = overCapRefusal(2, 1, '/some/state').join('\n')
     expect(text).toMatch(/REFUSING TO START/)
     expect(text).toMatch(/2 client key\(s\)/)
-    expect(text).toMatch(/EW_MAX_CLIENTS=1/)
+    expect(text).toMatch(/PINHOLE_MAX_CLIENTS=1/)
     expect(text).toMatch(/revoke/)
     expect(text).toContain('/some/state')
     expect(text).toMatch(/no server needed/)
-    expect(text).toMatch(/EW_MAX_CLIENTS=2/) // raise it back to the count
+    expect(text).toMatch(/PINHOLE_MAX_CLIENTS=2/) // raise it back to the count
   })
 
   it('offers no override — the two honest remedies are the only ones', () => {
@@ -423,7 +423,7 @@ describe('over the cap', () => {
     const src =
       readFileSync(new URL('../src/server/auth.ts', import.meta.url), 'utf8') +
       readFileSync(new URL('../src/server/main.ts', import.meta.url), 'utf8')
-    expect(src).not.toMatch(/EW_ALLOW_OVER_CAP/)
+    expect(src).not.toMatch(/PINHOLE_ALLOW_OVER_CAP/)
   })
 })
 
@@ -444,7 +444,7 @@ describe('stateDirWarning', () => {
   })
 })
 
-// ── EW_MAX_CLIENTS ────────────────────────────────────────────────────────────────────────
+// ── PINHOLE_MAX_CLIENTS ────────────────────────────────────────────────────────────────────────
 //
 // Re-pairing adds a key, it does not replace one (the device makes a fresh keypair, so the
 // fingerprint is new and `addClient`'s idempotence cannot help). The old entry then stays
@@ -452,15 +452,15 @@ describe('stateDirWarning', () => {
 // looks anomalous. A printed reminder is not a control; a cap is. At the default of 1 the
 // second enrollment is refused, which makes "there is a spare key" a state the operator
 // cannot reach by forgetting something.
-describe('EW_MAX_CLIENTS — how many keys may be enrolled at once', () => {
-  const prev = process.env.EW_MAX_CLIENTS
+describe('PINHOLE_MAX_CLIENTS — how many keys may be enrolled at once', () => {
+  const prev = process.env.PINHOLE_MAX_CLIENTS
   afterEach(() => {
-    if (prev === undefined) delete process.env.EW_MAX_CLIENTS
-    else process.env.EW_MAX_CLIENTS = prev
+    if (prev === undefined) delete process.env.PINHOLE_MAX_CLIENTS
+    else process.env.PINHOLE_MAX_CLIENTS = prev
   })
 
   it('defaults to one', () => {
-    delete process.env.EW_MAX_CLIENTS
+    delete process.env.PINHOLE_MAX_CLIENTS
     expect(maxClients()).toBe(1)
   })
 
@@ -480,7 +480,7 @@ describe('EW_MAX_CLIENTS — how many keys may be enrolled at once', () => {
   })
 
   it('refuses a second, different key at the default cap', () => {
-    delete process.env.EW_MAX_CLIENTS
+    delete process.env.PINHOLE_MAX_CLIENTS
     const first = makeEd25519Key(),
       second = makeEd25519Key()
     expect(addClient(first.pub)).not.toBeNull()
@@ -491,7 +491,7 @@ describe('EW_MAX_CLIENTS — how many keys may be enrolled at once', () => {
   })
 
   it('still accepts the same key — re-enrolling is not a new key', () => {
-    delete process.env.EW_MAX_CLIENTS
+    delete process.env.PINHOLE_MAX_CLIENTS
     const key = makeEd25519Key()
     expect(addClient(key.pub)).not.toBeNull()
     // Idempotent at the cap, and a name refresh still lands.
@@ -500,7 +500,7 @@ describe('EW_MAX_CLIENTS — how many keys may be enrolled at once', () => {
   })
 
   it('lets the new key in once the old one is revoked — the whole point of the cap', () => {
-    delete process.env.EW_MAX_CLIENTS
+    delete process.env.PINHOLE_MAX_CLIENTS
     const old = makeEd25519Key(),
       fresh = makeEd25519Key()
     addClient(old.pub)
@@ -511,7 +511,7 @@ describe('EW_MAX_CLIENTS — how many keys may be enrolled at once', () => {
   })
 
   it('honours a deliberately raised cap, and then stops at it', () => {
-    process.env.EW_MAX_CLIENTS = '2'
+    process.env.PINHOLE_MAX_CLIENTS = '2'
     const a = makeEd25519Key(),
       b = makeEd25519Key(),
       c = makeEd25519Key()
@@ -523,7 +523,7 @@ describe('EW_MAX_CLIENTS — how many keys may be enrolled at once', () => {
   })
 
   it('enrols without limit when uncapped', () => {
-    process.env.EW_MAX_CLIENTS = 'unlimited'
+    process.env.PINHOLE_MAX_CLIENTS = 'unlimited'
     for (let i = 0; i < 4; i++) expect(addClient(makeEd25519Key().pub)).not.toBeNull()
     expect(enrollmentFull()).toBe(false)
     expect(listClients()).toHaveLength(4)
@@ -666,12 +666,12 @@ describe('rejections — each is a specific way of cheating', () => {
 
 // The registry is cached in memory behind a freshness stat (docs/security.md). The cache is an
 // optimisation; immediate revocation is the property, and these tests defend it from the
-// direction that actually threatens it — an edit made by someone else. `ew-auth revoke` runs in
+// direction that actually threatens it — an edit made by someone else. `pw-auth revoke` runs in
 // a different process and just rewrites clients.json, so none of the in-process bookkeeping
 // (writeRegistry adopting its own write, resetRegistryCache) is available to save us. Nothing
 // here calls resetRegistryCache: that would test the escape hatch instead of the mechanism.
 describe('revocation stays immediate through the registry cache', () => {
-  /** Rewrite clients.json from the outside, exactly as `scripts/ew-auth.mjs revoke` does:
+  /** Rewrite clients.json from the outside, exactly as `scripts/pw-auth.mjs revoke` does:
    *  read, drop the matching client, write the whole file back. No auth.ts function involved. */
   function revokeOutOfProcess(clientId: string): void {
     const file = join(stateDir(), 'clients.json')
@@ -756,7 +756,7 @@ describe('revocation stays immediate through the registry cache', () => {
     addClient(key.pub)
     expect(getClient(id)?.id).toBe(id)
 
-    const second = useTempStateDir() // a different EW_STATE_DIR, same process
+    const second = useTempStateDir() // a different PINHOLE_STATE_DIR, same process
     try {
       expect(listClients()).toEqual([])
       expect(getClient(id)).toBeNull()
@@ -783,7 +783,7 @@ describe('fingerprints', () => {
 })
 
 describe('pairing requires an out-of-band human approval', () => {
-  /** Open a pairing window the way scripts/ew-auth.mjs does. */
+  /** Open a pairing window the way scripts/pw-auth.mjs does. */
   function openWindow(code: string, ttlMs = 60_000): void {
     writeFileSync(
       join(stateDir(), 'pairing.json'),
@@ -840,7 +840,7 @@ describe('pairing requires an out-of-band human approval', () => {
     // The cap is enforced by `approve` on the host, which is a walk away from the phone. The
     // pairing response therefore carries used/max — and the caller has presented a valid
     // one-time code, so this is not something an unauthenticated stranger can ask.
-    delete process.env.EW_MAX_CLIENTS
+    delete process.env.PINHOLE_MAX_CLIENTS
     openWindow('code')
     const first = submitPairing('code', makeEd25519Key().pub)
     expect(first).toMatchObject({ status: 'pending', slots: { used: 0, max: 1 } })
@@ -855,12 +855,12 @@ describe('pairing requires an out-of-band human approval', () => {
   })
 
   it('reports max 0 when the cap is lifted', () => {
-    process.env.EW_MAX_CLIENTS = 'unlimited'
+    process.env.PINHOLE_MAX_CLIENTS = 'unlimited'
     try {
       openWindow('code')
       expect(submitPairing('code', makeEd25519Key().pub)).toMatchObject({ slots: { max: 0 } })
     } finally {
-      delete process.env.EW_MAX_CLIENTS
+      delete process.env.PINHOLE_MAX_CLIENTS
     }
   })
 
@@ -869,7 +869,7 @@ describe('pairing requires an out-of-band human approval', () => {
     openWindow('code')
     const staged = submitPairing('code', key.pub)
     expect('art' in staged && staged.art.length).toBeGreaterThan(0)
-    addClient(key.pub) // what `ew-auth approve` does
+    addClient(key.pub) // what `pw-auth approve` does
     expect(pairingStatus(fingerprint(key.pub))).toBe('approved')
     // Now — and only now — the handshake works.
     const { nonce } = issueChallenge()

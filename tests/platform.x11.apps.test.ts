@@ -316,7 +316,7 @@ describe('source 3 — the user override file', () => {
 
   it('a user entry is included even when the deny-list would refuse the command', () => {
     // `show` un-denies a scanned command; an explicit `app` line is the user naming an argv,
-    // which is their own configuration (same standing as EW_SPAWN).
+    // which is their own configuration (same standing as PINHOLE_SPAWN).
     const r = build({
       overrides: { ...NO_OVERRIDES, add: [{ name: 'Info', argv: ['xdpyinfo'], terminal: true }] },
     })

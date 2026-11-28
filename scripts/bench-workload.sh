@@ -32,7 +32,7 @@ while [ $# -gt 0 ]; do
 done
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-SESSION="$ROOT/.ew-x11/session.json"
+SESSION="$ROOT/.pw-x11/session.json"
 
 # Use the transport the server recorded for its X: Xvfb is started with -listen tcp and
 # its unix socket is not always answerable (src/server/platform/x11/session.ts).
@@ -41,7 +41,7 @@ if [ -n "$DISPLAY_OVERRIDE" ]; then
 elif [ -r "$SESSION" ]; then
   DISP=$(node -e 'const s=require(process.argv[1]);process.stdout.write(s.displayEnv||s.display||"")' "$SESSION" 2>/dev/null)
 else
-  DISP=${EW_X11_DISPLAY:-:100}
+  DISP=${PINHOLE_X11_DISPLAY:-:100}
 fi
 
 if [ -z "$DISP" ]; then

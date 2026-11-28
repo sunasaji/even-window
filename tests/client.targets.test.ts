@@ -25,17 +25,17 @@ import { glassWidth, LINE_UNITS, PANEL_LINES } from '../src/shared/voiceDialog.t
 const T = (server: string, name?: string): Target => (name ? { server, name } : { server })
 
 describe('the stored list', () => {
-  it('reads entries with and without a name, and the bare strings of the first version', () => {
+  it('reads entries with and without a name, and drops anything else', () => {
     expect(parseTargets('[{"server":"http://a:1","name":"desk"},{"server":"http://b:2"}]')).toEqual(
       [T('http://a:1', 'desk'), T('http://b:2')],
     )
-    expect(parseTargets('["http://a:1","http://b:2"]')).toEqual([T('http://a:1'), T('http://b:2')])
+    expect(parseTargets('["http://a:1","http://b:2"]')).toEqual([])
     expect(parseTargets(null)).toEqual([])
     expect(parseTargets('not json')).toEqual([])
     expect(parseTargets('{"a":1}')).toEqual([])
-    expect(parseTargets('["http://a:1", 3, "", {"name":"x"}, {"server":""}]')).toEqual([
-      T('http://a:1'),
-    ])
+    expect(
+      parseTargets('[3, "", {"name":"x"}, {"server":""}, {"server":"http://a:1","name":7}]'),
+    ).toEqual([T('http://a:1')])
   })
 
   it('adds an address once and keeps its place and its name', () => {
@@ -136,7 +136,7 @@ describe('the list on the lens', () => {
     const lines = rootText([], 0).split('\n')
     expect(lines.length).toBeLessThanOrEqual(PANEL_LINES)
     for (const l of lines) expect(glassWidth(l)).toBeLessThan(LINE_UNITS)
-    expect(lines.join('\n')).toContain('ew-auth.mjs pair')
+    expect(lines.join('\n')).toContain('pw-auth.mjs pair')
     expect(lines.at(-1)).toContain('double-tap: exit')
   })
 })

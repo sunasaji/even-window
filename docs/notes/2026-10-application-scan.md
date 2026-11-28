@@ -5,7 +5,7 @@ Snapshot — not maintained. Conditions: 2026-10-10, one development machine, WS
 ## What the scan found
 
 ```
-[ew] apps: 46 launchable (20 .desktop, 28/75 Section:x11, 0 user; 47 denied, 0 hidden, 2 dup)
+[pw] apps: 46 launchable (20 .desktop, 28/75 Section:x11, 0 user; 47 denied, 0 hidden, 2 dup)
 ```
 
 | Source | Count | Breakdown |

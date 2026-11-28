@@ -34,7 +34,16 @@ again: its testers are invited again, and a phone pairs again unless the Even Ap
 key across the two. The id cannot be changed once an app is public, and during the beta the
 cost was one tester.
 
-`EW_*` variables, `ew.*` storage keys and `ew-auth.mjs` stay: they never spelled the old name.
+The initials go too. The `EW_` variables are `PINHOLE_*`: a two-letter prefix read as
+"password" and is the prefix of another tool's variables. Everything else that was `ew` is
+`pw`: the commands `pw-auth.mjs` and `pw-firefox.sh`, the runtime directory `.pw-x11`, the
+`[pw]` log prefix, the `pw.*` keys in the phone's storage, the `pw-auth` key store, and the
+`pw-session-v1` label inside what a device signs.
+
+Nothing is migrated. An env file written for the old names has to be rewritten, and a phone
+paired with 0.1.4 or earlier has to pair again and loses its settings: its keys and its stored
+values are under names the client no longer reads, and its signatures carry a label the server
+no longer accepts.
 
 ## Alternatives considered
 

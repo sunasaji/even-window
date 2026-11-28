@@ -3,8 +3,8 @@
 # dev.sh — run the pinhole-window API/capture server and the Vite dev server together,
 # without the Even Hub simulator (scripts/sim.sh is the full end-to-end harness).
 #
-#   1. node src/server/main.ts -> HTTP on EW_PORT (default 8787); it owns its nested
-#      X display (EW_X11_DISPLAY, default :100) and the capture
+#   1. node src/server/main.ts -> HTTP on PINHOLE_PORT (default 8787); it owns its nested
+#      X display (PINHOLE_X11_DISPLAY, default :100) and the capture
 #   2. Vite -> the WebView app on 5273
 #   3. both logs are streamed with [api] / [vite] prefixes
 #   4. Ctrl-C stops both by recorded pid
@@ -18,7 +18,7 @@
 #
 # Auth is enforced by default, as in production: the browser profile keeps its key, so
 # pairing (the command this script prints) is needed once per profile. --no-auth runs
-# with EW_AUTH=0 and prints a notice every time. See docs/security.md.
+# with PINHOLE_AUTH=0 and prints a notice every time. See docs/security.md.
 #
 set -euo pipefail
 
@@ -26,9 +26,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 VITE_PORT="${VITE_PORT:-5273}"
-API_PORT="${EW_PORT:-8787}"
+API_PORT="${PINHOLE_PORT:-8787}"
 AUTH=1
-X_DISPLAY="${EW_X11_DISPLAY:-:100}"
+X_DISPLAY="${PINHOLE_X11_DISPLAY:-:100}"
 READY_TIMEOUT="${READY_TIMEOUT:-60}"
 
 usage() {
@@ -38,12 +38,12 @@ usage: scripts/dev.sh [options]
   Runs the pinhole-window API/capture server and Vite together (no simulator).
 
   --port <N>       Vite port                      (default 5273)
-  --api-port <N>   API server port / EW_PORT      (default 8787)
+  --api-port <N>   API server port / PINHOLE_PORT      (default 8787)
   --display <:N>   server's nested X display      (default :100)
-  --auth           run with the REAL auth gate (EW_AUTH enforced) — THE DEFAULT.
+  --auth           run with the REAL auth gate (PINHOLE_AUTH enforced) — THE DEFAULT.
                    Pair the browser once with the command this script prints;
                    the key lives in that profile, so later runs are warm.
-  --no-auth        run with EW_AUTH=0 instead, with a visible notice. The run is
+  --no-auth        run with PINHOLE_AUTH=0 instead, with a visible notice. The run is
                    still scoped to its own registry, no config file, loopback.
   -h, --help       this help
 
@@ -63,19 +63,19 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-LOG_DIR="${EW_X11_RUNTIME_DIR:-${REPO_ROOT}/.ew-x11}/logs"
+LOG_DIR="${PINHOLE_X11_RUNTIME_DIR:-${REPO_ROOT}/.pw-x11}/logs"
 
 # The run has its own auth registry instead of ~/.pinhole-window: pairing into the real
-# registry would be refused by EW_MAX_CLIENTS (default 1) when a phone already holds the
-# slot, and an EW_AUTH=0 run must not touch the real keys. An explicit EW_STATE_DIR wins.
-STATE_DIR="${EW_STATE_DIR:-${EW_X11_RUNTIME_DIR:-${REPO_ROOT}/.ew-x11}/state}"
-# The operator's ~/.pinhole-window/env is not read: an EW_ORIGIN naming the tailnet URL
+# registry would be refused by PINHOLE_MAX_CLIENTS (default 1) when a phone already holds the
+# slot, and a PINHOLE_AUTH=0 run must not touch the real keys. An explicit PINHOLE_STATE_DIR wins.
+STATE_DIR="${PINHOLE_STATE_DIR:-${PINHOLE_X11_RUNTIME_DIR:-${REPO_ROOT}/.pw-x11}/state}"
+# The operator's ~/.pinhole-window/env is not read: a PINHOLE_ORIGIN naming the tailnet URL
 # would refuse every signature a browser makes at 127.0.0.1. The untracked dev.env in
 # the checkout is read when it exists, for per-developer settings. An explicit
-# EW_ENV_FILE wins, and an empty one means "no file".
+# PINHOLE_ENV_FILE wins, and an empty one means "no file".
 # See docs/decisions/harness-auth-and-isolation.md.
 HARNESS_ENV="${REPO_ROOT}/dev.env"
-if [ "${EW_ENV_FILE+set}" = set ]; then ENV_FILE="${EW_ENV_FILE}"
+if [ "${PINHOLE_ENV_FILE+set}" = set ]; then ENV_FILE="${PINHOLE_ENV_FILE}"
 elif [ -f "${HARNESS_ENV}" ];      then ENV_FILE="${HARNESS_ENV}"
 else                                    ENV_FILE=""
 fi
@@ -206,22 +206,22 @@ echo "dev.sh: logs ${API_LOG} / ${VITE_LOG}"
 # ── 1. API / capture server ──────────────────────────────────────────────────
 : >"${API_LOG}"
 if [ "${AUTH}" = 1 ]; then
-  EW_AUTH_VAL=1
-  echo "dev.sh: AUTH ENFORCED (EW_AUTH=1) — pair the browser (note the state dir: this run"
-  echo "dev.sh: has its own registry, so ew-auth must be pointed at the same one):"
-  echo "dev.sh:   EW_STATE_DIR='${STATE_DIR}' \\"
-  echo "dev.sh:     node scripts/ew-auth.mjs pair 'http://127.0.0.1:${VITE_PORT}/?server=http://127.0.0.1:${API_PORT}'"
+  PINHOLE_AUTH_VAL=1
+  echo "dev.sh: AUTH ENFORCED (PINHOLE_AUTH=1) — pair the browser (note the state dir: this run"
+  echo "dev.sh: has its own registry, so pw-auth must be pointed at the same one):"
+  echo "dev.sh:   PINHOLE_STATE_DIR='${STATE_DIR}' \\"
+  echo "dev.sh:     node scripts/pw-auth.mjs pair 'http://127.0.0.1:${VITE_PORT}/?server=http://127.0.0.1:${API_PORT}'"
 else
-  EW_AUTH_VAL=0
+  PINHOLE_AUTH_VAL=0
   echo "dev.sh: ###############################################################"
-  echo "dev.sh: # NOTICE: running with EW_AUTH=0 — THE AUTH GATE IS DISABLED. #"
+  echo "dev.sh: # NOTICE: running with PINHOLE_AUTH=0 — THE AUTH GATE IS DISABLED. #"
   echo "dev.sh: # Every /api route is unauthenticated for this run, including #"
   echo "dev.sh: # /api/spawn and /api/desktop/input (= code execution). Loopback  #"
   echo "dev.sh: # only. Pass --auth to exercise the real gate.                #"
   echo "dev.sh: ###############################################################"
 fi
-setsid env EW_ENV_FILE="${ENV_FILE}" EW_STATE_DIR="${STATE_DIR}" \
-  EW_PORT="${API_PORT}" EW_X11_DISPLAY="${X_DISPLAY}" EW_AUTH="${EW_AUTH_VAL}" \
+setsid env PINHOLE_ENV_FILE="${ENV_FILE}" PINHOLE_STATE_DIR="${STATE_DIR}" \
+  PINHOLE_PORT="${API_PORT}" PINHOLE_X11_DISPLAY="${X_DISPLAY}" PINHOLE_AUTH="${PINHOLE_AUTH_VAL}" \
   "${SB[@]}" node "${REPO_ROOT}/src/server/main.ts" \
   > >(prefix '[api] ' "${API_LOG}") 2>&1 &
 API_PID=$!
@@ -255,9 +255,9 @@ cat <<EOF
 dev.sh: both up. Ctrl-C to stop.
   app   http://127.0.0.1:${VITE_PORT}/?server=http://127.0.0.1:${API_PORT}
   api   http://127.0.0.1:${API_PORT}/api/health
-  auth  EW_AUTH=${EW_AUTH_VAL} $([ "${AUTH}" = 1 ] && echo '(ENFORCED)' || echo '(DISABLED for this run)')
+  auth  PINHOLE_AUTH=${PINHOLE_AUTH_VAL} $([ "${AUTH}" = 1 ] && echo '(ENFORCED)' || echo '(DISABLED for this run)')
   state ${STATE_DIR} (this run's own registry; ~/.pinhole-window is untouched)
-  env   ${ENV_FILE:-none — create dev.env (mode 600) for persistent EW_* in dev runs}
+  env   ${ENV_FILE:-none — create dev.env (mode 600) for persistent PINHOLE_* in dev runs}
 EOF
 
 # Exit as soon as either half dies, so a crash is not silently half-running.

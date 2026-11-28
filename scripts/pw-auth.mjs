@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
-// ew-auth.mjs — operator CLI for the client auth registry (~/.pinhole-window/clients.json).
+// pw-auth.mjs — operator CLI for the client auth registry (~/.pinhole-window/clients.json).
 //
 // Runs without the TypeScript toolchain: node builtins only, plus one optional dynamic
 // import (the QR encoder, for `pair`) that falls back to `qrencode`, then to the URL alone.
 //
-//   node scripts/ew-auth.mjs list
-//   node scripts/ew-auth.mjs pair [appUrl]        # interactive: open a window, wait for a
+//   node scripts/pw-auth.mjs list
+//   node scripts/pw-auth.mjs pair [appUrl]        # interactive: open a window, wait for a
 //                                                 #   device, show its art, [y/N] approve
-//   node scripts/ew-auth.mjs open [appUrl]        # non-interactive: open the window and
+//   node scripts/pw-auth.mjs open [appUrl]        # non-interactive: open the window and
 //                                                 #   print CODE=… / URL=… (for scripts)
-//   node scripts/ew-auth.mjs pending              # staged devices + their randomart
-//   node scripts/ew-auth.mjs approve <idPrefix>   # enroll a pending device (>=4-char id)
-//   node scripts/ew-auth.mjs reject  <idPrefix>
-//   node scripts/ew-auth.mjs add '<publicKeyJwkJson>' [name]
-//   node scripts/ew-auth.mjs add-test [name]      # gen keypair, enroll pub, save priv
-//   node scripts/ew-auth.mjs sign <nonce> [origin] # sign a challenge with the test key
+//   node scripts/pw-auth.mjs pending              # staged devices + their randomart
+//   node scripts/pw-auth.mjs approve <idPrefix>   # enroll a pending device (>=4-char id)
+//   node scripts/pw-auth.mjs reject  <idPrefix>
+//   node scripts/pw-auth.mjs add '<publicKeyJwkJson>' [name]
+//   node scripts/pw-auth.mjs add-test [name]      # gen keypair, enroll pub, save priv
+//   node scripts/pw-auth.mjs sign <nonce> [origin] # sign a challenge with the test key
 //                                                 #   (origin = what the device claims to be
 //                                                 #    talking to; must equal the server's
-//                                                 #    EW_ORIGIN when it is set)
-//   node scripts/ew-auth.mjs rename <idPrefix> <name>   # what `list` and the phone call this key
-//   node scripts/ew-auth.mjs revoke <idPrefix>
-//   node scripts/ew-auth.mjs rotate               # new token-signing secret: ends every
+//                                                 #    PINHOLE_ORIGIN when it is set)
+//   node scripts/pw-auth.mjs rename <idPrefix> <name>   # what `list` and the phone call this key
+//   node scripts/pw-auth.mjs revoke <idPrefix>
+//   node scripts/pw-auth.mjs rotate               # new token-signing secret: ends every
 //                                                 #   session now (enrollments stay)
 //
 // The fingerprint formula and the session-binding material under `sign` must match
@@ -84,13 +84,13 @@ async function renderQr(url) {
 }
 
 // ── the env file, before anything reads a setting ────────────────────────────────────────
-// The CLI shares EW_STATE_DIR (which registry) and EW_MAX_CLIENTS (the cap) with the
+// The CLI shares PINHOLE_STATE_DIR (which registry) and PINHOLE_MAX_CLIENTS (the cap) with the
 // server, so it reads the same env file; otherwise `approve` could enforce a different cap
 // or edit a different registry than the one being served.
 // A copy of src/server/envFile.ts that must not drift (a .mjs cannot import the .ts): the
 // same strict subset of systemd's EnvironmentFile format.
 const loadEnvFile = () => {
-  const explicit = process.env.EW_ENV_FILE
+  const explicit = process.env.PINHOLE_ENV_FILE
   if (explicit === '') return
   const xdg = process.env.XDG_CONFIG_HOME || join(homedir(), '.config')
   const candidates = explicit
@@ -102,7 +102,7 @@ const loadEnvFile = () => {
       const st = statSync(file)
       if ((st.mode & 0o022) !== 0) {
         console.error(
-          `ew-auth: ignoring ${file} — mode 0${(st.mode & 0o777).toString(8)} is writable by others (chmod 600 it)`,
+          `pw-auth: ignoring ${file} — mode 0${(st.mode & 0o777).toString(8)} is writable by others (chmod 600 it)`,
         )
         continue
       }
@@ -117,7 +117,7 @@ const loadEnvFile = () => {
       const eq = line.indexOf('=')
       if (eq <= 0) continue
       const key = line.slice(0, eq)
-      if (!/^EW_[A-Z0-9_]+$/.test(key)) continue
+      if (!/^PINHOLE_[A-Z0-9_]+$/.test(key)) continue
       let value = line.slice(eq + 1).trim()
       if (
         value.length >= 2 &&
@@ -133,7 +133,7 @@ const loadEnvFile = () => {
 }
 loadEnvFile()
 
-const DIR = process.env.EW_STATE_DIR || join(homedir(), '.pinhole-window')
+const DIR = process.env.PINHOLE_STATE_DIR || join(homedir(), '.pinhole-window')
 const CLIENTS = join(DIR, 'clients.json')
 const PENDING = join(DIR, 'pending.json')
 const PAIRING = join(DIR, 'pairing.json')
@@ -215,11 +215,11 @@ const doApprove = p => {
   writePending(readPending().filter(x => x.id !== p.id))
 }
 
-/** EW_MAX_CLIENTS: the maximum number of enrolled keys. Must match `parseMaxClients` in
+/** PINHOLE_MAX_CLIENTS: the maximum number of enrolled keys. Must match `parseMaxClients` in
  *  src/server/auth.ts: unset ⇒ 1, `0`/`unlimited`/`off`/`none` ⇒ uncapped, plain digits ⇒ that
  *  many, anything else ⇒ 1. `Number()` is not used, or `1e3` would mean 1000. */
 const maxClients = () => {
-  const raw = (process.env.EW_MAX_CLIENTS ?? '').trim()
+  const raw = (process.env.PINHOLE_MAX_CLIENTS ?? '').trim()
   if (raw === '') return 1
   if (/^(0|unlimited|off|none)$/i.test(raw)) return 0
   return /^\d+$/.test(raw) ? Number(raw) : 1
@@ -234,9 +234,9 @@ const printSlotRemedy = (clients, max) => {
   console.error('Either revoke the key this device replaces, then run this again:')
   console.error('')
   for (const c of clients)
-    console.error(`  node scripts/ew-auth.mjs revoke ${c.id.slice(0, 12)}   # ${c.name}`)
+    console.error(`  node scripts/pw-auth.mjs revoke ${c.id.slice(0, 12)}   # ${c.name}`)
   console.error('')
-  console.error(`…or raise the cap on purpose, for the whole run: EW_MAX_CLIENTS=${max + 1}`)
+  console.error(`…or raise the cap on purpose, for the whole run: PINHOLE_MAX_CLIENTS=${max + 1}`)
   console.error('(put it in ~/.pinhole-window/env and restart the server; it says so at start-up).')
 }
 
@@ -249,7 +249,7 @@ const refuseIfFull = id => {
   if (clients.find(c => c.id === id)) return // re-enrolling the same key is not a new key
   if (clients.length < max) return
   console.error(
-    `REFUSED: ${clients.length} of ${max} client key(s) already enrolled (EW_MAX_CLIENTS).`,
+    `REFUSED: ${clients.length} of ${max} client key(s) already enrolled (PINHOLE_MAX_CLIENTS).`,
   )
   printSlotRemedy(clients, max)
   process.exit(1)
@@ -264,7 +264,7 @@ const refuseIfNoFreeSlot = () => {
   const clients = readReg().clients
   if (clients.length < max) return
   console.error(
-    `NO FREE SLOT: ${clients.length} of ${max} client key(s) enrolled (EW_MAX_CLIENTS),`,
+    `NO FREE SLOT: ${clients.length} of ${max} client key(s) enrolled (PINHOLE_MAX_CLIENTS),`,
   )
   console.error('so a device paired now would be refused at `approve`. Not opening a window.')
   printSlotRemedy(clients, max)
@@ -288,7 +288,7 @@ const remindToRevokeOthers = id => {
     )
   console.log('If this device is replacing one of them, revoke it now — a re-paired device leaves')
   console.log('its old key enrolled and nobody holding it:')
-  console.log(`  node scripts/ew-auth.mjs revoke ${others[0].id.slice(0, 12)}`)
+  console.log(`  node scripts/pw-auth.mjs revoke ${others[0].id.slice(0, 12)}`)
 }
 const doReject = p => {
   const list = readPending()
@@ -316,7 +316,7 @@ const openWindow = (ttlMs = 2 * 60 * 1000) => {
 // The app URL the device opens: the client reads `?pair=` (and `#pair=`) next to the
 // `?server=` it already needs.
 const pairUrl = (base, code) => {
-  const b = (base || process.env.EW_APP_URL || '').replace(/\/+$/, '')
+  const b = (base || process.env.PINHOLE_APP_URL || '').replace(/\/+$/, '')
   if (!b) return `<app-url>/?pair=${code}`
   return b.includes('?') ? `${b}&pair=${code}` : `${b}/?pair=${code}`
 }
@@ -401,7 +401,7 @@ switch (cmd) {
     // Non-interactive half of `pair`, for scripts: open the window, print the code, exit.
     // Approval stays a separate, human step (`pending` + `approve`).
     refuseIfNoFreeSlot()
-    const ttl = Number(process.env.EW_PAIR_TTL_MS) || 5 * 60 * 1000
+    const ttl = Number(process.env.PINHOLE_PAIR_TTL_MS) || 5 * 60 * 1000
     const { code, exp } = openWindow(ttl)
     console.log(`CODE=${code}`)
     console.log(`URL=${pairUrl(args[0], code)}`)
@@ -498,7 +498,7 @@ switch (cmd) {
     const nonce = args[0]
     if (!nonce) {
       console.error(
-        'usage: sign <nonce> [origin]   # origin must match EW_ORIGIN when the server sets it',
+        'usage: sign <nonce> [origin]   # origin must match PINHOLE_ORIGIN when the server sets it',
       )
       process.exit(1)
     }
@@ -507,7 +507,7 @@ switch (cmd) {
     // The signature covers the version tag, the client id, the origin the caller claims
     // to be talking to, and the nonce. This copy of src/shared/sessionBinding.ts must stay
     // byte-identical to it (docs/security.md).
-    const material = ['ew-session-v1', id, normaliseOrigin(args[1]), nonce].join('\n')
+    const material = ['pw-session-v1', id, normaliseOrigin(args[1]), nonce].join('\n')
     // Ed25519 (OKP): null algorithm, pure EdDSA. P-256 (EC): SHA-256 + raw r||s.
     const buf = Buffer.from(material, 'utf8')
     console.log(
@@ -585,8 +585,8 @@ switch (cmd) {
   }
   default:
     console.error(
-      "usage: ew-auth.mjs {list|add '<jwk>' [name]|pair [appUrl]|open [appUrl]|pending|approve <id>|reject <id>|add-test [name]|sign <nonce> [origin]|rename <idPrefix> <name>|revoke <idPrefix>|rotate}",
+      "usage: pw-auth.mjs {list|add '<jwk>' [name]|pair [appUrl]|open [appUrl]|pending|approve <id>|reject <id>|add-test [name]|sign <nonce> [origin]|rename <idPrefix> <name>|revoke <idPrefix>|rotate}",
     )
-    console.error(`state dir: ${DIR}  (EW_STATE_DIR)`)
+    console.error(`state dir: ${DIR}  (PINHOLE_STATE_DIR)`)
     process.exit(1)
 }

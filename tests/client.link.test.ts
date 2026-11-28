@@ -385,7 +385,7 @@ describe('the lens pause rides the overlay path, not a second one', () => {
   it('the latch is not persisted: a dark lens must not survive a reload unexplained', () => {
     const body = src.fn('setLensOn')
     expect(body.has('localStorage')).toBe(false)
-    expect(src.has("'ew.lens'")).toBe(false)
+    expect(src.has("'pw.lens'")).toBe(false)
   })
 
   it('the pause does not stop the phone: no palette or input path consults it', () => {

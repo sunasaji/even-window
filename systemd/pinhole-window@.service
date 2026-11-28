@@ -4,7 +4,7 @@ Documentation=file://%f/docs/getting-started.md
 Wants=network-online.target
 After=network-online.target
 # The host display is needed only for the Xephyr backend. A headless run uses Xvfb, so
-# this is an ordering hint and not a dependency: with EW_HOST_DISPLAY= (empty) the
+# this is an ordering hint and not a dependency: with PINHOLE_HOST_DISPLAY= (empty) the
 # service starts with no desktop (docs/configuration.md).
 After=graphical-session.target
 
@@ -29,7 +29,7 @@ ExecStart=/usr/bin/env node %f/src/server/main.ts
 #   systemctl --user stop <unit>
 #   pgrep -af 'Xephyr :100|Xvfb :100'    # find the pid; do not use pkill -f
 #   kill <pid>
-#   rm -f <checkout>/.ew-x11/session.json
+#   rm -f <checkout>/.pw-x11/session.json
 KillMode=process
 Restart=on-failure
 RestartSec=5s

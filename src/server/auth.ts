@@ -12,9 +12,9 @@
 //   3. Steady state: `Authorization: Bearer` session token (1h), or a 60-second `?ticket=` for
 //      the SSE stream. Both cost one constant-time HMAC check per request.
 //
-// Enforcement is on by default; `EW_AUTH=0` is for loopback-only development. The state dir,
+// Enforcement is on by default; `PINHOLE_AUTH=0` is for loopback-only development. The state dir,
 // the registry and the secret are resolved per call and stat-gated, so a revoked key or a
-// rotated secret (`ew-auth rotate`, or deleting the file) takes effect on the next request
+// rotated secret (`pw-auth rotate`, or deleting the file) takes effect on the next request
 // without a restart. Rotation ends live sessions, not enrollments.
 
 import {
@@ -33,10 +33,10 @@ import { randomart } from '../shared/randomart.ts'
 import { normaliseOrigin, sessionMaterial } from '../shared/sessionBinding.ts'
 import { defaultStateDir } from './stateDir.ts'
 
-/** Registry/secret/pairing state. `EW_STATE_DIR` overrides; read per call so the location is
+/** Registry/secret/pairing state. `PINHOLE_STATE_DIR` overrides; read per call so the location is
  *  a runtime property, not a module-load one (docs/configuration.md). */
 export function stateDir(): string {
-  return process.env.EW_STATE_DIR || defaultStateDir()
+  return process.env.PINHOLE_STATE_DIR || defaultStateDir()
 }
 const clientsFile = (): string => join(stateDir(), 'clients.json')
 const secretFile = (): string => join(stateDir(), 'server-secret')
@@ -58,9 +58,9 @@ export type TokenKind = 's' | 't'
 
 // ── enforcement flag ─────────────────────────────────────────────────────────
 /** Auth is enforced by default. Opt out only for a loopback-only dev run with an explicit
- *  `EW_AUTH=0` (or off/false/no) — see docs/development.md. */
+ *  `PINHOLE_AUTH=0` (or off/false/no) — see docs/development.md. */
 export function authEnabled(): boolean {
-  const v = (process.env.EW_AUTH ?? '').toLowerCase()
+  const v = (process.env.PINHOLE_AUTH ?? '').toLowerCase()
   return !(v === '0' || v === 'off' || v === 'false' || v === 'no')
 }
 
@@ -92,7 +92,7 @@ interface Registry {
 // (docs/decisions/registry-stat-cache.md)
 //
 // `authClientId()` reads the registry on every request, and revocation happens in another
-// process (`scripts/ew-auth.mjs` edits clients.json). So the cache removes the read and the
+// process (`scripts/pw-auth.mjs` edits clients.json). So the cache removes the read and the
 // parse but never the freshness check: one `statSync` per request. Not `fs.watch` — it can
 // miss events and follows an inode, and a missed event is a revoked key that keeps working.
 //
@@ -158,7 +158,7 @@ function writeRegistry(r: Registry): void {
 
 /** Stable client id = SHA-256 fingerprint of the public key coordinates (hex). The same key
  *  always maps to the same id, so re-pairing is idempotent; the randomart is drawn from it.
- *  The material must match src/client/authClient.ts and scripts/ew-auth.mjs byte for byte:
+ *  The material must match src/client/authClient.ts and scripts/pw-auth.mjs byte for byte:
  *  OKP has only `x`; EC has `x` and `y`. */
 export function fingerprint(pub: ClientJwk): string {
   const material = pub.kty === 'OKP' ? `${pub.crv}:${pub.x}` : `${pub.crv}:${pub.x}:${pub.y}`
@@ -178,18 +178,18 @@ export function listClients(): Client[] {
   return readRegistry().clients
 }
 
-// ── how many keys may be enrolled at once (EW_MAX_CLIENTS, default 1) ────────
+// ── how many keys may be enrolled at once (PINHOLE_MAX_CLIENTS, default 1) ────────
 // (docs/decisions/client-cap.md)
 //
 // Re-pairing adds a key instead of replacing one: the device generates a fresh keypair and
 // the old entry stays authorized with nobody holding it. With a cap of 1 the second
 // enrollment is refused, so a new key needs the old one revoked first.
 //
-// The cap covers the enrollment paths (this module and the write paths in ew-auth.mjs), not
+// The cap covers the enrollment paths (this module and the write paths in pw-auth.mjs), not
 // hand edits of clients.json. Re-adding an already enrolled key is allowed at any limit: same
 // fingerprint, no new key.
 
-/** Pure parse of `EW_MAX_CLIENTS`: unset ⇒ 1; `0`/`unlimited`/`off`/`none` ⇒ 0, meaning no
+/** Pure parse of `PINHOLE_MAX_CLIENTS`: unset ⇒ 1; `0`/`unlimited`/`off`/`none` ⇒ 0, meaning no
  *  cap; anything else that is not plain digits ⇒ 1, so a typo fails safe. Plain digits only:
  *  `Number()` would read `1e3` or `0x10`, and the value in effect must be the value seen. */
 export function parseMaxClients(raw: string | undefined | null): number {
@@ -201,7 +201,7 @@ export function parseMaxClients(raw: string | undefined | null): number {
 
 /** Max simultaneous enrolled keys, read per call like the rest of this module's config. */
 export function maxClients(): number {
-  return parseMaxClients(process.env.EW_MAX_CLIENTS)
+  return parseMaxClients(process.env.PINHOLE_MAX_CLIENTS)
 }
 
 /** Is the registry at its cap? (Always false when uncapped.) */
@@ -211,17 +211,21 @@ export function enrollmentFull(): boolean {
 }
 
 /** Banner lines when the cap has been relaxed from its default, or [] at the default. */
-export function clientLimitWarning(raw: string | undefined = process.env.EW_MAX_CLIENTS): string[] {
+export function clientLimitWarning(
+  raw: string | undefined = process.env.PINHOLE_MAX_CLIENTS,
+): string[] {
   const max = parseMaxClients(raw)
   if (max === 1) return []
   if (max === 0) {
     return [
-      'WARNING: EW_MAX_CLIENTS is UNCAPPED — any number of keys may be enrolled at once.',
+      'WARNING: PINHOLE_MAX_CLIENTS is UNCAPPED — any number of keys may be enrolled at once.',
       '  A re-paired device leaves its old key enrolled and nobody holding it; with no cap,' +
         ' nothing refuses that.',
     ]
   }
-  return [`client limit: ${max} keys (EW_MAX_CLIENTS) — revoke-first re-pairing is not enforced`]
+  return [
+    `client limit: ${max} keys (PINHOLE_MAX_CLIENTS) — revoke-first re-pairing is not enforced`,
+  ]
 }
 
 /** Enroll (or refresh the name of) an authorized client by its public key. Idempotent on the
@@ -264,7 +268,7 @@ export function autoName(id: string): string {
 }
 
 // ── host-local secret for signing session tokens ─────────────────────────────
-// Cached by directory (EW_STATE_DIR is read per call) and stat-gated like the registry:
+// Cached by directory (PINHOLE_STATE_DIR is read per call) and stat-gated like the registry:
 // deleting or replacing the file is how "end every live session" is spelled, and it has to
 // work on a running server, on the next token check. Cost: one `statSync` per verify.
 //
@@ -372,23 +376,23 @@ export function issueTicket(clientId: string): { ticket: string; exp: number } {
 //  1. The comparison value is configured, never derived from the request. A relaying attacker
 //     connects directly and chooses its own `Host` header. (`corsOrigin()` in main.ts does
 //     match against `Host`; that is correct for CORS and must not be copied here.)
-//  2. It has its own variable, not `EW_ORIGINS`. That one is a CORS allowlist — multi-valued
+//  2. It has its own variable, not `PINHOLE_ORIGINS`. That one is a CORS allowlist — multi-valued
 //     and accepting `*` — and widening CORS must not widen the auth binding.
 //  3. No downgrade: a bare-nonce signature is never accepted (see SESSION_BINDING_V1).
 //
-// Unset is a legitimate state (loopback development, the `EW_AUTH=0` harness): the signature
+// Unset is a legitimate state (loopback development, the `PINHOLE_AUTH=0` harness): the signature
 // is verified and the comparison skipped. `sessionBindingStatus()` reports it on every start.
 
-/** `EW_ORIGIN`, canonicalised — the one origin this server accepts a session signature for,
+/** `PINHOLE_ORIGIN`, canonicalised — the one origin this server accepts a session signature for,
  *  or `''` when unset/unusable. Read per call, like `stateDir()`. */
 export function canonicalOrigin(): string {
-  return normaliseOrigin(process.env.EW_ORIGIN)
+  return normaliseOrigin(process.env.PINHOLE_ORIGIN)
 }
 
 /** What the start-up banner says about session binding ("session" to keep it apart from the
  *  swipe bindings). Pure in its argument. A misconfigured value never reads as enforced:
- *  `EW_ORIGIN=*` lands in "unusable", not in "allow anything". */
-export function sessionBindingStatus(raw: string | undefined = process.env.EW_ORIGIN): {
+ *  `PINHOLE_ORIGIN=*` lands in "unusable", not in "allow anything". */
+export function sessionBindingStatus(raw: string | undefined = process.env.PINHOLE_ORIGIN): {
   enforced: boolean
   origin: string
   line: string
@@ -396,19 +400,19 @@ export function sessionBindingStatus(raw: string | undefined = process.env.EW_OR
   const given = (raw ?? '').trim()
   const origin = normaliseOrigin(given)
   if (origin)
-    return { enforced: true, origin, line: `session binding ENFORCED — EW_ORIGIN=${origin}` }
+    return { enforced: true, origin, line: `session binding ENFORCED — PINHOLE_ORIGIN=${origin}` }
   if (given) {
     return {
       enforced: false,
       origin: '',
-      line: `session binding NOT enforced — EW_ORIGIN=${JSON.stringify(given)} is not an absolute URL`,
+      line: `session binding NOT enforced — PINHOLE_ORIGIN=${JSON.stringify(given)} is not an absolute URL`,
     }
   }
   return {
     enforced: false,
     origin: '',
     line:
-      'session binding NOT enforced — set EW_ORIGIN to the URL the device dials' +
+      'session binding NOT enforced — set PINHOLE_ORIGIN to the URL the device dials' +
       ' (e.g. https://host.ts.net:8443) to refuse signatures made for anywhere else',
   }
 }
@@ -424,23 +428,23 @@ export function overCap(): boolean {
 /** The refusal printed when the server declines to start over the cap
  *  (docs/decisions/client-cap.md). It fails closed, with no override: a warning would leave a
  *  gate that is believed narrow and is in fact wide, and `count > max` is also what an
- *  unauthorized enrollment looks like. Recovery needs no server — `ew-auth revoke` edits
+ *  unauthorized enrollment looks like. Recovery needs no server — `pw-auth revoke` edits
  *  clients.json directly. */
 export function overCapRefusal(count: number, max: number, dir: string): string[] {
   return [
-    `REFUSING TO START: ${count} client key(s) are enrolled but EW_MAX_CLIENTS=${max}.`,
+    `REFUSING TO START: ${count} client key(s) are enrolled but PINHOLE_MAX_CLIENTS=${max}.`,
     '  Lowering the cap does not revoke anything — the cap gates enrolment, not requests — so',
     '  starting now would serve a gate that is wider than the configuration asks for. This is',
     '  also what an unauthorized enrolment looks like, so it is not assumed to be benign.',
     `  Look, then drop what should be gone (no server needed — ${dir}):`,
-    '    node scripts/ew-auth.mjs list',
-    '    node scripts/ew-auth.mjs revoke <id>',
-    `  Or keep them on purpose: raise the cap back to ${count} (EW_MAX_CLIENTS=${count}).`,
+    '    node scripts/pw-auth.mjs list',
+    '    node scripts/pw-auth.mjs revoke <id>',
+    `  Or keep them on purpose: raise the cap back to ${count} (PINHOLE_MAX_CLIENTS=${count}).`,
   ]
 }
 
 /** Banner lines for how many keys are enrolled. Pure in its arguments. The count tells a
- *  wrong `EW_STATE_DIR` apart from a device that lost its pairing: both look like every
+ *  wrong `PINHOLE_STATE_DIR` apart from a device that lost its pairing: both look like every
  *  request getting 401, but an enforcing server with zero keys points at the registry. */
 export function clientCountBanner(
   count: number,
@@ -452,7 +456,7 @@ export function clientCountBanner(
   if (count === 0) {
     return [
       `NO CLIENT KEYS ENROLLED in ${dir} — nothing can authenticate until a device is paired.`,
-      '  If a device was already paired, this is the wrong registry: check EW_STATE_DIR' +
+      '  If a device was already paired, this is the wrong registry: check PINHOLE_STATE_DIR' +
         ' (scripts/dev.sh and scripts/sim.sh deliberately use their own).',
     ]
   }
@@ -463,10 +467,10 @@ export function clientCountBanner(
   if (max > 0 && count > max) {
     return [
       `WARNING: a key was added while running — ${count} client key(s) enrolled but` +
-        ` EW_MAX_CLIENTS=${max}. OVER THE CAP.`,
+        ` PINHOLE_MAX_CLIENTS=${max}. OVER THE CAP.`,
       '  The extra key(s) work: the cap gates enrolment, not requests. If you did not add it,' +
         ' revoke it now — and note that this server will REFUSE TO START while over the cap.',
-      `  node scripts/ew-auth.mjs list  /  revoke <id>   (${dir}, no restart needed)`,
+      `  node scripts/pw-auth.mjs list  /  revoke <id>   (${dir}, no restart needed)`,
     ]
   }
   return [`${count} client key(s) enrolled${max > 0 ? ` of ${max}` : ''} — ${dir}`]
@@ -475,7 +479,7 @@ export function clientCountBanner(
 /** Redeem a signed challenge for a session token. Verifies that the nonce is live and
  *  single-use, that the signature matches an enrolled client's public key over the bound
  *  material (clientId + the origin the client believes it is talking to + the nonce), and that
- *  the named origin is this server's own when `EW_ORIGIN` is configured.
+ *  the named origin is this server's own when `PINHOLE_ORIGIN` is configured.
  *  `origin` is what the request body claimed; it is folded back into the signed material, so
  *  a tampered value fails verification. */
 export function redeemSession(
@@ -542,10 +546,10 @@ export function stateDirWarning(mode: number, dir = stateDir()): string[] {
 // ── pairing (strict "approve-then-enroll") ───────────────────────────────────
 // (docs/decisions/pairing-randomart.md)
 //
-// The operator opens a short pairing window (`ew-auth pair` writes pairing.json with a hashed
+// The operator opens a short pairing window (`pw-auth pair` writes pairing.json with a hashed
 // one-time code). The client posts its public key + code; a valid code stages a pending
 // enrollment, never an authorized one. The operator compares the staged key's randomart
-// (`ew-auth pending`) with the art the device drew from its own key and runs `approve`; only
+// (`pw-auth pending`) with the art the device drew from its own key and runs `approve`; only
 // then does the key move into clients.json.
 //
 // The window is single-use, which stops a code that leaked to someone off the path. The art
@@ -597,7 +601,7 @@ function pairingWindow(): { codeHash: string; exp: number } | null {
   }
 }
 
-/** How many keys are enrolled, and how many may be. `max: 0` = uncapped (EW_MAX_CLIENTS).
+/** How many keys are enrolled, and how many may be. `max: 0` = uncapped (PINHOLE_MAX_CLIENTS).
  *  Reported in the pairing response so the device can say there is no free slot before the
  *  operator tries to approve. Only a caller holding a valid one-time code receives it. */
 export interface PairSlots {

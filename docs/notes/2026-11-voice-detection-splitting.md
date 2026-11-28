@@ -3,9 +3,9 @@
 Snapshot — not maintained. Conditions: 2026-11-26, a Xeon W-2125 with a Quadro P5000 under
 WSL2; speech.cpp 0.8.8 (CPU) with `silero-vad`, and the faster-whisper library with
 `large-v3`. Audio: two recordings from the glasses of about 29 s each, short Japanese
-sentences with pauses between them, kept with `EW_STT_DUMP_DIR`.
+sentences with pauses between them, kept with `PINHOLE_STT_DUMP_DIR`.
 
-This is a record of a setting that was tried and withdrawn. `EW_STT_OPTIONS` defaulted to
+This is a record of a setting that was tried and withdrawn. `PINHOLE_STT_OPTIONS` defaulted to
 `chunking_strategy=auto` for one day and defaults to nothing now.
 
 ## What it is

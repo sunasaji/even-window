@@ -46,7 +46,7 @@ export interface LauncherEntry {
  *  key material: the list exists so a human can notice a key they did not add, and the
  *  client cannot enrol or revoke. */
 export interface EnrolledClient {
-  /** SHA-256 fingerprint of the public key: the id `ew-auth list` prints. */
+  /** SHA-256 fingerprint of the public key: the id `pw-auth list` prints. */
   id: string
   /** The authorized_keys-style comment: `client-<id8>` unless the operator named it. */
   name: string

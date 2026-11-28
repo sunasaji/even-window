@@ -76,9 +76,9 @@ const SUPERSEDED_Z = 10001
  *  Its only control reloads, which mints a new instance id and takes the glasses back. That is
  *  the supported way to resolve it from the phone. */
 export function showSupersededOverlay(by: string): void {
-  if (typeof document === 'undefined' || document.getElementById('ew-superseded')) return
+  if (typeof document === 'undefined' || document.getElementById('pw-superseded')) return
   const el = document.createElement('div')
-  el.id = 'ew-superseded'
+  el.id = 'pw-superseded'
   el.setAttribute('role', 'alertdialog')
   el.style.cssText =
     'position:fixed;inset:0;background:#0d0d0d;display:flex;' +
@@ -131,21 +131,21 @@ const APPS_RENDER_MAX = 120
  *  (`flex:1 1 0`, right-aligned): the name is how an entry is found, the command only tells two
  *  entries with the same name apart. */
 const PALETTE_CSS = `
-.ew-plist .ew-row{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 10px;
+.pw-plist .pw-row{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 10px;
   box-sizing:border-box;cursor:pointer}
-.ew-plist .ew-row + .ew-row{border-top:1px solid #272727}
-.ew-plist .ew-row:active{background:#2d3542}
-.ew-plist .ew-row:focus-visible{outline:2px solid #9ecbff;outline-offset:-2px}
-.ew-plist .ew-name{flex:0 0 auto;max-width:62%;white-space:nowrap;overflow:hidden;
+.pw-plist .pw-row + .pw-row{border-top:1px solid #272727}
+.pw-plist .pw-row:active{background:#2d3542}
+.pw-plist .pw-row:focus-visible{outline:2px solid #9ecbff;outline-offset:-2px}
+.pw-plist .pw-name{flex:0 0 auto;max-width:62%;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;font:14px/1.2 system-ui;color:#E5E5E5}
-.ew-plist .ew-cmd{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;
+.pw-plist .pw-cmd{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;font:11px/1.2 ui-monospace,monospace;color:#8f8f8f;text-align:right}
 `
 
 function ensurePaletteCss(): void {
-  if (document.getElementById('ew-palette-css')) return
+  if (document.getElementById('pw-palette-css')) return
   const st = document.createElement('style')
-  st.id = 'ew-palette-css'
+  st.id = 'pw-palette-css'
   st.textContent = PALETTE_CSS
   document.head.appendChild(st)
 }
@@ -228,7 +228,7 @@ function closePalette(why = 'closed', keepHistory = false): void {
   paletteDetach?.()
   paletteDetach = null
   palettePanel = null
-  document.getElementById('ew-palette-backdrop')?.remove()
+  document.getElementById('pw-palette-backdrop')?.remove()
   paletteEl = null
   paletteNoteEl = null
   paletteOpener = null
@@ -273,7 +273,7 @@ interface PaletteShell {
   panel: HTMLElement
   /** The dim count beside the heading. */
   countEl: HTMLElement
-  /** The scrolling list the rows go into. Carries `ew-plist`, so `PALETTE_CSS` styles them. */
+  /** The scrolling list the rows go into. Carries `pw-plist`, so `PALETTE_CSS` styles them. */
   list: HTMLElement
   /** The footer note. Set `dataset.keep = '1'` for text that must survive the keyboard. */
   note: HTMLElement
@@ -303,7 +303,7 @@ function openPaletteShell(spec: PaletteSpec): PaletteShell {
   // the panel (#1b1b1b), so the panel's edge stays visible and the area below a short panel
   // reads as "outside".
   const backdrop = document.createElement('div')
-  backdrop.id = 'ew-palette-backdrop'
+  backdrop.id = 'pw-palette-backdrop'
   backdrop.style.cssText =
     'position:fixed;inset:0;background:#0d0d0d;' + `z-index:${String(PALETTE_BACKDROP_Z)}`
   backdrop.addEventListener('pointerdown', e => {
@@ -316,7 +316,7 @@ function openPaletteShell(spec: PaletteSpec): PaletteShell {
   // Tap-outside exists only when the panel is shorter than the screen. With the keyboard up the
   // panel takes the whole visible rectangle; ✕, Escape and the back gesture are unconditional.
   const panel = document.createElement('div')
-  panel.id = `ew-${spec.id}`
+  panel.id = `pw-${spec.id}`
   panel.tabIndex = -1
   panel.setAttribute('role', 'dialog')
   panel.setAttribute('aria-label', spec.label)
@@ -391,7 +391,7 @@ function openPaletteShell(spec: PaletteSpec): PaletteShell {
   listWrap.style.cssText = 'position:relative;flex:1 1 auto;min-height:0;display:flex'
 
   const list = document.createElement('div')
-  list.className = 'ew-plist'
+  list.className = 'pw-plist'
   list.style.cssText =
     'flex:1 1 auto;min-width:0;overflow-y:auto;background:#111;' +
     'border:1px solid #333;border-radius:8px;overscroll-behavior:contain;' +
@@ -558,19 +558,19 @@ export function openAppsPalette(): void {
     for (const a of apps) {
       const argv = [a.cmd, ...a.args].join(' ')
       const row = document.createElement('div')
-      row.className = 'ew-row'
+      row.className = 'pw-row'
       row.setAttribute('role', 'button')
       row.tabIndex = 0
       row.title = `${argv}${a.terminal ? '  (wrapped in a terminal)' : ''}  [${a.note}]`
       const nameEl = document.createElement('span')
-      nameEl.className = 'ew-name'
+      nameEl.className = 'pw-name'
       nameEl.textContent = a.name
       // The command stays on the row because two entries can share a display name (a deb and a
       // snap Firefox) and the command is what tells them apart. One line, ellipsised, with the
       // full argv in the tooltip and the aria-label. It is omitted when it would repeat the
       // name verbatim.
       const cmdEl = document.createElement('span')
-      cmdEl.className = 'ew-cmd'
+      cmdEl.className = 'pw-cmd'
       const cmdText = `${a.terminal ? 'term: ' : ''}${argv}`
       cmdEl.textContent = cmdText
       const showsCmd = cmdText !== a.name
@@ -720,17 +720,17 @@ export function openTaskPalette(): void {
       : String(all.length)
     for (const w of rows) {
       const row = document.createElement('div')
-      row.className = 'ew-row'
+      row.className = 'pw-row'
       row.setAttribute('role', 'button')
       row.tabIndex = 0
       const nameEl = document.createElement('span')
-      nameEl.className = 'ew-name'
+      nameEl.className = 'pw-name'
       // The active marker is `*`, as on the glasses overlay.
       nameEl.textContent = (w.active ? '* ' : '') + (w.title || w.cls || w.app || w.wid)
       if (w.active) nameEl.style.color = '#9ad'
       // The dim column carries the class, which tells two windows with the same title apart.
       const clsEl = document.createElement('span')
-      clsEl.className = 'ew-cmd'
+      clsEl.className = 'pw-cmd'
       clsEl.textContent = windowAppName(w)
       row.append(nameEl, clsEl)
       row.setAttribute(
@@ -789,17 +789,17 @@ export function openWindowPalette(): void {
     for (const r of rows) {
       const isArmed = armed === r.token
       const row = document.createElement('div')
-      row.className = 'ew-row'
+      row.className = 'pw-row'
       row.setAttribute('role', 'button')
       row.tabIndex = 0
       const nameEl = document.createElement('span')
-      nameEl.className = 'ew-name'
+      nameEl.className = 'pw-name'
       nameEl.textContent = isArmed ? CONFIRM_LABEL : r.label
       // The dim right-hand column carries what the row sends, in the WM's own spelling
       // (`C-t n`): the labels are English phrases, and the command is what identifies the row
       // to someone who knows the keystroke.
       const cmdEl = document.createElement('span')
-      cmdEl.className = 'ew-cmd'
+      cmdEl.className = 'pw-cmd'
       cmdEl.textContent = isArmed ? 'tap again' : rowSendsLabel(r.token)
       if (isArmed) {
         nameEl.style.color = '#ff6b57'

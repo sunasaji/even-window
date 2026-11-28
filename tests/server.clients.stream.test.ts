@@ -6,7 +6,7 @@
 //   1. The public key does not travel. The event is built by `clientsWire`, not by spreading
 //      the registry object.
 //   2. The change key is order-insensitive and name-sensitive: a rewrite that only reorders
-//      entries is not a change; a rename, and a flip of EW_AUTH, are.
+//      entries is not a change; a rename, and a flip of PINHOLE_AUTH, are.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { addClient, type Client, listClients, removeClient } from '../src/server/auth.ts'
@@ -17,11 +17,11 @@ let dispose: () => void
 let prevMax: string | undefined
 beforeEach(() => {
   dispose = useTempStateDir()
-  prevMax = process.env.EW_MAX_CLIENTS
+  prevMax = process.env.PINHOLE_MAX_CLIENTS
 })
 afterEach(() => {
-  if (prevMax === undefined) delete process.env.EW_MAX_CLIENTS
-  else process.env.EW_MAX_CLIENTS = prevMax
+  if (prevMax === undefined) delete process.env.PINHOLE_MAX_CLIENTS
+  else process.env.PINHOLE_MAX_CLIENTS = prevMax
   dispose()
 })
 
@@ -85,14 +85,14 @@ describe('clientsKey — when a change is published', () => {
     expect(clientsKey([{ ...rows[0]!, name: 'renamed' }, rows[1]!], true)).not.toBe(base)
   })
 
-  it('notices EW_AUTH flipping — the same list means something else when auth is off', () => {
+  it('notices PINHOLE_AUTH flipping — the same list means something else when auth is off', () => {
     expect(clientsKey(rows, false)).not.toBe(clientsKey(rows, true))
   })
 })
 
 describe('the registry it reports is the real one', () => {
   it('tracks an enrol and a revoke made through the auth module', () => {
-    process.env.EW_MAX_CLIENTS = '2'
+    process.env.PINHOLE_MAX_CLIENTS = '2'
     const a = makeEd25519Key(),
       b = makeP256Key()
     const ca = addClient(a.pub, 'phone')!

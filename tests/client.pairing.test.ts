@@ -155,7 +155,7 @@ describe('pairingTarget', () => {
 
 // ── the slot count, shown before approval ─────────────────────────────────────────────────
 //
-// EW_MAX_CLIENTS is enforced by `ew-auth approve` on the host. The pairing response reports
+// PINHOLE_MAX_CLIENTS is enforced by `pw-auth approve` on the host. The pairing response reports
 // the slots, so the device can say beforehand that an approval would be refused.
 
 describe('slotLine', () => {
@@ -172,7 +172,7 @@ describe('slotLine', () => {
     expect(s.text).toMatch(/NO FREE SLOT/)
     expect(s.text).toMatch(/REFUSED/)
     expect(s.text).toMatch(/revoke/)
-    expect(s.text).toMatch(/EW_MAX_CLIENTS/)
+    expect(s.text).toMatch(/PINHOLE_MAX_CLIENTS/)
   })
 
   it('does not block a device that is already enrolled: it takes no new slot', () => {

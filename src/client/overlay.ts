@@ -71,7 +71,7 @@ export let overlayBusy = false
 
 /** This page load's identity, minted once. Sent as `?inst=` on the stream, which is what makes
  *  "the same id came back" mean "the old page is still running". */
-export const INSTANCE_ID = `ew-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`
+export const INSTANCE_ID = `pw-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`
 /** Has a newer instance taken over? One-way: nothing clears it but a reload. */
 export let superseded = false
 

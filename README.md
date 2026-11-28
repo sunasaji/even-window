@@ -6,9 +6,6 @@ PinholeWindow (repository `pinhole-window`) mirrors a desktop session on your PC
 and lets you operate it from the glasses and from your phone. It is an Even Hub app
 (a WebView page inside the official Even App) plus a small server on the PC.
 
-It was called even-window until version 0.1.4. An install made then has to move
-`~/.even-window` to `~/.pinhole-window` ([details](docs/decisions/rename-to-pinhole-window.md)).
-
 The server runs a dedicated 576×288 mirrored desktop, captures it, and streams it to
 the glasses. Temple and ring gestures send keys back, a menu on the glasses switches
 windows and launches applications, and speech can be transcribed on your own PC and
@@ -117,7 +114,7 @@ Authentication is on by default, so pair a device before it can connect. To try 
 in a browser on the same machine:
 
 ```bash
-node scripts/ew-auth.mjs pair 'http://127.0.0.1:5273/?server=http://127.0.0.1:8787'
+node scripts/pw-auth.mjs pair 'http://127.0.0.1:5273/?server=http://127.0.0.1:8787'
 ```
 
 Open the printed URL, tap **Pair this device**, compare the pattern shown on both

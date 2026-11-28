@@ -12,7 +12,7 @@
 import type { DurableStore } from './authClient.ts'
 import { withTimeout } from './util.ts'
 
-const BLOB_KEY = 'ew.kv'
+const BLOB_KEY = 'pw.kv'
 
 let store: DurableStore | null = null
 let blob: Record<string, string> = {}

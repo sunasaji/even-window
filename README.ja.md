@@ -6,9 +6,6 @@ PinholeWindow（リポジトリ名は `pinhole-window`）は、PC 上のデス�
 ミラーし、グラスとスマホから操作できるようにします。Even Hub アプリ（公式 Even App の
 中で動く WebView ページ）と、PC 上の小さなサーバで構成されています。
 
-バージョン 0.1.4 までは even-window という名前でした。当時の環境は、
-`~/.even-window` を `~/.pinhole-window` に移す必要があります（[詳細](docs/decisions/rename-to-pinhole-window.md)）。
-
 サーバは専用の 576×288 のミラーデスクトップを動かし、それをキャプチャしてグラスへ
 配信します。テンプルやリングのジェスチャがキーを送り返し、グラス上のメニューで
 ウィンドウの切り替えとアプリケーションの起動ができ、音声は自分の PC 上で認識して
@@ -116,7 +113,7 @@ npm run dev         # クライアントのページをポート 5273 で配信�
 試す場合:
 
 ```bash
-node scripts/ew-auth.mjs pair 'http://127.0.0.1:5273/?server=http://127.0.0.1:8787'
+node scripts/pw-auth.mjs pair 'http://127.0.0.1:5273/?server=http://127.0.0.1:8787'
 ```
 
 表示された URL を開き、**Pair this device** をタップし、両方の画面に出るパターンを

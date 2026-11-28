@@ -54,15 +54,15 @@ export const DEFAULT_SPAWN_ARGV: readonly string[] = [
 export const DEFAULT_SPAWN_CMD: string = DEFAULT_SPAWN_ARGV.join(' ')
 
 /** Client launched into a fresh/empty nested X so there is something to mirror. '' disables.
- *  EW_SPAWN is the operator's configuration and is not validated. */
-const SPAWN_CMD = process.env.EW_SPAWN ?? DEFAULT_SPAWN_CMD
+ *  PINHOLE_SPAWN is the operator's configuration and is not validated. */
+const SPAWN_CMD = process.env.PINHOLE_SPAWN ?? DEFAULT_SPAWN_CMD
 
 /** Backend preference. Xephyr draws a window on the host desktop, so it is preferred when
  *  there is a host display and headless Xvfb otherwise; the other stays as the fallback on the
- *  same display. EW_BACKEND=xephyr|xvfb pins one with no fallback. Keyed on HOST_DISPLAY, not
+ *  same display. PINHOLE_BACKEND=xephyr|xvfb pins one with no fallback. Keyed on HOST_DISPLAY, not
  *  process.env.DISPLAY, which is absent under systemd. `host` is a seam for the tests. */
 export function backendOrder(host: string | null = HOST_DISPLAY): Backend[] {
-  const pin = (process.env.EW_BACKEND || 'auto').toLowerCase()
+  const pin = (process.env.PINHOLE_BACKEND || 'auto').toLowerCase()
   if (pin === 'xephyr') return ['Xephyr']
   if (pin === 'xvfb') return ['Xvfb']
   return host ? ['Xephyr', 'Xvfb'] : ['Xvfb', 'Xephyr']
@@ -444,7 +444,7 @@ async function windowCount(): Promise<number> {
 }
 
 /** Put one client on the nested display when it is empty, so there is something to mirror.
- *  Skipped when EW_SPAWN='' or when clients are already up (the reattach case: the previous
+ *  Skipped when PINHOLE_SPAWN='' or when clients are already up (the reattach case: the previous
  *  process's client is still running and must not be duplicated). Starts in SPAWN_CWD because
  *  the client is usually a terminal whose prompt the operator reads. */
 async function ensureClient(env: NodeJS.ProcessEnv): Promise<number> {
@@ -533,7 +533,7 @@ async function tryReattach(): Promise<boolean> {
   const displayEnv = (await unixReady(st.display))
     ? st.display
     : `127.0.0.1:${displayNum(st.display)}`
-  process.env.EW_X11_DISPLAY_ENV = displayEnv // publish the live transport to childEnv()
+  process.env.PINHOLE_X11_DISPLAY_ENV = displayEnv // publish the live transport to childEnv()
   const s: Session = {
     display: st.display,
     displayEnv,
@@ -635,7 +635,7 @@ async function startImpl(): Promise<void> {
 
     const s = fresh
     session = s
-    process.env.EW_X11_DISPLAY_ENV = s.displayEnv // publish the live transport to childEnv()
+    process.env.PINHOLE_X11_DISPLAY_ENV = s.displayEnv // publish the live transport to childEnv()
     const env = childEnv({ DISPLAY: s.displayEnv })
 
     s.wmPid = startWm(env)

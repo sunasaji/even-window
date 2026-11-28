@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# ew-firefox.sh — launch Firefox as an pinhole-window X11 client, tuned for the G2.
+# pw-firefox.sh — launch Firefox as an pinhole-window X11 client, tuned for the G2.
 #
 # Point ~/.pinhole-window/apps.conf at this script so that the launcher lists it:
 #
-#     app Firefox (G2) = /abs/path/to/scripts/ew-firefox.sh
+#     app Firefox (G2) = /abs/path/to/scripts/pw-firefox.sh
 #
 # pinhole-window execs an app's argv directly, without a shell and without arguments, so
 # everything configurable comes from the environment or the profile.
@@ -18,19 +18,19 @@
 # Background: docs/firefox.md.
 #
 # Environment:
-#   EW_FIREFOX_PROFILE  runtime profile dir (default ~/.local/share/pinhole-window/firefox)
-#   EW_FIREFOX_URL      open this URL instead of the profile's homepage
-#   EW_FIREFOX_BIN      firefox binary (default: firefox)
+#   PINHOLE_FIREFOX_PROFILE  runtime profile dir (default ~/.local/share/pinhole-window/firefox)
+#   PINHOLE_FIREFOX_URL      open this URL instead of the profile's homepage
+#   PINHOLE_FIREFOX_BIN      firefox binary (default: firefox)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 TEMPLATE="$SCRIPT_DIR/firefox-profile"
 # Persistent and under $HOME, not /tmp: WSL clears /tmp, and the profile holds logins
 # and site storage.
-PROFILE="${EW_FIREFOX_PROFILE:-$HOME/.local/share/pinhole-window/firefox}"
-FIREFOX_BIN="${EW_FIREFOX_BIN:-firefox}"
+PROFILE="${PINHOLE_FIREFOX_PROFILE:-$HOME/.local/share/pinhole-window/firefox}"
+FIREFOX_BIN="${PINHOLE_FIREFOX_BIN:-firefox}"
 
-[ -d "$TEMPLATE" ] || { echo "ew-firefox: template not found: $TEMPLATE" >&2; exit 1; }
+[ -d "$TEMPLATE" ] || { echo "pw-firefox: template not found: $TEMPLATE" >&2; exit 1; }
 
 # 1. provision / re-sync the runtime profile from the template
 mkdir -p "$PROFILE/chrome"
@@ -87,7 +87,7 @@ cat "$LOCAL" >> "$PROFILE/user.js"
 #      fontconfig (src/server/platform/x11/xenv.ts), and a manual run on :0 should
 #      use the desktop's fonts.
 URL=()
-[ -n "${EW_FIREFOX_URL:-}" ] && URL=("$EW_FIREFOX_URL")
+[ -n "${PINHOLE_FIREFOX_URL:-}" ] && URL=("$PINHOLE_FIREFOX_URL")
 
 exec env -u WAYLAND_DISPLAY \
   GTK_THEME="Adwaita:dark" \

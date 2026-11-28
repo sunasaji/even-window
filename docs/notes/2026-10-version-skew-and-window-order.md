@@ -10,8 +10,8 @@ rows for display. `list` must stay in the window manager's own order, or the men
 changes on every focus change and each switch costs a page rebuild.
 
 ```bash
-EW_X11_RUNTIME_DIR=/tmp/ew-mru-x11 EW_X11_DISPLAY=:171 EW_PORT=8799 \
-VITE_PORT=5274 EW_AUTOMATION_PORT=9900 EW_SIM_DISPLAY=:181 scripts/sim.sh --headless --keep
+PINHOLE_X11_RUNTIME_DIR=/tmp/pw-mru-x11 PINHOLE_X11_DISPLAY=:171 PINHOLE_PORT=8799 \
+VITE_PORT=5274 PINHOLE_AUTOMATION_PORT=9900 PINHOLE_SIM_DISPLAY=:181 scripts/sim.sh --headless --keep
 ```
 
 After spawning `xclock` and `xlogo` and focusing xterm, then xclock:
@@ -31,7 +31,7 @@ Right after `recent` was added to the `windows` event, a new client against a se
 hours earlier stopped reacting to double taps only:
 
 ```
-[ew] CLIENT … double — opening the overlay root list
+[pw] CLIENT … double — opening the overlay root list
                                        (no `overlay SHOW`; the log ends here)
 ```
 
@@ -41,7 +41,7 @@ one. Two fixes followed: receivers tolerate missing new fields, and uncaught err
 logged. The same failure now reads:
 
 ```
-[ew] CLIENT … UNCAUGHT rejection: Spread syntax requires ...iterable not be null or undefined
+[pw] CLIENT … UNCAUGHT rejection: Spread syntax requires ...iterable not be null or undefined
 ```
 
 A quieter form the same day: the list stayed in launch order because the ordering is made by
@@ -50,11 +50,11 @@ the (old) server and the client degraded as designed.
 To reproduce skew deliberately, run an old server with a new client from a worktree:
 
 ```bash
-git worktree add --detach /tmp/ew-old <old-commit>
-ln -s "$PWD/node_modules" /tmp/ew-old/node_modules
+git worktree add --detach /tmp/pw-old <old-commit>
+ln -s "$PWD/node_modules" /tmp/pw-old/node_modules
 # copy the current client and shared types over the old ones, then:
-cd /tmp/ew-old && EW_X11_RUNTIME_DIR=/tmp/ew-old-x11 EW_X11_DISPLAY=:172 EW_PORT=8798 \
-  VITE_PORT=5275 EW_AUTOMATION_PORT=9901 EW_SIM_DISPLAY=:182 \
+cd /tmp/pw-old && PINHOLE_X11_RUNTIME_DIR=/tmp/pw-old-x11 PINHOLE_X11_DISPLAY=:172 PINHOLE_PORT=8798 \
+  VITE_PORT=5275 PINHOLE_AUTOMATION_PORT=9901 PINHOLE_SIM_DISPLAY=:182 \
   scripts/sim.sh --headless --keep --app-query "debug=1"
 ```
 
@@ -65,7 +65,7 @@ instance as far as the server is concerned.
 
 | Action | Observed |
 | --- | --- |
-| Subscribe with another id | Server `stream inst=fake-tak TAKES OVER from ew-wl1rh`; client `SUPERSEDED by instance fake-takeover`; full-screen curtain ("another instance owns the glasses", both ids, "take over here") |
+| Subscribe with another id | Server `stream inst=fake-tak TAKES OVER from pw-wl1rh`; client `SUPERSEDED by instance fake-takeover`; full-screen curtain ("another instance owns the glasses", both ids, "take over here") |
 | Tap "take over here" | Reload, new id, `TAKES OVER`, tiles flow again |
 | Subscribe again with a displaced id | `stream inst=fake2 is STALE (current=…) — told to stand down`; ownership never goes back, otherwise two pages would trade it forever |
 
@@ -77,12 +77,12 @@ went stale.
 On hardware, judge by the server log, since a crashed app shows no curtain:
 
 ```bash
-grep -E 'TAKES OVER|is STALE|CLOSED after being told' .ew-x11/logs/dev-api.log | tail
-grep 'CLIENT.*re-establish failed' .ew-x11/logs/dev-api.log | tail   # must stop after the new boot:
+grep -E 'TAKES OVER|is STALE|CLOSED after being told' .pw-x11/logs/dev-api.log | tail
+grep 'CLIENT.*re-establish failed' .pw-x11/logs/dev-api.log | tail   # must stop after the new boot:
 ```
 
 After replacing only the server, `reattached to Xephyr on :100 (xPid …)` in the banner means
-the windows survived, and `session binding ENFORCED — EW_ORIGIN=…` that pairings did.
+the windows survived, and `session binding ENFORCED — PINHOLE_ORIGIN=…` that pairings did.
 
 ## The server log after a crash on hardware (2026-10-20)
 
@@ -92,7 +92,7 @@ the server's stdout:
 ```bash
 ss -ltnp | grep :8787            # server pid
 ls -l /proc/<pid>/fd/1           # where its stdout goes
-grep 'CLIENT' .ew-x11/logs/dev-api.log | tail -60
+grep 'CLIENT' .pw-x11/logs/dev-api.log | tail -60
 ```
 
 In that session the phone showed everything up to the disconnect; `create => 1`,

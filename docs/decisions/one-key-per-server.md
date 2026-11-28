@@ -11,15 +11,13 @@ accepting the phone.
 ## Decision
 
 A key pair belongs to one server, and is stored under that server's origin
-(`client@<origin>` in IndexedDB, `ew-auth.jwk@<origin>` in the bridge's durable store). It is
+(`client@<origin>` in IndexedDB, `pw-auth.jwk@<origin>` in the bridge's durable store). It is
 generated when the phone pairs with that server and discarded when the phone forgets the
 server. A request, a session and the "is this device paired" answer all use the key of the
 server currently addressed.
 
-The single key of earlier versions is adopted by the first server that asks for a key and that
-somebody chose, which is the server it was enrolled at, since the stored address is the first
-one opened. The built-in default address is a guess and never adopts it. The origin that took
-it is recorded (`ew-auth.owner`), so no second server can.
+The single key that versions up to 0.1.4 kept is not carried over: its store was renamed with
+the rest of the `ew` names, so a phone paired then pairs again.
 
 ## Alternatives considered
 

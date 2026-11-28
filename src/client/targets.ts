@@ -9,7 +9,7 @@ import { fitUnits, ROW_LABEL_UNITS } from '../shared/glassMenu.ts'
 import { keep } from './durableKv.ts'
 
 /** Where the list is kept: localStorage, mirrored to the bridge's durable store (durableKv.ts). */
-export const TARGETS_KEY = 'ew.targets'
+export const TARGETS_KEY = 'pw.targets'
 /** Rows of the lens under its header. A longer list is shown a page at a time: the page is
  *  the one the cursor is on, so swiping past the last row of a page turns it. */
 export const ROOT_PAGE_ROWS = 9
@@ -29,8 +29,7 @@ export function cleanName(raw: string): string {
   return raw.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
 }
 
-/** Pure: the stored JSON as a list. An entry is `{server, name?}`; a bare string is an entry of
- *  the first version of the list, which had no names. Anything malformed is dropped. */
+/** Pure: the stored JSON as a list of `{server, name?}`. Anything malformed is dropped. */
 export function parseTargets(raw: string | null): Target[] {
   if (!raw) return []
   let v: unknown
@@ -42,8 +41,7 @@ export function parseTargets(raw: string | null): Target[] {
   if (!Array.isArray(v)) return []
   const out: Target[] = []
   for (const x of v) {
-    if (typeof x === 'string' && x !== '') out.push({ server: x })
-    else if (x && typeof x === 'object') {
+    if (x && typeof x === 'object') {
       const o = x as { server?: unknown; name?: unknown }
       if (typeof o.server !== 'string' || o.server === '') continue
       const name = typeof o.name === 'string' ? cleanName(o.name) : ''
@@ -110,7 +108,7 @@ export function rootText(list: readonly Target[], sel: number, name = 'PinholeWi
       'On the phone, in this app:',
       '- paired before: enter the server URL',
       '- first time, on the PC:',
-      '    node scripts/ew-auth.mjs pair URL',
+      '    node scripts/pw-auth.mjs pair URL',
       '    scan its QR code, tap Copy, paste here',
       '',
       'double-tap: exit',

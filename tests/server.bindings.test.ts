@@ -29,13 +29,13 @@ const VIM: AppBinding = {
 let dir = ''
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'ew-bind-'))
-  process.env.EW_STATE_DIR = dir
+  dir = mkdtempSync(join(tmpdir(), 'pw-bind-'))
+  process.env.PINHOLE_STATE_DIR = dir
   resetBindingsCache()
 })
 
 afterEach(() => {
-  delete process.env.EW_STATE_DIR
+  delete process.env.PINHOLE_STATE_DIR
   resetBindingsCache()
   rmSync(dir, { recursive: true, force: true })
 })

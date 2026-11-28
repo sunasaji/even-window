@@ -1,7 +1,7 @@
 // Where Xephyr draws. Xephyr needs a host desktop to map its window into; with none, the
 // server prefers headless Xvfb. A systemd user unit has no DISPLAY even when a desktop socket
 // is reachable, so the host display is resolved from the socket directory, with the
-// environment as a hint and EW_HOST_DISPLAY as the override. These tests pin that order, the
+// environment as a hint and PINHOLE_HOST_DISPLAY as the override. These tests pin that order, the
 // explicit opt-out, and the one case that must never resolve: our own nested display.
 
 import { describe, expect, it } from 'vitest'
@@ -18,16 +18,20 @@ const socketsOf =
     names
 
 describe('resolveHostDisplay — the host desktop, if there is one', () => {
-  it('prefers EW_HOST_DISPLAY over everything', () => {
-    expect(resolveHostDisplay({ EW_HOST_DISPLAY: ':5', DISPLAY: ':0' }, socketsOf('X0'))).toBe(':5')
-    expect(resolveHostDisplay({ EW_HOST_DISPLAY: '  :5  ' }, socketsOf())).toBe(':5')
+  it('prefers PINHOLE_HOST_DISPLAY over everything', () => {
+    expect(resolveHostDisplay({ PINHOLE_HOST_DISPLAY: ':5', DISPLAY: ':0' }, socketsOf('X0'))).toBe(
+      ':5',
+    )
+    expect(resolveHostDisplay({ PINHOLE_HOST_DISPLAY: '  :5  ' }, socketsOf())).toBe(':5')
   })
 
   // The operator must be able to say "there is no desktop" on a box that has one, to force the
   // headless preference. An empty value is that assertion, so it has to beat DISPLAY too.
-  it('treats an empty EW_HOST_DISPLAY as "headless", even with a DISPLAY and a live socket', () => {
-    expect(resolveHostDisplay({ EW_HOST_DISPLAY: '', DISPLAY: ':0' }, socketsOf('X0'))).toBeNull()
-    expect(resolveHostDisplay({ EW_HOST_DISPLAY: '   ' }, socketsOf('X0'))).toBeNull()
+  it('treats an empty PINHOLE_HOST_DISPLAY as "headless", even with a DISPLAY and a live socket', () => {
+    expect(
+      resolveHostDisplay({ PINHOLE_HOST_DISPLAY: '', DISPLAY: ':0' }, socketsOf('X0')),
+    ).toBeNull()
+    expect(resolveHostDisplay({ PINHOLE_HOST_DISPLAY: '   ' }, socketsOf('X0'))).toBeNull()
   })
 
   it('takes DISPLAY when it is set — a login shell or scripts/dev.sh exported it', () => {
@@ -60,18 +64,18 @@ describe('backendOrder — the preference the host display decides', () => {
     expect(backendOrder(null)).toEqual(['Xvfb', 'Xephyr'])
   })
 
-  it('EW_BACKEND pins one backend with no fallback, host display or not', () => {
-    const saved = process.env.EW_BACKEND
+  it('PINHOLE_BACKEND pins one backend with no fallback, host display or not', () => {
+    const saved = process.env.PINHOLE_BACKEND
     try {
-      process.env.EW_BACKEND = 'xephyr'
+      process.env.PINHOLE_BACKEND = 'xephyr'
       expect(backendOrder(null)).toEqual(['Xephyr'])
-      process.env.EW_BACKEND = 'XVFB'
+      process.env.PINHOLE_BACKEND = 'XVFB'
       expect(backendOrder(':0')).toEqual(['Xvfb'])
-      process.env.EW_BACKEND = 'auto'
+      process.env.PINHOLE_BACKEND = 'auto'
       expect(backendOrder(':0')).toEqual(['Xephyr', 'Xvfb'])
     } finally {
-      if (saved === undefined) delete process.env.EW_BACKEND
-      else process.env.EW_BACKEND = saved
+      if (saved === undefined) delete process.env.PINHOLE_BACKEND
+      else process.env.PINHOLE_BACKEND = saved
     }
   })
 })

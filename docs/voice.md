@@ -4,7 +4,7 @@ Speak, have the speech recognised, confirm the text, and have it typed into the 
 window of the mirrored desktop. The target can be a terminal, a form in a browser or anything
 else: the text goes wherever keyboard focus is.
 
-Voice input is off unless the server is given a recogniser (`EW_STT_URL`).
+Voice input is off unless the server is given a recogniser (`PINHOLE_STT_URL`).
 
 ## Pipeline
 
@@ -25,7 +25,7 @@ phone ([A hosted recogniser](#a-hosted-recogniser)). Background: [decisions/stt-
 
 ## Capability advertisement
 
-`GET /api/health` reports `stt: true` when `EW_STT_URL` is set
+`GET /api/health` reports `stt: true` when `PINHOLE_STT_URL` is set
 ([protocol.md](protocol.md#get-apihealth)). The client reads it at start-up. Only then does it bind the
 long press and show the phone's voice button, so a dialog that could only end in
 "not configured" is never offered.
@@ -82,13 +82,13 @@ another.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `EW_STT_URL` | empty (feature off) | Full URL of the transcription endpoint, for example `http://127.0.0.1:8757/v1/audio/transcriptions` |
-| `EW_STT_MODEL` | `Qwen3-ASR-0.6B` | Sent as `model` |
-| `EW_STT_LANG` | empty | Sent as `language` when set |
-| `EW_STT_PROMPT` | empty | Sent as `prompt` when set (vocabulary bias) |
-| `EW_STT_OPTIONS` | empty | Extra form fields, as `name=value` pairs joined by `&`. Empty sends none. See [Recogniser options](#recogniser-options) |
-| `EW_STT_API_KEY` | empty | Sent as `Authorization: Bearer` when set. For a hosted recogniser; see [A hosted recogniser](#a-hosted-recogniser) |
-| `EW_STT_DUMP_DIR` | empty | Keeps a copy of each utterance in this directory. For diagnosis; see [Keeping the audio for diagnosis](#keeping-the-audio-for-diagnosis) |
+| `PINHOLE_STT_URL` | empty (feature off) | Full URL of the transcription endpoint, for example `http://127.0.0.1:8757/v1/audio/transcriptions` |
+| `PINHOLE_STT_MODEL` | `Qwen3-ASR-0.6B` | Sent as `model` |
+| `PINHOLE_STT_LANG` | empty | Sent as `language` when set |
+| `PINHOLE_STT_PROMPT` | empty | Sent as `prompt` when set (vocabulary bias) |
+| `PINHOLE_STT_OPTIONS` | empty | Extra form fields, as `name=value` pairs joined by `&`. Empty sends none. See [Recogniser options](#recogniser-options) |
+| `PINHOLE_STT_API_KEY` | empty | Sent as `Authorization: Bearer` when set. For a hosted recogniser; see [A hosted recogniser](#a-hosted-recogniser) |
+| `PINHOLE_STT_DUMP_DIR` | empty | Keeps a copy of each utterance in this directory. For diagnosis; see [Keeping the audio for diagnosis](#keeping-the-audio-for-diagnosis) |
 
 The settings are read per request. See [configuration.md](configuration.md).
 
@@ -96,7 +96,7 @@ What the server sends and expects:
 
 - A `multipart/form-data` POST with `file` (the PCM wrapped in a 44-byte WAV header,
   `audio/wav`, named `utterance.wav`), `model`, optionally `language` and `prompt`, and the
-  fields of `EW_STT_OPTIONS`. A 400 to a request that carried options is retried once
+  fields of `PINHOLE_STT_OPTIONS`. A 400 to a request that carried options is retried once
   without them.
 - A 2xx JSON response with a string `text`. The text is trimmed.
 - Anything else is a failure: a network error, a non-2xx status, a non-JSON body, or JSON
@@ -106,7 +106,7 @@ An empty recording is answered `{ok: true, text: ''}` without calling the recogn
 
 ### Recogniser options
 
-`EW_STT_OPTIONS` adds form fields to the request, so a recogniser's own switches can be set
+`PINHOLE_STT_OPTIONS` adds form fields to the request, so a recogniser's own switches can be set
 without a setting for each. The syntax is a URL query string: `name=value` pairs joined by
 `&`, percent-encoded where a value needs it. An option with the name of `model`, `language`
 or `prompt` replaces that field; `file` cannot be set.
@@ -115,8 +115,8 @@ Nothing extra is sent by default, and the shipped setup needs nothing here. Use 
 your recogniser documents a field you want:
 
 ```
-EW_STT_OPTIONS=name=value
-EW_STT_OPTIONS=name=value&other=value
+PINHOLE_STT_OPTIONS=name=value
+PINHOLE_STT_OPTIONS=name=value&other=value
 ```
 
 When the recogniser answers 400 to a request that carried options, the server logs it and
@@ -128,14 +128,14 @@ Background: a field that was tried as the default and withdrawn is in
 
 ### A hosted recogniser
 
-The contract is OpenAI's API, so OpenAI's own endpoint is a valid `EW_STT_URL`. Not tested
+The contract is OpenAI's API, so OpenAI's own endpoint is a valid `PINHOLE_STT_URL`. Not tested
 against the live service: the request shape is the documented one, and the bearer header is
 covered by the tests against a local stand-in.
 
 ```
-EW_STT_URL=https://api.openai.com/v1/audio/transcriptions
-EW_STT_MODEL=gpt-4o-mini-transcribe
-EW_STT_API_KEY=sk-...
+PINHOLE_STT_URL=https://api.openai.com/v1/audio/transcriptions
+PINHOLE_STT_MODEL=gpt-4o-mini-transcribe
+PINHOLE_STT_API_KEY=sk-...
 ```
 
 - **The audio leaves the machine.** With a local recogniser, what the microphone heard stays
@@ -150,7 +150,7 @@ EW_STT_API_KEY=sk-...
 ### Keeping the audio for diagnosis
 
 When a transcript comes back short or wrong, the question is whether the audio or the
-recogniser is at fault. `EW_STT_DUMP_DIR` names a directory; with it set, the server writes
+recogniser is at fault. `PINHOLE_STT_DUMP_DIR` names a directory; with it set, the server writes
 two files per utterance:
 
 - `utt-<date>-<time>-<ms>.wav`: the exact file sent to the recogniser, written before the
@@ -178,12 +178,12 @@ specific to pinhole-window, and it is separate from the server's unit so that ei
 without the other.
 
 - speech.cpp has no authentication and no TLS. Keep it on loopback. This is about where
-  speech.cpp listens, not about `EW_STT_URL`, which may name a hosted service instead.
-- The unit's model name and `EW_STT_MODEL` are different strings for the same model and must
+  speech.cpp listens, not about `PINHOLE_STT_URL`, which may name a hosted service instead.
+- The unit's model name and `PINHOLE_STT_MODEL` are different strings for the same model and must
   agree. A mismatch produces a 404 that looks like a wrong route. List the ids with
   `curl -s http://127.0.0.1:8757/v1/models`.
 
-  | Unit (`STT_MODEL`) | `EW_STT_MODEL` | Languages |
+  | Unit (`STT_MODEL`) | `PINHOLE_STT_MODEL` | Languages |
   | --- | --- | --- |
   | `qwen3-asr-0.6b` (default) | `Qwen3-ASR-0.6B` (default) | 30, including English and Japanese |
 
@@ -195,7 +195,7 @@ without the other.
 - `reazonspeech-v2` (HTTP id `reazonspeech-nemo-v2`) is a Japanese-only alternative, about
   1.6 times faster on a CPU. It made more errors on real recordings
   ([notes](notes/2026-11-voice-detection-splitting.md)) and is not part of the default
-  setup. To use it, set `STT_MODEL` and `EW_STT_MODEL` and leave `EW_STT_LANG` unset.
+  setup. To use it, set `STT_MODEL` and `PINHOLE_STT_MODEL` and leave `PINHOLE_STT_LANG` unset.
 
 #### GPU, and WSL
 
@@ -206,7 +206,7 @@ what it found.
 
 Under WSL2 that does not help with an NVIDIA GPU: WSL passes it through CUDA and Direct3D 12,
 not Vulkan, and `speech` inside WSL runs on the CPU. To use the GPU, run the Windows build of
-speech.cpp on the Windows host and point `EW_STT_URL` at it. The Windows host's models
+speech.cpp on the Windows host and point `PINHOLE_STT_URL` at it. The Windows host's models
 directory can be the same one WSL uses (`SPEECH_MODEL_DIR`).
 
 Measured on one machine (Quadro P5000, 4-core Xeon), `Qwen3-ASR-0.6B`, 30 s of audio: about

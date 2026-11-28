@@ -39,4 +39,4 @@ back to IndexedDB. In a plain browser no JWK is ever written.
 - The client opens the stream before the bridge is ready, so wiring the durable store
   invalidates a cached "no identity" result; otherwise the mirror would never be consulted.
 - There is no unpair control in the client. Discarding the key on the device does not remove
-  the enrolment; `ew-auth revoke` does.
+  the enrolment; `pw-auth revoke` does.

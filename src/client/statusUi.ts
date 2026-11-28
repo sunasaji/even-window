@@ -56,7 +56,7 @@ export function renderConnSummary(): void {
       ? 'connection — ⚠ not paired yet: open to pair'
       : // Not a stale token: the client re-establishes once on a 401 first. `unauthorized`
         // means this device's key is not in the registry the server reads: revoked, or the
-        // server was started against a different EW_STATE_DIR.
+        // server was started against a different PINHOLE_STATE_DIR.
         authState === 'unauthorized'
         ? "connection — ⚠ this device's key is not enrolled: open to re-pair"
         : authState === 'offline'
@@ -122,13 +122,13 @@ export function renderStatus(): void {
 export let previewText: string | null = null
 
 /** One row of container 6: 288 px over the ten lines the panel shows. */
-const PREVIEW_LINE_PX = SCREEN_H / PANEL_LINES
+const PREVIPINHOLE_LINE_PX = SCREEN_H / PANEL_LINES
 /** Sized so ASCII rows run at about the lens font's width. CJK comes out ~15% narrower than
  *  the lens's 28 per line, which is harmless: the breaks come from the width model, not this
  *  font. */
-const PREVIEW_FONT = '17px system-ui, -apple-system, "Hiragino Sans", sans-serif'
+const PREVIPINHOLE_FONT = '17px system-ui, -apple-system, "Hiragino Sans", sans-serif'
 /** Lens green — what the glasses draw text in — in both preview modes. */
-const PREVIEW_TEXT_COLOUR = '#3f3'
+const PREVIPINHOLE_TEXT_COLOUR = '#3f3'
 
 /** Called from `syncOverlay`, which every overlay change goes through. */
 export function syncPreviewOverlay(): void {
@@ -156,14 +156,14 @@ function drawPreviewOverlay(text: string): void {
   ctx.save()
   ctx.fillStyle = '#000'
   ctx.fillRect(0, 0, SCREEN_W, SCREEN_H)
-  ctx.font = PREVIEW_FONT
-  ctx.fillStyle = PREVIEW_TEXT_COLOUR
+  ctx.font = PREVIPINHOLE_FONT
+  ctx.fillStyle = PREVIPINHOLE_TEXT_COLOUR
   ctx.textBaseline = 'middle'
   // The panel clips at its bottom edge and does not scroll, so neither does this.
   wrapGlassLines(text)
     .slice(0, PANEL_LINES)
     .forEach((line, k) => {
-      const y = (k + 0.5) * PREVIEW_LINE_PX
+      const y = (k + 0.5) * PREVIPINHOLE_LINE_PX
       const w = ctx.measureText(line).width
       if (w <= SCREEN_W) {
         ctx.fillText(line, 0, y)

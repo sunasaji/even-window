@@ -11,5 +11,5 @@ export function defaultStateDir(home: string = homedir()): string {
 
 /** State dir — the same resolution as src/server/auth.ts; read per call so a test can move it. */
 export function appStateDir(): string {
-  return process.env.EW_STATE_DIR || defaultStateDir()
+  return process.env.PINHOLE_STATE_DIR || defaultStateDir()
 }

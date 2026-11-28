@@ -4,7 +4,7 @@
 
 Session tokens are stateless, so on their own they stay valid for their full hour after the
 key behind them is revoked. Revocation and rotation happen in another process:
-`scripts/ew-auth.mjs` edits `clients.json` and `server-secret` directly. The gate runs on
+`scripts/pw-auth.mjs` edits `clients.json` and `server-secret` directly. The gate runs on
 every request, so reading and parsing a file each time is wasteful.
 
 ## Decision
@@ -28,7 +28,7 @@ is cached as "no clients".
 
 ## Consequences
 
-- `ew-auth revoke` and `ew-auth rotate` take effect on the next request with no restart,
+- `pw-auth revoke` and `pw-auth rotate` take effect on the next request with no restart,
   even when the server is stuck or refusing to start.
 - The steady-state cost of the gate is one HMAC and two `stat` calls.
 - Stat-before-read means a racing write causes a redundant re-read, never a stale answer.

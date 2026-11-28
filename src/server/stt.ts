@@ -52,31 +52,31 @@ export function isPcmRate(n: unknown): n is number {
 /** The configured recogniser, or '' when the feature is off. Off by default: this is the one
  *  route in the server that sends what a microphone heard to another process. */
 export function sttUrl(): string {
-  return (process.env.EW_STT_URL ?? '').trim()
+  return (process.env.PINHOLE_STT_URL ?? '').trim()
 }
 
 /** The model id the recogniser wants: its HTTP id as listed by `/v1/models`, which differs
  *  from the model's CLI name (docs/voice.md). The default must name the model the shipped unit
- *  (systemd/speech-cpp.service) serves, or a fresh install that sets only EW_STT_URL gets a
+ *  (systemd/speech-cpp.service) serves, or a fresh install that sets only PINHOLE_STT_URL gets a
  *  404. */
 export function sttModel(): string {
-  return (process.env.EW_STT_MODEL ?? 'Qwen3-ASR-0.6B').trim()
+  return (process.env.PINHOLE_STT_MODEL ?? 'Qwen3-ASR-0.6B').trim()
 }
 
 /** Optional language hint, and optional vocabulary bias (the API's `prompt`: proper nouns
  *  and jargon). Both empty by default. */
 export function sttLang(): string {
-  return (process.env.EW_STT_LANG ?? '').trim()
+  return (process.env.PINHOLE_STT_LANG ?? '').trim()
 }
 export function sttPrompt(): string {
-  return (process.env.EW_STT_PROMPT ?? '').trim()
+  return (process.env.PINHOLE_STT_PROMPT ?? '').trim()
 }
 
 /** The recogniser's API key, or '' for a recogniser that wants none (a local one). Sent as
  *  `Authorization: Bearer`, which is what OpenAI's own endpoint requires. It is never logged
  *  and never reaches the phone. */
 export function sttApiKey(): string {
-  return (process.env.EW_STT_API_KEY ?? '').trim()
+  return (process.env.PINHOLE_STT_API_KEY ?? '').trim()
 }
 
 /** Would the key cross the network unencrypted? True for a plain `http://` URL whose host is
@@ -94,17 +94,17 @@ export function sttKeyExposed(url: string, key: string): boolean {
   return !(host === 'localhost' || host === '[::1]' || /^127\./.test(host))
 }
 
-/** What `EW_STT_OPTIONS` is when unset: nothing. Splitting the audio by voice detection was
+/** What `PINHOLE_STT_OPTIONS` is when unset: nothing. Splitting the audio by voice detection was
  *  the default for a day and made recognition worse
  *  (docs/notes/2026-11-voice-detection-splitting.md). */
 export const STT_OPTIONS_DEFAULT = ''
 
-/** Extra form fields for the recogniser, from `EW_STT_OPTIONS`: `name=value` pairs joined by
+/** Extra form fields for the recogniser, from `PINHOLE_STT_OPTIONS`: `name=value` pairs joined by
  *  `&`, in URL query syntax, so a value may be percent-encoded. They are how a recogniser's
  *  own switches are reached without this module knowing them (`vad_filter=true`,
  *  `temperature=0`). Unset or empty, nothing extra is sent. `file` is not theirs to set. */
 export function sttOptions(): [string, string][] {
-  const raw = (process.env.EW_STT_OPTIONS ?? STT_OPTIONS_DEFAULT).trim()
+  const raw = (process.env.PINHOLE_STT_OPTIONS ?? STT_OPTIONS_DEFAULT).trim()
   const out: [string, string][] = []
   for (const [k, v] of new URLSearchParams(raw)) {
     const name = k.trim()
@@ -113,11 +113,11 @@ export function sttOptions(): [string, string][] {
   return out
 }
 
-/** Where to keep a copy of each utterance, from `EW_STT_DUMP_DIR`; '' (the default) keeps
+/** Where to keep a copy of each utterance, from `PINHOLE_STT_DUMP_DIR`; '' (the default) keeps
  *  none. It is for finding out why a transcript came back short: the file is the exact WAV
  *  the recogniser was sent, so it can be played and sent again by hand. */
 export function sttDumpDir(): string {
-  return (process.env.EW_STT_DUMP_DIR ?? '').trim()
+  return (process.env.PINHOLE_STT_DUMP_DIR ?? '').trim()
 }
 
 /** How many utterances the dump directory keeps. These are recordings of the wearer, so the
@@ -149,11 +149,11 @@ async function dumpWav(dir: string, wav: Uint8Array): Promise<string> {
       await rm(join(dir, f), { force: true })
       await rm(join(dir, f.replace(/\.wav$/, '.txt')), { force: true })
     }
-    console.log(`[ew] stt: kept the utterance at ${stem}.wav (EW_STT_DUMP_DIR)`)
+    console.log(`[pw] stt: kept the utterance at ${stem}.wav (PINHOLE_STT_DUMP_DIR)`)
     return stem
   } catch (e) {
     console.log(
-      `[ew] stt: could not keep the utterance in ${dir}: ${e instanceof Error ? e.message : String(e)}`,
+      `[pw] stt: could not keep the utterance in ${dir}: ${e instanceof Error ? e.message : String(e)}`,
     )
     return ''
   }
@@ -205,14 +205,15 @@ function excerpt(s: string, max = 200): string {
  *  as JSON. */
 export async function transcribe(pcm: Uint8Array, rate: number): Promise<SttResult> {
   const url = sttUrl()
-  if (!url) return { ok: false, error: 'STT is not configured — set EW_STT_URL' }
+  if (!url) return { ok: false, error: 'STT is not configured — set PINHOLE_STT_URL' }
   if (pcm.length === 0) return { ok: true, text: '' }
 
   const key = sttApiKey()
   if (sttKeyExposed(url, key)) {
     return {
       ok: false,
-      error: 'EW_STT_API_KEY is set but EW_STT_URL is plain http to another host — use https',
+      error:
+        'PINHOLE_STT_API_KEY is set but PINHOLE_STT_URL is plain http to another host — use https',
     }
   }
   const headers: Record<string, string> = key ? { authorization: `Bearer ${key}` } : {}
@@ -248,8 +249,8 @@ export async function transcribe(pcm: Uint8Array, rate: number): Promise<SttResu
     if (res.status === 400 && options.length > 0) {
       const why = await res.text().catch(() => '')
       console.log(
-        `[ew] stt: the recogniser refused the request (400: ${excerpt(why, 120)}) — ` +
-          `retrying without EW_STT_OPTIONS (${options.map(([k]) => k).join(', ')})`,
+        `[pw] stt: the recogniser refused the request (400: ${excerpt(why, 120)}) — ` +
+          `retrying without PINHOLE_STT_OPTIONS (${options.map(([k]) => k).join(', ')})`,
       )
       res = await post(false)
     }

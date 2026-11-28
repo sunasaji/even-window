@@ -9,7 +9,7 @@ authentication of its own.
 ## Decision
 
 `src/server/stt.ts` speaks exactly one interface, OpenAI's
-`POST /v1/audio/transcriptions`, at whatever `EW_STT_URL` names. The feature is off when the
+`POST /v1/audio/transcriptions`, at whatever `PINHOLE_STT_URL` names. The feature is off when the
 setting is empty. The client sends raw PCM to the gated route `POST /api/stt`; the server
 wraps it in a WAV header and forwards it. The recogniser runs as a separate resident process
 with its own systemd unit.
@@ -31,12 +31,12 @@ with its own systemd unit.
 
 ## Consequences
 
-- `EW_STT_URL` may point at another host or a hosted service without the phone learning a
+- `PINHOLE_STT_URL` may point at another host or a hosted service without the phone learning a
   second credential. The audio then leaves the machine; that is the operator's choice.
 - A hosted service wants an API key, which is a header and not part of the interface's form.
-  `EW_STT_API_KEY` carries it as `Authorization: Bearer`, and the server refuses to send it
+  `PINHOLE_STT_API_KEY` carries it as `Authorization: Bearer`, and the server refuses to send it
   over plain `http` to another host. Fields that only some recognisers take go in
-  `EW_STT_OPTIONS`, so the interface stays one and the differences stay settings.
+  `PINHOLE_STT_OPTIONS`, so the interface stays one and the differences stay settings.
 - The client learns whether voice is available from `GET /api/health` and offers the dialog
   only then.
 - The model id is the recogniser's HTTP id, which differs from its CLI name; the server's

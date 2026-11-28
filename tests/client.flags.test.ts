@@ -83,7 +83,7 @@ describe('instruments are query-only (source scan)', () => {
 
   it('never reads the stats flag from storage', () => {
     expect(src.has("statsOn = queryFlag('stats')")).toBe(true)
-    expect(src.has('ew.stats')).toBe(false)
+    expect(src.has('pw.stats')).toBe(false)
   })
 
   it('keeps the settings persistent — this is not a reason to de-stick them', () => {

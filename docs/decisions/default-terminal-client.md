@@ -10,7 +10,7 @@ into coloured fringes.
 
 ## Decision
 
-The default (`DEFAULT_SPAWN_ARGV`, overridable with `EW_SPAWN`) is
+The default (`DEFAULT_SPAWN_ARGV`, overridable with `PINHOLE_SPAWN`) is
 
 ```
 xterm -bg black -fg white -cr white

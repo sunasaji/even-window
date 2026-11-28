@@ -20,7 +20,7 @@ handler runs. Nothing behind the gate is a second line of defence (see
 ## Trust boundary
 
 - The host account running the server is trusted for everything. It owns the state
-  directory, the configuration and `scripts/ew-auth.mjs`; another process of the same user is
+  directory, the configuration and `scripts/pw-auth.mjs`; another process of the same user is
   not a boundary.
 - An enrolled device has full use of every route, but cannot enrol or revoke: no route does
   either. A client that could revoke would let a stolen token lock the operator out; one
@@ -50,7 +50,7 @@ device's private key.
 - A device can remove its own key from the registry (`POST /api/auth/revoke-self`), which is
   what forgetting a server on the phone does. The route removes only the key the session was
   made with, so it gives a holder of that key nothing the key did not already give. Removing
-  any other key stays with the host (`ew-auth.mjs revoke`).
+  any other key stays with the host (`pw-auth.mjs revoke`).
 - In a browser the private key is non-extractable and lives in IndexedDB, so script on the
   page can use it but not export it.
 - Inside the packaged Even Hub app IndexedDB does not survive a restart, so the key is
@@ -62,14 +62,14 @@ device's private key.
 
 The client id formula and the signed session material are implemented in three places that
 must agree byte for byte: `src/server/auth.ts`, the client's auth module
-(via `src/shared/sessionBinding.ts`) and `scripts/ew-auth.mjs`.
+(via `src/shared/sessionBinding.ts`) and `scripts/pw-auth.mjs`.
 
 ## Enrolment
 
-`scripts/ew-auth.mjs`, run on the host, is the only enrolment interface. It edits the state
+`scripts/pw-auth.mjs`, run on the host, is the only enrolment interface. It edits the state
 directory directly; `list`, `revoke` and `rotate` work whether or not the server is running.
 
-1. The operator opens a pairing window (`ew-auth pair [appUrl]`, or `open` for scripts). A
+1. The operator opens a pairing window (`pw-auth pair [appUrl]`, or `open` for scripts). A
    128-bit one-time code is generated; only its SHA-256 is stored (`pairing.json`). The code
    reaches the device in a URL (`?pair=<code>`), shown also as a QR code.
 2. The device generates a key pair and posts the code and public key to
@@ -82,7 +82,7 @@ directory directly; `list`, `revoke` and `rotate` work whether or not the server
    Only then does the key enter `clients.json`. The device polls
    `GET /api/auth/pair/status` and continues without a reload.
 
-A `pair` window lasts 2 minutes, an `open` window 5 minutes (or `EW_PAIR_TTL_MS`), and a
+A `pair` window lasts 2 minutes, an `open` window 5 minutes (or `PINHOLE_PAIR_TTL_MS`), and a
 pending entry 10 minutes.
 
 The single-use window stops someone who saw the code but is not in the network path: whoever
@@ -95,7 +95,7 @@ Background: [decisions/pairing-randomart.md](decisions/pairing-randomart.md).
 The pairing response also reports how many slots are used and allowed, so the device can say
 that approval will be refused before anyone walks to the host.
 
-### `ew-auth` commands
+### `pw-auth` commands
 
 | Command | Effect |
 | --- | --- |
@@ -109,8 +109,8 @@ that approval will be refused before anyone walks to the host.
 | `add '<jwk>' [name]` | Enrol a public key directly |
 | `add-test [name]`, `sign <nonce> [origin]` | A throwaway key for exercising the gate with `curl` ([development.md](development.md)) |
 
-`ew-auth` reads the same env file as the server, so both see the same `EW_STATE_DIR` and
-`EW_MAX_CLIENTS`.
+`pw-auth` reads the same env file as the server, so both see the same `PINHOLE_STATE_DIR` and
+`PINHOLE_MAX_CLIENTS`.
 
 ## Sessions
 
@@ -118,7 +118,7 @@ that approval will be refused before anyone walks to the host.
 2. The device signs the session material (below) and posts
    `{clientId, nonce, sig, origin}` to `POST /api/auth/session`.
 3. The server checks that the nonce is live, that the signature verifies against the enrolled
-   key for `clientId`, and that the named origin is its own when `EW_ORIGIN` is set. It
+   key for `clientId`, and that the named origin is its own when `PINHOLE_ORIGIN` is set. It
    answers with a session token.
 
 Every failure answers the same 401, so a caller cannot learn which part was wrong.
@@ -153,13 +153,13 @@ rule the short lifetime would protect nothing.
 401; the client then fetches a new ticket and reopens the stream.
 Background: [decisions/stream-ticket.md](decisions/stream-ticket.md).
 
-### Session binding to `EW_ORIGIN`
+### Session binding to `PINHOLE_ORIGIN`
 
 The device signs the destination along with the nonce. The signed bytes are four fields
 joined by newlines (`src/shared/sessionBinding.ts`):
 
 ```
-ew-session-v1
+pw-session-v1
 <clientId>
 <origin the device believes it is talking to>
 <nonce>
@@ -168,18 +168,18 @@ ew-session-v1
 The origin is normalised with `URL.origin`. It also travels in the request body, but only as
 transport: the server rebuilds the material from it, so changing it breaks the signature.
 
-When `EW_ORIGIN` is set, the server refuses a signature that names any other origin. This
+When `PINHOLE_ORIGIN` is set, the server refuses a signature that names any other origin. This
 stops one attack: a paired device is tricked (through a `?server=` link) into talking to an
 attacker's API base, and the attacker relays the device's signature to the real server.
 
 | Rule | Reason |
 | --- | --- |
 | The comparison value comes from configuration, never from the request | A relaying attacker connects directly and chooses its own `Host` header. |
-| `EW_ORIGIN` is a single value, separate from the CORS list `EW_ORIGINS` | Widening CORS must not widen authentication; `*` is treated as a misconfiguration, not as "any". |
+| `PINHOLE_ORIGIN` is a single value, separate from the CORS list `PINHOLE_ORIGINS` | Widening CORS must not widen authentication; `*` is treated as a misconfiguration, not as "any". |
 | There is no acceptance path for a signature without the origin | A fallback would hand the relay back. |
 | An origin mismatch does not consume the nonce | Nothing was proved about this server. |
 
-Unset `EW_ORIGIN` means "verify the signature, skip the comparison". That is correct for
+Unset `PINHOLE_ORIGIN` means "verify the signature, skip the comparison". That is correct for
 loopback development; for a server a phone reaches, set it to the URL the device dials. The
 start-up banner reports the state on every start.
 
@@ -222,22 +222,22 @@ background: [decisions/open-route-rate-limit.md](decisions/open-route-rate-limit
 ### CORS
 
 Tokens are Bearer headers, not cookies, so a foreign page has no ambient credential, and the
-gate is what protects the routes. The CORS default therefore follows `EW_AUTH`:
+gate is what protects the routes. The CORS default therefore follows `PINHOLE_AUTH`:
 
 - **Authentication enforced (default):** any origin is allowed. The packaged app runs on an
   origin chosen by the Even App, and a foreign page still gets only the four open routes.
-- **`EW_AUTH=0`:** foreign origins are refused, because a refused preflight is then the only
+- **`PINHOLE_AUTH=0`:** foreign origins are refused, because a refused preflight is then the only
   thing between a web page and `POST /api/spawn`. Allowed: requests with no `Origin`,
   loopback origins, and an origin on the same host the request was addressed to.
 
-Setting `EW_ORIGINS` to a list replaces the default in both cases with the narrow policy plus
+Setting `PINHOLE_ORIGINS` to a list replaces the default in both cases with the narrow policy plus
 the listed origins; `*` is a wildcard. CORS is a browser policy and not an authorisation
 decision. Details: [protocol.md](protocol.md#cors). Background:
 [decisions/cors-follows-auth.md](decisions/cors-follows-auth.md).
 
 ## Enrolled clients
 
-### Client cap (`EW_MAX_CLIENTS`)
+### Client cap (`PINHOLE_MAX_CLIENTS`)
 
 Re-pairing a device does not replace its key; it adds one. The device generates a new key
 pair, so the old entry stays authorised with nobody holding it, and a key that is never used
@@ -246,7 +246,7 @@ never looks anomalous. The server cannot tell "the same device again" from "a se
 The cap, default 1, turns that into a refusal: a new key cannot be enrolled while the
 registry is full, so the old key must be revoked first.
 
-`EW_MAX_CLIENTS` accepts plain decimal digits; `0`, `unlimited`, `off` or `none` remove the
+`PINHOLE_MAX_CLIENTS` accepts plain decimal digits; `0`, `unlimited`, `off` or `none` remove the
 cap (the banner warns); anything else, including a typo, means 1.
 
 - The cap applies to the enrolment paths (`approve`, `add`, `add-test`, and `pair` / `open`,
@@ -256,7 +256,7 @@ cap (the banner warns); anything else, including a typo, means 1.
 - The cap gates enrolment, not requests. Lowering it revokes nothing.
 - If more keys are enrolled than the cap allows, the server refuses to start (exit 1, before
   the display session or the listener is touched). There is no override. Fix it with
-  `ew-auth revoke`, or raise the cap to the number in use. With `EW_AUTH=0` the check is
+  `pw-auth revoke`, or raise the cap to the number in use. With `PINHOLE_AUTH=0` the check is
   skipped.
 - If the registry grows past the cap while the server is running, the server keeps running,
   logs a warning and notifies clients.
@@ -278,7 +278,7 @@ anything the server says. See [phone-ui.md](phone-ui.md).
 
 ## State directory
 
-`~/.pinhole-window`, or `EW_STATE_DIR`. The directory is created `0700` and the files `0600`.
+`~/.pinhole-window`, or `PINHOLE_STATE_DIR`. The directory is created `0700` and the files `0600`.
 
 | File | Contents |
 | --- | --- |
@@ -293,11 +293,11 @@ if an existing directory is group- or world-accessible the banner says so and su
 `chmod 700`. The server does not change modes itself.
 
 The env file (`~/.pinhole-window/env`) is ignored if others can write to it, since it could set
-`EW_AUTH=0` ([configuration.md](configuration.md)).
+`PINHOLE_AUTH=0` ([configuration.md](configuration.md)).
 
 ## Secret rotation
 
-`ew-auth rotate` (or deleting `server-secret`) invalidates every live session and ticket at
+`pw-auth rotate` (or deleting `server-secret`) invalidates every live session and ticket at
 once. Enrolments are untouched: each device re-establishes with its own key on its next
 request. No restart is needed; the secret, like the registry, is re-read when its file
 changes.
@@ -319,7 +319,7 @@ it does not protect the channel.
 | Property | Provided here |
 | --- | --- |
 | Client authentication | Yes |
-| Destination binding of the session signature | Yes, when `EW_ORIGIN` is set |
+| Destination binding of the session signature | Yes, when `PINHOLE_ORIGIN` is set |
 | Confidentiality and integrity of traffic | No. A session token read off the wire can be replayed from anywhere until it expires. |
 | Authentication of the server to the device | No. An in-path attacker can impersonate the host. |
 | Binding of the signature to the channel | No. A web page cannot reach TLS keying material. |
@@ -337,13 +337,13 @@ That arrangement rests on assumptions the code cannot check:
 - Devices that can reach the proxy are trusted. A tailnet authenticates the network, not the
   client: every device on it reaches the gate. Restrict access with ACLs.
 - The proxy is not public (`tailscale funnel` is not in use).
-- The server was started with the intended configuration. An unset `EW_ORIGIN` leaves
+- The server was started with the intended configuration. An unset `PINHOLE_ORIGIN` leaves
   binding off; check the banner.
 
 ## Bind address and start-up banner
 
-The server binds `127.0.0.1` unless `EW_HOST` says otherwise. Loopback is the default even
-with authentication on, so that a run with `EW_AUTH=0` is never one setting away from
+The server binds `127.0.0.1` unless `PINHOLE_HOST` says otherwise. Loopback is the default even
+with authentication on, so that a run with `PINHOLE_AUTH=0` is never one setting away from
 publishing a shell.
 
 The banner states the security posture on every start:
@@ -351,12 +351,12 @@ The banner states the security posture on every start:
 | Line | When |
 | --- | --- |
 | `auth ENFORCED … state <dir>` | Authentication is on |
-| `N client key(s) enrolled [of M] — <dir>` | Always with auth on. Zero keys is a warning: nothing can authenticate, or `EW_STATE_DIR` points at the wrong registry |
+| `N client key(s) enrolled [of M] — <dir>` | Always with auth on. Zero keys is a warning: nothing can authenticate, or `PINHOLE_STATE_DIR` points at the wrong registry |
 | `session binding ENFORCED` / `NOT enforced` | Always with auth on; a value that is not an absolute URL is quoted and reported as not enforced |
 | `client limit: N keys` / `UNCAPPED` warning | The cap is not 1 |
 | `state dir … is mode 0NNN` | The state directory is accessible to other accounts |
 | `bound to <host> over PLAIN HTTP` | Auth on and a non-loopback bind: the configuration that looks finished and is not |
-| `EW_AUTH is OFF — every route is UNAUTHENTICATED` | Auth off; stronger wording when the bind is not loopback |
+| `PINHOLE_AUTH is OFF — every route is UNAUTHENTICATED` | Auth off; stronger wording when the bind is not loopback |
 | `REFUSING TO START` | More keys enrolled than the cap |
 
 ## The launcher list is not a security control
@@ -367,17 +367,17 @@ contain shells and general launchers such as `env`, and the same token can type 
 into a shell through `/api/desktop/input`. Do not count it when deciding on a bind address, exposure or whether to
 disable authentication.
 
-## Disabling authentication (`EW_AUTH=0`)
+## Disabling authentication (`PINHOLE_AUTH=0`)
 
-Authentication is enforced unless `EW_AUTH` is `0`, `off`, `false` or `no`. With it off,
+Authentication is enforced unless `PINHOLE_AUTH` is `0`, `off`, `false` or `no`. With it off,
 every route is open, the registry is never consulted and the banner warns on every start.
 
 `scripts/dev.sh` keeps authentication on (`--no-auth` disables it): an interactive loop pairs
-once per browser profile. `scripts/sim.sh` defaults to `EW_AUTH=0` (`--auth` enables it): a
+once per browser profile. `scripts/sim.sh` defaults to `PINHOLE_AUTH=0` (`--auth` enables it): a
 headless run starts a fresh WebView each time and has no human to approve a pairing.
 
 A harness run is confined so that an unauthenticated server cannot touch real credentials:
-it uses its own state directory (`.ew-x11/state`), reads no env file and binds loopback. Both
+it uses its own state directory (`.pw-x11/state`), reads no env file and binds loopback. Both
 the script and the server announce that authentication is off. See
 [development.md](development.md).
 
@@ -385,5 +385,5 @@ the script and the server announce that authentication is off. See
 
 Please report security issues privately through GitHub's private vulnerability reporting
 ("Report a vulnerability" under the repository's Security tab) rather than in a public
-issue. Include the version or commit, the configuration (bind address, proxy, `EW_AUTH`,
-`EW_ORIGIN`) and steps to reproduce.
+issue. Include the version or commit, the configuration (bind address, proxy, `PINHOLE_AUTH`,
+`PINHOLE_ORIGIN`) and steps to reproduce.

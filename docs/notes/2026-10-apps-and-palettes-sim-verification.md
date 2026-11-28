@@ -6,7 +6,7 @@ Snapshot — not maintained. Conditions: 2026-10-10 (launcher, keyboard followin
 layouts.
 
 ```bash
-EW_X11_RUNTIME_DIR=/tmp/ew-pal EW_STATE_DIR=/tmp/ew-pal/state \
+PINHOLE_X11_RUNTIME_DIR=/tmp/pw-pal PINHOLE_STATE_DIR=/tmp/pw-pal/state \
   scripts/sim.sh --headless --keep --port 5291 --api-port 8791 \
                  --display :191 --sim-display :186 --automation-port 9909
 ```
@@ -15,8 +15,8 @@ EW_X11_RUNTIME_DIR=/tmp/ew-pal EW_STATE_DIR=/tmp/ew-pal/state \
 
 | Action | Observed |
 | --- | --- |
-| Phone `apps` → filter `xfontsel` → tap the row | `[ew] spawn id=x11:xfontsel xfontsel => ok`; xfontsel in the mirror after about 1 s; toast `xfontsel started — watch the mirror` |
-| Launcher row chosen on the glasses | `[ew] spawn id=desktop:debian-xterm xterm => ok`, two windows |
+| Phone `apps` → filter `xfontsel` → tap the row | `[pw] spawn id=x11:xfontsel xfontsel => ok`; xfontsel in the mirror after about 1 s; toast `xfontsel started — watch the mirror` |
+| Launcher row chosen on the glasses | `[pw] spawn id=desktop:debian-xterm xterm => ok`, two windows |
 | Right after a launch | The window list change and the recency update arrived as one menu update |
 | `POST /api/spawn` with a command outside the scanned set | `403`, `spawn refused: bash is not a scanned application (45 known; GET /api/apps)` |
 

@@ -345,7 +345,7 @@ opened, or tapped or typed in after it opened by itself, is left alone. A user w
 the same problem does not open it a second time.
 
 Inside: the status line (the client's own bookkeeping), the server URL field with `apply`
-(adds the address to the server list, stores it as `ew.server` and opens it), and `pair`, which opens
+(adds the address to the server list, stores it as `pw.server` and opens it), and `pair`, which opens
 the pairing dialog regardless of auth state, because a device that cannot reach the server
 never learns its state. Pairing is described in [security.md](security.md).
 
@@ -361,15 +361,14 @@ it works until a server is open.
 | A server row | `openTarget()`: connects, and the mirror takes the card's place. A named row shows the address under the name |
 | `…` | Shows `name` and `forget` under the row. Both are rare, so the row itself is one target to open |
 | `name` | Turns the row into a field: a name of up to 24 characters, shown on the lens in front of the address (`desk (https://…)`). An empty name shows the address again |
-| `forget` | Two taps: the first arms it for four seconds. The second asks the server to remove this phone's key, discards the key here and removes the row ([one key per server](decisions/one-key-per-server.md)). When the server does not answer within six seconds, nothing is discarded: a question under the row says that the key on the server would stay enrolled and names the `ew-auth.mjs revoke` that removes it, with `keep it`, `try again` and `forget anyway` |
+| `forget` | Two taps: the first arms it for four seconds. The second asks the server to remove this phone's key, discards the key here and removes the row ([one key per server](decisions/one-key-per-server.md)). When the server does not answer within six seconds, nothing is discarded: a question under the row says that the key on the server would stay enrolled and names the `pw-auth.mjs revoke` that removes it, with `keep it`, `try again` and `forget anyway` |
 | `disconnect` (inside a server, in the `connection` fold) | `enterRoot()`: stops the stream and returns to the list. It is in the fold because leaving a server is rare |
 
-The list is `ew.targets`, a JSON array of `{server, name?}`, kept like the settings (localStorage,
+The list is `pw.targets`, a JSON array of `{server, name?}`, kept like the settings (localStorage,
 mirrored to the bridge's storage). It has no limit: past about five rows they scroll inside
 the card, which keeps the row under the glasses' cursor in view. An address becomes a row when somebody
 chooses it: `apply`, a pasted pairing URL, the server-address card, a `?server=` that was
-adopted. The address stored as `ew.server` by an earlier version becomes the first row, and
-so does the app's own origin when it is served from a real one (the dev server).
+adopted. The app's own origin is a row too when it is served from a real one (the dev server).
 
 A URL with `?server=` or `?pair=` opens that server directly, without stopping at the list.
 While the list is up the client sends no request except to the pairing routes.
@@ -391,21 +390,21 @@ A server that does not answer after it was opened opens nothing; the summary lin
 unreachable`, and the lens shows the setup notice.
 
 In the packaged app `localStorage` does not survive a restart of the Even App, so a chosen
-address is also written to the bridge's storage (`setLocalStorage`, key `ew.server`) and read
+address is also written to the bridge's storage (`setLocalStorage`, key `pw.server`) and read
 back at start when the client would otherwise be on the default.
 
 Enrolled keys table: a read-only list of the client keys the server trusts, received on the
 stream (`{t:'clients'}`): name, first 12 characters of the id, date added, with this device
-marked. The first list seen becomes the acknowledged set (stored as `ew.keys.acked`). A key
+marked. The first list seen becomes the acknowledged set (stored as `pw.keys.acked`). A key
 that appears later is shown in red as `⚠ NEW` until `mark as seen` is tapped; removed keys
-are reported too. Only the host can change the list (`ew-auth`).
+are reported too. Only the host can change the list (`pw-auth`).
 
 ## Pills
 
 | Pill | Effect | Persistence |
 | --- | --- | --- |
-| `inv:on` / `inv:off` | Flips the polarity of what is pushed to the lens | Setting (`ew.invert`) |
-| `color` / `green` | Preview in the server's colours, or as the lens shows it (16 grey levels in green) | Setting (`ew.mirror`) |
+| `inv:on` / `inv:off` | Flips the polarity of what is pushed to the lens | Setting (`pw.invert`) |
+| `color` / `green` | Preview in the server's colours, or as the lens shows it (16 grey levels in green) | Setting (`pw.mirror`) |
 | `lens:on` / `lens:off` / `lens:case` | Pauses the glasses: tile pushes stop and the panel is blanked | Not persisted |
 
 All three are client-only. `color` is forced and the pill disabled while the frame pump is
@@ -459,7 +458,7 @@ screen from the top.
 
 Voice rows (the long press, `🎤 voice`) appear only with a recogniser.
 
-- Opens by itself on the first `GET /api/health` that answers OK, once per device (`ew.tour.seen`
+- Opens by itself on the first `GET /api/health` that answers OK, once per device (`pw.tour.seen`
   in localStorage, set by any close). Not before: a tour over a connection that does not work
   would explain controls that do nothing.
 - `?` in the title row opens it again. `?tour=1` opens it at boot regardless; `?tour=0` keeps
@@ -523,11 +522,11 @@ anything else decides nothing.
 
 | Flag | Kind | Effect |
 | --- | --- | --- |
-| `server=<url>` | Setting (`ew.server`) | API base. A paired device asks before following a link to another server |
+| `server=<url>` | Setting (`pw.server`) | API base. A paired device asks before following a link to another server |
 | `pair=<code>` (also `#pair=`) | One-shot | Opens the pairing dialog with the code; removed from the address bar |
-| `invert` | Setting (`ew.invert`), default off | Polarity |
-| `mirror=color\|green` | Setting (`ew.mirror`), default `color` | Preview rendering |
-| `scrollnat` | Setting (`ew.scrollnat`), default on | Two-finger wheel direction on vPad |
+| `invert` | Setting (`pw.invert`), default off | Polarity |
+| `mirror=color\|green` | Setting (`pw.mirror`), default `color` | Preview rendering |
+| `scrollnat` | Setting (`pw.scrollnat`), default on | Two-finger wheel direction on vPad |
 | `debug` | Instrument | Forwards every log line (`POST /api/debug/log`, batched) and each raw bridge event (`POST /api/debug/event`) to the server log |
 | `stats` | Instrument | Logs frame-pump statistics every 10 s |
 | `encworker=worker\|main\|abba` | Instrument, read only with `stats` | Pins or alternates the tile encode path |
@@ -542,9 +541,9 @@ the URL, the boot log prints a `sticky:` line naming it and its value.
 
 In the packaged app `localStorage` is emptied when the Even App is restarted. Everything the
 client keeps there is therefore also held in the bridge's storage (one JSON object under
-`ew.kv`, written by `src/client/durableKv.ts`) and put back at start: the settings above, the
-tour and hint records (`ew.tour.seen`, `ew.hint.*`) and the acknowledged enrolled keys
-(`ew.keys.acked`). A value chosen by a query or a tap in the current load wins over the kept
+`pw.kv`, written by `src/client/durableKv.ts`) and put back at start: the settings above, the
+tour and hint records (`pw.tour.seen`, `pw.hint.*`) and the acknowledged enrolled keys
+(`pw.keys.acked`). A value chosen by a query or a tap in the current load wins over the kept
 one. The boot log names what was put back (`settings recovered from the durable store: …`).
 
 ## Log and key probe

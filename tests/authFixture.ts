@@ -39,16 +39,16 @@ export function makeP256Key(): TestKey {
   }
 }
 
-/** Point EW_STATE_DIR at a fresh temp dir and return a disposer. Every auth test must do
+/** Point PINHOLE_STATE_DIR at a fresh temp dir and return a disposer. Every auth test must do
  *  this: the module reads the dir per call, so the real ~/.pinhole-window registry is never
  *  touched and tests cannot see each other's keys. */
 export function useTempStateDir(): () => void {
-  const prev = process.env.EW_STATE_DIR
-  const dir = mkdtempSync(join(tmpdir(), 'ew-auth-test-'))
-  process.env.EW_STATE_DIR = dir
+  const prev = process.env.PINHOLE_STATE_DIR
+  const dir = mkdtempSync(join(tmpdir(), 'pw-auth-test-'))
+  process.env.PINHOLE_STATE_DIR = dir
   return () => {
-    if (prev === undefined) delete process.env.EW_STATE_DIR
-    else process.env.EW_STATE_DIR = prev
+    if (prev === undefined) delete process.env.PINHOLE_STATE_DIR
+    else process.env.PINHOLE_STATE_DIR = prev
     rmSync(dir, { recursive: true, force: true })
   }
 }
@@ -57,7 +57,7 @@ export function useTempStateDir(): () => void {
  *  token. Throws if any step fails, so a broken happy path cannot turn a negative test into
  *  a false pass.
  *  `origin` is what the device claims to be talking to and goes inside the signature
- *  (src/shared/sessionBinding.ts). The default `''` is the "no EW_ORIGIN configured" case. */
+ *  (src/shared/sessionBinding.ts). The default `''` is the "no PINHOLE_ORIGIN configured" case. */
 export function enrolAndSession(
   key: TestKey,
   origin = '',

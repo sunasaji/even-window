@@ -46,7 +46,7 @@ function saveRecent(list: string[]): void {
 export function recentApps(apps: readonly LauncherEntry[], boot: string): string[] {
   const ids = new Set(apps.map(a => a.id))
   const out = loadRecent().filter(id => ids.has(id))
-  // The seed: the default client (EW_SPAWN) is appended at the back as a filler, not only when
+  // The seed: the default client (PINHOLE_SPAWN) is appended at the back as a filler, not only when
   // the list is empty. A fresh install then shows a non-empty launcher, and after one launch
   // the remaining glasses slots still offer "open another terminal". Anything actually
   // launched outranks it.

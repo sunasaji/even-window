@@ -8,11 +8,11 @@
 // docs/decisions/session-origin-binding.md.
 //
 // The material must match byte for byte here (imported by src/server/auth.ts and
-// src/client/authClient.ts) and in the re-implementation in scripts/ew-auth.mjs.
+// src/client/authClient.ts) and in the re-implementation in scripts/pw-auth.mjs.
 
 /** Version tag of the signed material; it is the first signed field. No unversioned
  *  bare-nonce signature is accepted alongside it, since that would reopen the relay. */
-export const SESSION_BINDING_V1 = 'ew-session-v1'
+export const SESSION_BINDING_V1 = 'pw-session-v1'
 
 /** Canonical origin of a URL: scheme, host and non-default port. `''` when the input is empty
  *  or not a usable absolute URL (including the CORS wildcard `*`). `URL.origin` canonicalises

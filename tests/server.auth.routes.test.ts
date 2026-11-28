@@ -73,8 +73,8 @@ afterAll(async () => {
 
 beforeEach(() => {
   dispose = useTempStateDir()
-  delete process.env.EW_AUTH // enforcement on — the default
-  delete process.env.EW_ORIGINS
+  delete process.env.PINHOLE_AUTH // enforcement on — the default
+  delete process.env.PINHOLE_ORIGINS
   const session = enrolAndSession(makeEd25519Key())
   token = session.token
   clientId = session.clientId
@@ -113,7 +113,7 @@ describe('the route table is the whole surface', () => {
   })
 })
 
-describe('with EW_AUTH enforced, every non-open route answers 401 unauthenticated', () => {
+describe('with PINHOLE_AUTH enforced, every non-open route answers 401 unauthenticated', () => {
   // Derived from the table, so a route added tomorrow is tested tomorrow with no edit here.
   for (const r of routes.filter(x => !x.open)) {
     it(`${r.method} ${r.path} → 401`, async () => {
@@ -227,13 +227,13 @@ describe('a real session gets through', () => {
   })
 })
 
-describe('EW_AUTH=0 disables the gate (and nothing else)', () => {
+describe('PINHOLE_AUTH=0 disables the gate (and nothing else)', () => {
   afterEach(() => {
-    delete process.env.EW_AUTH
+    delete process.env.PINHOLE_AUTH
   })
 
   it('an unauthenticated gated route is answered instead of 401', async () => {
-    process.env.EW_AUTH = '0'
+    process.env.PINHOLE_AUTH = '0'
     const res = await req('GET', '/api/auth/me')
     expect(res.status).toBe(200)
     // No identity to report, and the response says so rather than inventing one.
@@ -241,7 +241,7 @@ describe('EW_AUTH=0 disables the gate (and nothing else)', () => {
   })
 
   it('a valid token still works with the gate off (the harness and a paired phone coexist)', async () => {
-    process.env.EW_AUTH = '0'
+    process.env.PINHOLE_AUTH = '0'
     const res = await req('GET', '/api/auth/me', { token })
     expect(((await res.json()) as { id: string }).id).toMatch(/^[0-9a-f]{64}$/)
   })
@@ -296,7 +296,7 @@ describe('POST /api/spawn — launches a launcher entry by id, and nothing else'
   })
 
   it('a hidden entry cannot be launched, so apps.conf really takes effect', async () => {
-    const dir = process.env.EW_STATE_DIR ?? ''
+    const dir = process.env.PINHOLE_STATE_DIR ?? ''
     expect(dir).not.toBe('')
     writeFileSync(join(dir, 'apps.conf'), 'app Hidden Thing = xcalc-not-real\n')
     resetAppCache()
@@ -355,7 +355,7 @@ describe('CORS', () => {
     expect(corsOrigin('null', 'host:8787', '', true)).toBe('*')
   })
 
-  it('honours EW_ORIGINS with or without auth, including an explicit `*`', () => {
+  it('honours PINHOLE_ORIGINS with or without auth, including an explicit `*`', () => {
     for (const auth of [true, false]) {
       expect(corsOrigin('https://app.example', 'host:8787', 'https://app.example', auth)).toBe(
         'https://app.example',
@@ -386,8 +386,8 @@ describe('CORS', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe('*')
   })
 
-  it('live: EW_ORIGINS narrows CORS under auth', async () => {
-    process.env.EW_ORIGINS = 'https://app.example'
+  it('live: PINHOLE_ORIGINS narrows CORS under auth', async () => {
+    process.env.PINHOLE_ORIGINS = 'https://app.example'
     try {
       const ok = await req('GET', '/api/auth/challenge', { origin: 'https://app.example' })
       expect(ok.headers.get('access-control-allow-origin')).toBe('https://app.example')
@@ -395,16 +395,16 @@ describe('CORS', () => {
       const bad = await req('GET', '/api/auth/challenge', { origin: 'https://evil.example' })
       expect(bad.headers.get('access-control-allow-origin')).toBeNull()
     } finally {
-      delete process.env.EW_ORIGINS
+      delete process.env.PINHOLE_ORIGINS
     }
   })
 
-  describe('with EW_AUTH=0', () => {
+  describe('with PINHOLE_AUTH=0', () => {
     beforeEach(() => {
-      process.env.EW_AUTH = '0'
+      process.env.PINHOLE_AUTH = '0'
     })
     afterEach(() => {
-      delete process.env.EW_AUTH
+      delete process.env.PINHOLE_AUTH
     })
 
     it('live: an allowed origin gets ACAO + Vary, a foreign one gets neither', async () => {

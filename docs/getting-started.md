@@ -41,14 +41,14 @@ npm run server          # same as: node src/server/main.ts
 
 The server:
 
-- listens on `127.0.0.1:8787` (`EW_HOST`, `EW_PORT`);
-- starts the mirrored desktop on display `:100` (`EW_X11_DISPLAY`) with one dark
-  terminal in it (`EW_SPAWN`);
+- listens on `127.0.0.1:8787` (`PINHOLE_HOST`, `PINHOLE_PORT`);
+- starts the mirrored desktop on display `:100` (`PINHOLE_X11_DISPLAY`) with one dark
+  terminal in it (`PINHOLE_SPAWN`);
 - keeps its state in `~/.pinhole-window` and reads settings from `~/.pinhole-window/env`.
 
 The start-up banner states whether authentication is enforced, how many devices are
 enrolled, which settings came from the env file, and whether session binding
-(`EW_ORIGIN`) is enforced. Read it once after every configuration change.
+(`PINHOLE_ORIGIN`) is enforced. Read it once after every configuration change.
 
 The client page is served separately. During development, Vite serves it on port 5273:
 
@@ -57,7 +57,7 @@ npm run dev
 ```
 
 `scripts/dev.sh` starts both, but it is a development harness with its own device
-registry (`.ew-x11/state`) and it does not read `~/.pinhole-window/env`. Use it for
+registry (`.pw-x11/state`) and it does not read `~/.pinhole-window/env`. Use it for
 development only; see [development.md](development.md).
 
 ## Pair a device
@@ -69,7 +69,7 @@ route. Pairing enrols the key pair that the device generates for itself.
    load the app from:
 
    ```bash
-   node scripts/ew-auth.mjs pair 'https://host.ts.net:8443'
+   node scripts/pw-auth.mjs pair 'https://host.ts.net:8443'
    ```
 
    It prints a pairing URL (the app URL plus `?pair=<code>`) and, on a terminal, a QR
@@ -85,27 +85,27 @@ camera, tap **Copy** on the page that opens, and paste into the pair dialog of t
 
 While the phone is not paired, the glasses show the same steps:
 
-<img src="img/glasses-pairing.png" width="288" alt="The pairing steps on the lens: start the server, run ew-auth.mjs pair, scan the QR code, copy and paste the pairing URL">
+<img src="img/glasses-pairing.png" width="288" alt="The pairing steps on the lens: start the server, run pw-auth.mjs pair, scan the QR code, copy and paste the pairing URL">
 
 Other commands:
 
 | Command | Purpose |
 | --- | --- |
-| `ew-auth.mjs list` | Enrolled devices |
-| `ew-auth.mjs pending` | Devices waiting for approval, with their patterns |
-| `ew-auth.mjs approve <id>` / `reject <id>` | Decide a pending device (first 4 characters of the id are enough) |
-| `ew-auth.mjs rename <id> <name>` | Name a device, in place of the `client-…` it was given. The name is shown by `list` and in the phone's enrolled keys table |
-| `ew-auth.mjs revoke <id>` | Remove a device; takes effect on its next request |
-| `ew-auth.mjs rotate` | Invalidate every live session; enrolments stay |
+| `pw-auth.mjs list` | Enrolled devices |
+| `pw-auth.mjs pending` | Devices waiting for approval, with their patterns |
+| `pw-auth.mjs approve <id>` / `reject <id>` | Decide a pending device (first 4 characters of the id are enough) |
+| `pw-auth.mjs rename <id> <name>` | Name a device, in place of the `client-…` it was given. The name is shown by `list` and in the phone's enrolled keys table |
+| `pw-auth.mjs revoke <id>` | Remove a device; takes effect on its next request |
+| `pw-auth.mjs rotate` | Invalidate every live session; enrolments stay |
 
-One device may be enrolled at a time by default (`EW_MAX_CLIENTS=1`). Pairing a
+One device may be enrolled at a time by default (`PINHOLE_MAX_CLIENTS=1`). Pairing a
 device again adds a new key instead of replacing the old one, so revoke the old key
 first:
 
 ```bash
-node scripts/ew-auth.mjs list
-node scripts/ew-auth.mjs revoke <id>
-node scripts/ew-auth.mjs pair 'https://host.ts.net:8443'
+node scripts/pw-auth.mjs list
+node scripts/pw-auth.mjs revoke <id>
+node scripts/pw-auth.mjs pair 'https://host.ts.net:8443'
 ```
 
 Background and the security model: [security.md](security.md).
@@ -134,25 +134,25 @@ https://host.ts.net:8443 (tailnet only)
 
 Any free port works in place of 8443. Then:
 
-1. Set `EW_ORIGIN` to the URL the device dials and restart the server. The server
+1. Set `PINHOLE_ORIGIN` to the URL the device dials and restart the server. The server
    then refuses session signatures made out to any other origin.
 
    ```bash
    install -d -m 700 ~/.pinhole-window
    install -m 600 /dev/null ~/.pinhole-window/env
-   echo 'EW_ORIGIN=https://host.ts.net:8443' >> ~/.pinhole-window/env
+   echo 'PINHOLE_ORIGIN=https://host.ts.net:8443' >> ~/.pinhole-window/env
    ```
 
 2. If you use the Vite dev server, tell its hot-reload client where to dial back:
 
    ```bash
-   EW_HMR_HOST=host.ts.net EW_HMR_PORT=8443 npm run dev
+   PINHOLE_HMR_HOST=host.ts.net PINHOLE_HMR_PORT=8443 npm run dev
    ```
 
    Vite already accepts `*.ts.net` host names. Add other names (a LAN address, for
-   example) with `EW_ALLOWED_HOSTS=name1,name2`; without it Vite answers
+   example) with `PINHOLE_ALLOWED_HOSTS=name1,name2`; without it Vite answers
    `Blocked request. This host is not allowed.`
-3. Pair the phone with `node scripts/ew-auth.mjs pair 'https://host.ts.net:8443'`.
+3. Pair the phone with `node scripts/pw-auth.mjs pair 'https://host.ts.net:8443'`.
    No `?server=` parameter is needed: a page served from a non-loopback origin uses
    its own origin as the API base.
 
@@ -190,7 +190,7 @@ The app is one web page (`index.html`, described by `app.json`).
   carries the server address, and a device that already holds a key is asked for the
   server URL only. The address can be changed later under **connection**.
   The server allows any origin while authentication is on, so no CORS setting is needed;
-  with `EW_AUTH=0` the app's origin must be listed in `EW_ORIGINS`.
+  with `PINHOLE_AUTH=0` the app's origin must be listed in `PINHOLE_ORIGINS`.
 
 - **From the store.** Once pinhole-window is published, find it in the Even App,
   install it and open it from the app list, like any other app. That is the packaged
@@ -208,7 +208,7 @@ absolute path of the checkout, and `systemd/env.example` is a commented env file
 mkdir -p ~/.config/systemd/user ~/.pinhole-window && chmod 700 ~/.pinhole-window
 cp systemd/pinhole-window@.service ~/.config/systemd/user/
 install -m 600 systemd/env.example ~/.pinhole-window/env
-${EDITOR:-vi} ~/.pinhole-window/env          # set EW_ORIGIN at least
+${EDITOR:-vi} ~/.pinhole-window/env          # set PINHOLE_ORIGIN at least
 
 unit="pinhole-window@$(systemd-escape --path "$PWD").service"
 systemctl --user daemon-reload
@@ -225,7 +225,7 @@ systemctl --user status "$unit"
 
 - A restart re-attaches to the mirrored desktop; open windows survive it.
 - A user unit inherits no login environment. The server still finds a host display
-  by itself. To run before any desktop exists, set `EW_HOST_DISPLAY=` (empty) in the
+  by itself. To run before any desktop exists, set `PINHOLE_HOST_DISPLAY=` (empty) in the
   env file so that the headless backend is preferred.
 - The unit serves the API only. Serve the client page separately.
 
@@ -237,14 +237,14 @@ desktop. It is started detached so that a restart keeps your windows. To remove 
 ```bash
 pgrep -af 'Xephyr :100|Xvfb :100'     # find the pid
 kill <pid>                             # by pid; do not use pkill -f
-rm -f .ew-x11/session.json             # forget the session
+rm -f .pw-x11/session.json             # forget the session
 ```
 
 Do this also when you want to switch between the Xephyr and Xvfb backends: a live
 session is re-attached before any backend choice is made.
 
 To remove everything else: `tailscale serve --https=8443 off`, and delete
-`~/.pinhole-window` (enrolled devices, bindings, settings) and `.ew-x11/` in the
+`~/.pinhole-window` (enrolled devices, bindings, settings) and `.pw-x11/` in the
 checkout (runtime files and logs).
 
 ## Optional: speech-to-text
@@ -272,12 +272,12 @@ any compatible server works. How voice input works is in [voice.md](voice.md).
 3. Point pinhole-window at it in `~/.pinhole-window/env` and restart the server:
 
    ```
-   EW_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions
-   EW_STT_LANG=en
+   PINHOLE_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions
+   PINHOLE_STT_LANG=en
    ```
 
 The unit serves `qwen3-asr-0.6b`, and pinhole-window sends that model's HTTP id,
-`Qwen3-ASR-0.6B`, by default, so `EW_STT_MODEL` can stay unset. The two names are
+`Qwen3-ASR-0.6B`, by default, so `PINHOLE_STT_MODEL` can stay unset. The two names are
 different strings for the same model; if you change one, change the other
 ([voice.md](voice.md#speechcpp)). A mismatch returns a `404` that looks like a missing
 route.

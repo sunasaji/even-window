@@ -10,7 +10,7 @@ or a lost device, the leak is silent and permanent.
 
 ## Decision
 
-- `EW_MAX_CLIENTS` defaults to 1. Enrolling a new fingerprint into a full registry is
+- `PINHOLE_MAX_CLIENTS` defaults to 1. Enrolling a new fingerprint into a full registry is
   refused, on every enrolment path, before anything is written. The operator must revoke
   first.
 - If the registry holds more keys than the cap at start-up, the server exits before touching
@@ -25,7 +25,7 @@ or a lost device, the leak is silent and permanent.
   and the cap gates enrolment, not requests. A warning leaves a gate that is believed narrow
   and is wide, for as long as nobody reads the log. The over-cap state is also exactly what a
   hand-edited or tampered registry looks like.
-- **An opt-out variable (`EW_ALLOW_OVER_CAP`).** Added and removed. Its only safeguard was a
+- **An opt-out variable (`PINHOLE_ALLOW_OVER_CAP`).** Added and removed. Its only safeguard was a
   log line, which the argument above says cannot be relied on, and both honest intents
   already have an expression: revoke the extra key, or set the cap to the number in use.
 - **Exit when the cap is exceeded at run time.** Anyone who can write the state directory
@@ -33,7 +33,7 @@ or a lost device, the leak is silent and permanent.
 
 ## Consequences
 
-- Refusing to start is recoverable without a server: `ew-auth revoke` edits the registry
+- Refusing to start is recoverable without a server: `pw-auth revoke` edits the registry
   directly.
 - The cap is silent at 1 and announces itself when relaxed. Unparseable values mean 1, and
   only plain decimal digits are accepted, so the value in the environment is the value in

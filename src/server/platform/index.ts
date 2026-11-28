@@ -23,7 +23,7 @@ const choice = backendFor(process.platform)
 
 if (choice === 'x11-untested') {
   console.warn(
-    `[ew] ${process.platform} is untested: trying the X11 backend. It needs an X server ` +
+    `[pw] ${process.platform} is untested: trying the X11 backend. It needs an X server ` +
       '(Xvfb or Xephyr), ratpoison, xdotool and ffmpeg. Per-application bindings need /proc, ' +
       'and the package scan needs dpkg; without them those two are simply empty.',
   )

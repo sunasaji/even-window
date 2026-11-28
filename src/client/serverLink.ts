@@ -3,14 +3,7 @@
 // The client modules import each other freely, but only from inside functions: nothing here may
 // use another non-leaf module while this one is still loading.
 
-import {
-  bearer,
-  type DurableStore,
-  isPaired,
-  resetSession,
-  setAuthBase,
-  setLegacyAdoptable,
-} from './authClient.ts'
+import { bearer, type DurableStore, isPaired, resetSession, setAuthBase } from './authClient.ts'
 import { log } from './debugLog.ts'
 import { flagSource, noteFlag } from './flags.ts'
 import { maybePromptPairing } from './main.ts'
@@ -32,7 +25,7 @@ import { errText, withTimeout } from './util.ts'
 // default is a guess and is not, so the next load can still tell that nobody chose.
 
 const LOOPBACK_SERVER = 'http://localhost:8787'
-const SERVER_KEY = 'ew.server'
+const SERVER_KEY = 'pw.server'
 
 /** Trim and drop a trailing slash so `${SERVER}/api/x` never doubles up. */
 export function normaliseServer(raw: string): string {
@@ -108,8 +101,6 @@ export function initServer(): void {
 export function setServer(raw: string, guess = false): void {
   SERVER = normaliseServer(raw)
   serverIsGuess = guess
-  // The key of an earlier version goes to a server somebody chose, never to the default.
-  setLegacyAdoptable(!guess)
   if (!guess) {
     try {
       localStorage.setItem(SERVER_KEY, SERVER)
@@ -207,7 +198,7 @@ export function settlePendingServer(paired: boolean): void {
 
 // ── authenticated transport (docs/security.md) ─────────────────────────────────────────────
 // Every /api call carries the session bearer when this device is paired; unpaired sends no
-// header (correct for EW_AUTH=0 and for the open pairing routes). A 401 triggers one
+// header (correct for PINHOLE_AUTH=0 and for the open pairing routes). A 401 triggers one
 // re-establish and retry, then the pairing prompt.
 
 /** 'unknown' until a request has been answered. Drives the status line;

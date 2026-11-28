@@ -246,7 +246,7 @@ describe("source audit: the canvas gives up the platform's touch defaults", () =
     expect(PREVIEW.has('wireMirrorTouch(mirrorEl)')).toBe(true)
     expect(src.count('wireMirrorTouch(')).toBe(2) // the definition and that call
     // No pill, no persisted flag: the only gate is vPad.
-    expect(src.has(/mirrorTouchOn|ew\.mtouch/)).toBe(false)
+    expect(src.has(/mirrorTouchOn|pw\.mtouch/)).toBe(false)
   })
 
   it('tells the user what it costs, on the element itself', () => {

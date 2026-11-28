@@ -259,7 +259,7 @@ export function gestureFigureSvg(): string {
 
 // ── first run ──────────────────────────────────────────────────────────────────────────────
 
-const SEEN_KEY = 'ew.tour.seen'
+const SEEN_KEY = 'pw.tour.seen'
 
 /** `?tour=1` opens it at boot regardless, `?tour=0` keeps it shut (a verification run that
  *  drives the phone UI by coordinates). Not persisted: a query only steers this load. */
@@ -429,7 +429,7 @@ export function openTour(voice: boolean, why: string): void {
   const layer = document.createElement('div')
   layer.setAttribute('role', 'dialog')
   layer.setAttribute('aria-modal', 'true')
-  layer.setAttribute('aria-labelledby', 'ew-tour-title')
+  layer.setAttribute('aria-labelledby', 'pw-tour-title')
   // The layer itself is transparent and takes every touch; `dim` is the darkening, with the
   // holes clipped out of it, and `rings` outline each hole.
   layer.style.cssText = `position:fixed;inset:0;z-index:${String(TOUR_Z)};touch-action:none`
@@ -456,7 +456,7 @@ export function openTour(voice: boolean, why: string): void {
   const step = document.createElement('div')
   step.style.cssText = 'font:11px system-ui;opacity:.6;margin-bottom:2px'
   const title = document.createElement('h2')
-  title.id = 'ew-tour-title'
+  title.id = 'pw-tour-title'
   title.style.cssText = 'font-size:16px;margin:0 0 6px'
   const body = document.createElement('div')
   const nav = document.createElement('div')

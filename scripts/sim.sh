@@ -3,7 +3,7 @@
 # sim.sh — end-to-end harness: API/capture server + Vite + the Even Hub simulator,
 # pointed at each other.
 #
-#   node src/server/main.ts   :8787   owns nested X EW_X11_DISPLAY (:100) and the capture
+#   node src/server/main.ts   :8787   owns nested X PINHOLE_X11_DISPLAY (:100) and the capture
 #   vite                      :5273   serves the WebView app
 #   evenhub-simulator                 renders the app and the glasses panel in its own
 #                                     nested X (:180+); automation HTTP API on :9899
@@ -13,11 +13,11 @@
 # http://localhost:8787.
 #
 # Auth: the server enforces authentication by default. This script runs it with
-# EW_AUTH=0 and prints a notice, because an unattended run has nobody to approve a
+# PINHOLE_AUTH=0 and prints a notice, because an unattended run has nobody to approve a
 # pairing. --auth keeps the real gate; pair the WebView first:
-#     node scripts/ew-auth.mjs open '<app-url>'    # prints CODE=/URL=
+#     node scripts/pw-auth.mjs open '<app-url>'    # prints CODE=/URL=
 #     scripts/sim.sh --auth --app-query "pair=<CODE>"
-#     node scripts/ew-auth.mjs pending && node scripts/ew-auth.mjs approve <id>
+#     node scripts/pw-auth.mjs pending && node scripts/pw-auth.mjs approve <id>
 #
 # Usage:
 #   scripts/sim.sh                          # visible if a host X is available
@@ -33,18 +33,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 VITE_PORT="${VITE_PORT:-5273}"
-API_PORT="${EW_PORT:-8787}"
-X_DISPLAY="${EW_X11_DISPLAY:-:100}"      # the server's nested X (capture source)
-SIM_DISPLAY="${EW_SIM_DISPLAY:-:180}"    # the simulator's own nested X
-AUTOMATION_PORT="${EW_AUTOMATION_PORT:-9899}"
-HOST_DISPLAY="${EW_HOST_DISPLAY:-${DISPLAY:-}}"
-SIM_SCREEN="${EW_SIM_SCREEN:-608x1150}"  # portrait: browser panel + glasses below
+API_PORT="${PINHOLE_PORT:-8787}"
+X_DISPLAY="${PINHOLE_X11_DISPLAY:-:100}"      # the server's nested X (capture source)
+SIM_DISPLAY="${PINHOLE_SIM_DISPLAY:-:180}"    # the simulator's own nested X
+AUTOMATION_PORT="${PINHOLE_AUTOMATION_PORT:-9899}"
+HOST_DISPLAY="${PINHOLE_HOST_DISPLAY:-${DISPLAY:-}}"
+SIM_SCREEN="${PINHOLE_SIM_SCREEN:-608x1150}"  # portrait: browser panel + glasses below
 READY_TIMEOUT="${READY_TIMEOUT:-60}"
-SETTLE_MS="${EW_SETTLE_MS:-6000}"        # let the app establish its page containers
+SETTLE_MS="${PINHOLE_SETTLE_MS:-6000}"        # let the app establish its page containers
 # Extra query parameters appended to the app URL. The client resolves its settings
 # `?param=` → localStorage → default, so this is how a verification run pins one
-# (e.g. EW_APP_QUERY='invert=1' / --app-query invert=1) without touching stored state.
-APP_QUERY="${EW_APP_QUERY:-}"
+# (e.g. PINHOLE_APP_QUERY='invert=1' / --app-query invert=1) without touching stored state.
+APP_QUERY="${PINHOLE_APP_QUERY:-}"
 
 HEADLESS=0
 KEEP=0
@@ -71,17 +71,17 @@ usage: scripts/sim.sh [options]
                        Screenshots still come from the automation API, not the
                        screen, so they are unaffected.
   --keep               leave everything running for manual poking (Ctrl-C stops).
-  --auth               run the server with its REAL auth gate (EW_AUTH enforced).
-                       Default is EW_AUTH=0 with a visible notice, because an
+  --auth               run the server with its REAL auth gate (PINHOLE_AUTH enforced).
+                       Default is PINHOLE_AUTH=0 with a visible notice, because an
                        unattended run has nobody to approve a pairing. With
                        --auth, pair the WebView first: see docs/development.md.
   --port <N>           Vite port                        (default 5273)
-  --api-port <N>       API server port / EW_PORT        (default 8787)
+  --api-port <N>       API server port / PINHOLE_PORT        (default 8787)
   --display <:N>       the SERVER's nested X display    (default :100)
   --sim-display <:N>   the SIMULATOR's nested X display (default :180)
   --automation-port <N>  sim automation HTTP port       (default 9899)
   --app-query <qs>     extra query parameters for the app URL, e.g. `invert=1`
-                       (also settable as EW_APP_QUERY). The client reads its
+                       (also settable as PINHOLE_APP_QUERY). The client reads its
                        settings `?param=` -> localStorage -> default.
   -h, --help           this help
 
@@ -107,16 +107,16 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-RUNTIME_DIR="${EW_X11_RUNTIME_DIR:-${REPO_ROOT}/.ew-x11}"
+RUNTIME_DIR="${PINHOLE_X11_RUNTIME_DIR:-${REPO_ROOT}/.pw-x11}"
 LOG_DIR="${RUNTIME_DIR}/logs"
 # This run's own auth registry, as in scripts/dev.sh: a harness run must not pair into
 # (or be refused by) the registry that serves the real phone.
-STATE_DIR="${EW_STATE_DIR:-${RUNTIME_DIR}/state}"
+STATE_DIR="${PINHOLE_STATE_DIR:-${RUNTIME_DIR}/state}"
 # The untracked dev.env in the checkout is read when it exists; the operator's
-# ~/.pinhole-window/env is not. An explicit EW_ENV_FILE wins, and an empty one means
+# ~/.pinhole-window/env is not. An explicit PINHOLE_ENV_FILE wins, and an empty one means
 # "no file".
 HARNESS_ENV="${REPO_ROOT}/dev.env"
-if [ "${EW_ENV_FILE+set}" = set ]; then ENV_FILE="${EW_ENV_FILE}"
+if [ "${PINHOLE_ENV_FILE+set}" = set ]; then ENV_FILE="${PINHOLE_ENV_FILE}"
 elif [ -f "${HARNESS_ENV}" ];      then ENV_FILE="${HARNESS_ENV}"
 else                                    ENV_FILE=""
 fi
@@ -310,26 +310,26 @@ have stdbuf && SB=(stdbuf -oL -eL)
 
 # ── 1. API / capture server ──────────────────────────────────────────────────
 # The server does not inherit DISPLAY: it creates and owns its nested X at
-# EW_X11_DISPLAY. Given the simulator's display, it would capture the simulator.
+# PINHOLE_X11_DISPLAY. Given the simulator's display, it would capture the simulator.
 : >"${API_LOG}"
 if [ "${AUTH}" = 1 ]; then
-  EW_AUTH_VAL=1
-  echo "sim.sh: AUTH ENFORCED (EW_AUTH=1). The WebView must be paired or it gets 401s."
-  echo "sim.sh: This run has its own registry, so point ew-auth at the same one:"
-  echo "sim.sh:   EW_STATE_DIR='${STATE_DIR}' node scripts/ew-auth.mjs open '<app-url>'"
+  PINHOLE_AUTH_VAL=1
+  echo "sim.sh: AUTH ENFORCED (PINHOLE_AUTH=1). The WebView must be paired or it gets 401s."
+  echo "sim.sh: This run has its own registry, so point pw-auth at the same one:"
+  echo "sim.sh:   PINHOLE_STATE_DIR='${STATE_DIR}' node scripts/pw-auth.mjs open '<app-url>'"
   echo "sim.sh:   then re-launch with --app-query \"pair=<CODE>\""
 else
-  EW_AUTH_VAL=0
+  PINHOLE_AUTH_VAL=0
   echo "sim.sh: ###############################################################"
-  echo "sim.sh: # NOTICE: running with EW_AUTH=0 — THE AUTH GATE IS DISABLED. #"
+  echo "sim.sh: # NOTICE: running with PINHOLE_AUTH=0 — THE AUTH GATE IS DISABLED. #"
   echo "sim.sh: # Every /api route is unauthenticated for this run, including #"
   echo "sim.sh: # /api/spawn and /api/desktop/input (= code execution). Loopback  #"
   echo "sim.sh: # only. Pass --auth to exercise the real gate.                #"
   echo "sim.sh: ###############################################################"
 fi
-setsid env -u DISPLAY EW_ENV_FILE="${ENV_FILE}" EW_STATE_DIR="${STATE_DIR}" \
-  EW_PORT="${API_PORT}" EW_X11_DISPLAY="${X_DISPLAY}" \
-  EW_X11_RUNTIME_DIR="${RUNTIME_DIR}" EW_AUTH="${EW_AUTH_VAL}" \
+setsid env -u DISPLAY PINHOLE_ENV_FILE="${ENV_FILE}" PINHOLE_STATE_DIR="${STATE_DIR}" \
+  PINHOLE_PORT="${API_PORT}" PINHOLE_X11_DISPLAY="${X_DISPLAY}" \
+  PINHOLE_X11_RUNTIME_DIR="${RUNTIME_DIR}" PINHOLE_AUTH="${PINHOLE_AUTH_VAL}" \
   "${SB[@]}" node "${REPO_ROOT}/src/server/main.ts" \
   > >(prefix '[api] ' "${API_LOG}") 2>&1 &
 API_PID=$!
@@ -484,9 +484,9 @@ if [ "${KEEP}" = 1 ] || [ -z "${SHOT}" ]; then
   cat <<EOF
 sim.sh: up. Ctrl-C to stop.
   app        ${APP_URL}
-  auth       EW_AUTH=${EW_AUTH_VAL} $([ "${AUTH}" = 1 ] && echo '(ENFORCED)' || echo '(DISABLED for this run)')
+  auth       PINHOLE_AUTH=${PINHOLE_AUTH_VAL} $([ "${AUTH}" = 1 ] && echo '(ENFORCED)' || echo '(DISABLED for this run)')
   state      ${STATE_DIR} (this run's own registry; ~/.pinhole-window is untouched)
-  env        ${ENV_FILE:-none — create dev.env (mode 600) for persistent EW_* in harness runs}
+  env        ${ENV_FILE:-none — create dev.env (mode 600) for persistent PINHOLE_* in harness runs}
   api        http://127.0.0.1:${API_PORT}/api/health
   automation http://127.0.0.1:${AUTOMATION_PORT}/api/{ping,screenshot/glasses,screenshot/webview,console}
   sim X      ${SIM_DISPLAY} (${XBACKEND}, reach it as DISPLAY=${NX_DISPLAY})

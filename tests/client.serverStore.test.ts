@@ -27,15 +27,15 @@ describe('wireServerStore', () => {
     setServer('https://host.ts.net:8443/')
     const store = fakeStore()
     await wireServerStore(store)
-    expect(store.kv.get('ew.server')).toBe('https://host.ts.net:8443')
+    expect(store.kv.get('pw.server')).toBe('https://host.ts.net:8443')
     // And keeps following later changes.
     setServer('https://other.ts.net')
-    expect(store.kv.get('ew.server')).toBe('https://other.ts.net')
+    expect(store.kv.get('pw.server')).toBe('https://other.ts.net')
   })
 
   it('adopts the kept address when this load is still on the guessed default', async () => {
     setServer('http://localhost:8787', true)
-    await wireServerStore(fakeStore({ 'ew.server': 'https://host.ts.net:8443' }))
+    await wireServerStore(fakeStore({ 'pw.server': 'https://host.ts.net:8443' }))
     expect(SERVER).toBe('https://host.ts.net:8443')
     expect(serverIsGuess).toBe(false)
   })

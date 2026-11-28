@@ -3,7 +3,7 @@
 // Randomart is only worth comparing when each side computes it from the key material that
 // side holds: a pre-rendered grid is whatever the sender chose to draw. So the device draws
 // its grid from its own public key (src/client/pairingUI.ts) and the server from the key it
-// staged (src/server/auth.ts). `scripts/ew-auth.mjs` displays the server's stored `art`: same
+// staged (src/server/auth.ts). `scripts/pw-auth.mjs` displays the server's stored `art`: same
 // host and user, so no trust boundary. See docs/decisions/pairing-randomart.md.
 
 /** Randomart over a hex fingerprint: a small ASCII grid a human can compare at a glance.

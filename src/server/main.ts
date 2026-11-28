@@ -92,15 +92,15 @@ import {
   windowsMru,
 } from './windows.ts'
 
-const PORT = Number(process.env.EW_PORT) || 8787
+const PORT = Number(process.env.PINHOLE_PORT) || 8787
 
 // Bind address: loopback by default. Every route is effectively remote code execution, and
 // the real boundary is the authentication gate (docs/security.md, src/server/auth.ts), on by
-// default. Loopback stays the default bind so an `EW_AUTH=0` run is not one flag away from
+// default. Loopback stays the default bind so an `PINHOLE_AUTH=0` run is not one flag away from
 // publishing a shell to the LAN. A tunnel substitutes for neither: Tailscale authenticates
-// the network, not the client. `EW_HOST=0.0.0.0` opts in explicitly; the start-up banner
+// the network, not the client. `PINHOLE_HOST=0.0.0.0` opts in explicitly; the start-up banner
 // warns (see `transportWarning`).
-const HOST = process.env.EW_HOST || '127.0.0.1'
+const HOST = process.env.PINHOLE_HOST || '127.0.0.1'
 
 /** Bind addresses that are not reachable off this machine. Deliberately separate from the
  *  `LOOPBACK` set of the CORS policy: widening that one must not silence a warning about a
@@ -129,8 +129,8 @@ export function transportWarning(host: string, authOn: boolean): string[] {
 /** Rate limit for the gate-exempt routes only (see src/server/ratelimit.ts). */
 const openLimiter = createLimiter()
 
-/** EW_QUIET=1 silences the per-request access log (see route()). */
-const QUIET = process.env.EW_QUIET === '1'
+/** PINHOLE_QUIET=1 silences the per-request access log (see route()). */
+const QUIET = process.env.PINHOLE_QUIET === '1'
 const POLL_MS = 1000
 const HEARTBEAT_MS = 15_000
 /** Upper bound on a move-N repeat. A settle window (docs/glasses.md) accumulates a handful of
@@ -234,7 +234,7 @@ async function pollWindows(): Promise<void> {
 //
 // Polled on the 1 Hz window tick, not watched: the registry read is the stat-gated cache in
 // src/server/auth.ts (one `statSync` per second), and `fs.watch` can miss the event this
-// exists to deliver. There is no route that enrolls or revokes; only `scripts/ew-auth.mjs`,
+// exists to deliver. There is no route that enrolls or revokes; only `scripts/pw-auth.mjs`,
 // on the host, changes the registry.
 
 /** The wire shape of the registry: the server's `Client` minus its public key. Pure and
@@ -249,7 +249,7 @@ export function clientsWire(list: readonly Client[]): EnrolledClient[] {
 }
 
 /** Change key for the enrolled set. Includes the name and the enforcement flag, not only the
- *  ids: a rename is worth showing, and flipping EW_AUTH changes what the list means.
+ *  ids: a rename is worth showing, and flipping PINHOLE_AUTH changes what the list means.
  *  Order-insensitive, so a rewrite that only reorders entries is not a change. Pure. */
 export function clientsKey(list: readonly EnrolledClient[], enforced: boolean): string {
   return `${enforced ? 'on' : 'off'}|${list
@@ -272,7 +272,7 @@ function publishClients(force = false): void {
   // cannot be over the cap (the refusal ran first).
   if (!force && overCap()) {
     for (const l of clientCountBanner(list.length, maxClients(), stateDir(), enforced)) {
-      console.warn(`[ew] ${l}`)
+      console.warn(`[pw] ${l}`)
     }
   }
   onClientsChanged(list, enforced)
@@ -329,12 +329,12 @@ async function publishApps(force = false): Promise<void> {
 //
 // Tokens are Bearer headers, so a foreign page has no credential to ride on, and the gate is
 // what protects every route. CORS adds something only where the gate is absent, so the default
-// follows `EW_AUTH` (docs/decisions/cors-follows-auth.md):
-//   * auth enforced, `EW_ORIGINS` unset → any origin. The packaged app runs on an origin of
+// follows `PINHOLE_AUTH` (docs/decisions/cors-follows-auth.md):
+//   * auth enforced, `PINHOLE_ORIGINS` unset → any origin. The packaged app runs on an origin of
 //     the Even App's choosing, which is not knowable here.
-//   * `EW_AUTH=0`, `EW_ORIGINS` unset → the narrow policy below, because then an open
+//   * `PINHOLE_AUTH=0`, `PINHOLE_ORIGINS` unset → the narrow policy below, because then an open
 //     preflight would let any web page send a JSON POST to an unauthenticated server.
-//   * `EW_ORIGINS` set → exactly what it says, in both cases, on top of the narrow policy.
+//   * `PINHOLE_ORIGINS` set → exactly what it says, in both cases, on top of the narrow policy.
 //     `*` is the wildcard; any other list replaces the wildcard default.
 // The narrow policy:
 //   * no Origin header → allowed: not a browser, so there is no same-origin policy to satisfy;
@@ -365,7 +365,7 @@ const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 export function corsOrigin(
   origin: string | undefined,
   host: string | undefined,
-  configured: string | undefined = process.env.EW_ORIGINS,
+  configured: string | undefined = process.env.PINHOLE_ORIGINS,
   auth: boolean = authEnabled(),
 ): string {
   const list = (configured ?? '')
@@ -525,7 +525,7 @@ function handleStream(req: IncomingMessage, res: ServerResponse): void {
     // message reconnect in a loop, and a client that does understand closes itself.
     const by = instances.currentOf(cid) ?? ''
     console.log(
-      `[ew] stream inst=${inst.slice(0, 8)} is STALE (current=${by.slice(0, 8)}) — told to stand down`,
+      `[pw] stream inst=${inst.slice(0, 8)} is STALE (current=${by.slice(0, 8)}) — told to stand down`,
     )
     const me = sseWho.get(res)
     if (me) me.told = true
@@ -543,7 +543,7 @@ function handleStream(req: IncomingMessage, res: ServerResponse): void {
       // The count disambiguates the log: zero means the old page was already gone, which is
       // the good outcome, not a failure to deliver.
       console.log(
-        `[ew] stream inst=${inst.slice(0, 8)} TAKES OVER from ${displaced.slice(0, 8)}` +
+        `[pw] stream inst=${inst.slice(0, 8)} TAKES OVER from ${displaced.slice(0, 8)}` +
           ` — ${String(told)} live stream(s) told to stand down` +
           (told === 0 ? ' (the old page was already gone)' : ''),
       )
@@ -559,7 +559,7 @@ function handleStream(req: IncomingMessage, res: ServerResponse): void {
     // understand the message. Logged unconditionally, not only under `?debug=1`.
     const info = sseWho.get(res)
     if (info?.told === true) {
-      console.log(`[ew] stream inst=${info.inst.slice(0, 8)} CLOSED after being told to stand down`)
+      console.log(`[pw] stream inst=${info.inst.slice(0, 8)} CLOSED after being told to stand down`)
     }
     // `instances` is not touched: a disconnect must not release ownership (instances.ts).
     sseWho.delete(res)
@@ -686,7 +686,7 @@ export const routes: readonly Route[] = [
     path: '/api/auth/ticket',
     handler: (req, res) => {
       const cid = authClientId(req)
-      // Unreachable with auth on (the gate ran first). With EW_AUTH=0 there is no identity to
+      // Unreachable with auth on (the gate ran first). With PINHOLE_AUTH=0 there is no identity to
       // mint for, and the stream answers unauthenticated anyway.
       if (!cid) return sendJson(res, { ticket: '', exp: 0, authEnabled: authEnabled() })
       return sendJson(res, { ...issueTicket(cid), authEnabled: true })
@@ -712,7 +712,7 @@ export const routes: readonly Route[] = [
         backend: info.backend,
         pid: info.pid,
         fps: info.fps,
-        // Advertises whether `EW_STT_URL` is set, so the client offers voice input only when
+        // Advertises whether `PINHOLE_STT_URL` is set, so the client offers voice input only when
         // it can work (docs/voice.md).
         stt: sttEnabled(),
       })
@@ -793,7 +793,7 @@ export const routes: readonly Route[] = [
         if (pid) noteLaunchPid(app.id, pid)
         if (pid && noteLaunch(app.id)) void publishApps()
         console.log(
-          `[ew] spawn id=${id} pid=${pid || '-'} ${cmd} ${args.join(' ')} => ${pid ? 'ok' : 'failed'}`,
+          `[pw] spawn id=${id} pid=${pid || '-'} ${cmd} ${args.join(' ')} => ${pid ? 'ok' : 'failed'}`,
         )
         return sendJson(
           res,
@@ -820,7 +820,7 @@ export const routes: readonly Route[] = [
       // `count=N` call (docs/glasses.md). `via` names the binding entry that won (`comm:less`,
       // `*`) and is absent when the built-in default answered.
       console.log(
-        `[ew] input gesture=${g} count=${act.kind === 'client' ? 1 : act.repeat} action=${act.kind}` +
+        `[pw] input gesture=${g} count=${act.kind === 'client' ? 1 : act.repeat} action=${act.kind}` +
           (act.kind === 'key' ? ` key=${act.key}` : '') +
           (act.kind === 'wheel'
             ? ` button=${String(act.button)}${act.mods.length ? ` mods=${act.mods.join('+')}` : ''}`
@@ -869,7 +869,7 @@ export const routes: readonly Route[] = [
           return sendJson(res, { ok: false, msg: `not an app key: ${key}` }, 400)
         const changed = setBinding(key, null)
         if (changed) onBindingsChanged(bindingsMap())
-        console.log(`[ew] bindings clear ${key} => ${changed ? 'removed' : 'nothing to remove'}`)
+        console.log(`[pw] bindings clear ${key} => ${changed ? 'removed' : 'nothing to remove'}`)
         return sendJson(res, { ok: true, key, map: bindingsMap() })
       }
       // Validated here, against the same catalogue the editor renders from: the client
@@ -896,7 +896,7 @@ export const routes: readonly Route[] = [
         return sendJson(res, { ok: true, key, map: bindingsMap(), unchanged: true })
       }
       onBindingsChanged(bindingsMap())
-      console.log(`[ew] bindings set ${key} ${bindingLabel(binding)}`)
+      console.log(`[pw] bindings set ${key} ${bindingLabel(binding)}`)
       return sendJson(res, { ok: true, key, map: bindingsMap() })
     },
   },
@@ -925,7 +925,11 @@ export const routes: readonly Route[] = [
     handler: async (req, res) => {
       // Off by default; the 503 names the setting.
       if (!sttEnabled()) {
-        return sendJson(res, { ok: false, error: 'STT is not configured — set EW_STT_URL' }, 503)
+        return sendJson(
+          res,
+          { ok: false, error: 'STT is not configured — set PINHOLE_STT_URL' },
+          503,
+        )
       }
       const raw = new URL(req.url ?? '', 'http://x').searchParams.get('rate')
       const rate = raw === null ? STT_RATE_DEFAULT : Number(raw)
@@ -972,7 +976,7 @@ export const routes: readonly Route[] = [
       if (!isRatpoisonKey(key))
         return sendJson(res, { ok: false, msg: `not a menu key: ${key}` }, 400)
       const ok = await platform.input.wmKey(key)
-      console.log(`[ew] ratpoison ${RP_PREFIX} ${key} => ${ok ? 'ok' : 'failed'}`)
+      console.log(`[pw] ratpoison ${RP_PREFIX} ${key} => ${ok ? 'ok' : 'failed'}`)
       return sendJson(res, ok ? { ok: true, key } : { ok: false, msg: 'inject failed' })
     },
   },
@@ -985,7 +989,7 @@ export const routes: readonly Route[] = [
     handler: async (req, res) => {
       const b = await readJson(req)
       console.log(
-        `[ew] RAW ${JSON.stringify(b.event ?? b)}  -> ${JSON.stringify(b.gesture ?? null)}`,
+        `[pw] RAW ${JSON.stringify(b.event ?? b)}  -> ${JSON.stringify(b.gesture ?? null)}`,
       )
       return sendJson(res, { ok: true })
     },
@@ -1007,7 +1011,7 @@ export const routes: readonly Route[] = [
         const msg = str(e.m)
           .replace(/[\r\n]+/g, ' / ')
           .slice(0, DEBUG_LOG_MAX_CHARS)
-        console.log(`[ew] CLIENT ${hhmmss(e.t)} ${msg}`)
+        console.log(`[pw] CLIENT ${hhmmss(e.t)} ${msg}`)
       }
       return sendJson(res, { ok: true, n: take.length })
     },
@@ -1046,7 +1050,7 @@ function noteThrottle(path: string): void {
   if (now - throttleLogAt < 5000) return
   throttleLogAt = now
   console.warn(
-    `[ew] rate limit: refused ${throttleCount} request(s) on open routes (latest ${path})`,
+    `[pw] rate limit: refused ${throttleCount} request(s) on open routes (latest ${path})`,
   )
   throttleCount = 0
 }
@@ -1066,12 +1070,12 @@ export async function route(req: IncomingMessage, res: ServerResponse): Promise<
 
   const r = routes.find(x => x.method === method && x.path === path)
 
-  // Access log, on by default (EW_QUIET=1 silences it): one line per request tells "the
+  // Access log, on by default (PINHOLE_QUIET=1 silences it): one line per request tells "the
   // client never connected" apart from "it connected and got a 401". The stream logs once,
   // at open.
   if (!QUIET) {
     const who = authClientId(req)?.slice(0, 8) ?? '-'
-    console.log(`[ew] ${method} ${path} cid=${who}${r ? '' : ' (no route)'}`)
+    console.log(`[pw] ${method} ${path} cid=${who}${r ? '' : ' (no route)'}`)
   }
 
   if (!r) return sendJson(res, { ok: false, msg: 'not found' }, 404)
@@ -1090,7 +1094,7 @@ export async function route(req: IncomingMessage, res: ServerResponse): Promise<
 const server = createServer((req, res) => {
   route(req, res).catch((e: unknown) => {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error(`[ew] route ${req.method} ${req.url}: ${msg}`)
+    console.error(`[pw] route ${req.method} ${req.url}: ${msg}`)
     if (!res.headersSent) sendJson(res, { ok: false, msg }, 500)
     else if (!res.writableEnded) res.end()
   })
@@ -1098,13 +1102,13 @@ const server = createServer((req, res) => {
 
 async function main(): Promise<void> {
   // ── fail closed before anything else ────────────────────────────────────────────────────
-  // More keys enrolled than EW_MAX_CLIENTS allows means the gate in force is wider than the
+  // More keys enrolled tha PINHOLE_MAX_CLIENTS allows means the gate in force is wider than the
   // configuration asks for (see `overCapRefusal`). Checked before the desktop and the
   // listener, so a refusal has no side effects.
   if (overCap()) {
-    for (const line of envFileBanner(envFileReport)) console.error(`[ew] ${line}`)
+    for (const line of envFileBanner(envFileReport)) console.error(`[pw] ${line}`)
     for (const line of overCapRefusal(listClients().length, maxClients(), stateDir())) {
-      console.error(`[ew] ${line}`)
+      console.error(`[pw] ${line}`)
     }
     process.exit(1)
   }
@@ -1113,14 +1117,14 @@ async function main(): Promise<void> {
   try {
     await platform.session.start({ frame: processFrame, avail: setAvail })
   } catch (e: unknown) {
-    console.error(`[ew] startX11 failed: ${e instanceof Error ? e.message : String(e)}`)
+    console.error(`[pw] startX11 failed: ${e instanceof Error ? e.message : String(e)}`)
   }
 
   await pollWindows()
   const poll = setInterval(() => {
     void pollWindows()
     // One stat per second; it is what makes an enrollment made in another process
-    // (`ew-auth approve`) reach every connected phone.
+    // (`pw-auth approve`) reach every connected phone.
     publishClients()
   }, POLL_MS)
   poll.unref?.() // never hold the process open on the poll alone
@@ -1131,10 +1135,10 @@ async function main(): Promise<void> {
   try {
     const r = await platform.apps.list(true)
     await publishApps(false)
-    console.log(`[ew] apps: ${r.summary}`)
-    for (const e of r.errors) console.warn(`[ew] apps.conf: ${e}`)
+    console.log(`[pw] apps: ${r.summary}`)
+    for (const e of r.errors) console.warn(`[pw] apps.conf: ${e}`)
   } catch (e: unknown) {
-    console.error(`[ew] app scan failed: ${e instanceof Error ? e.message : String(e)}`)
+    console.error(`[pw] app scan failed: ${e instanceof Error ? e.message : String(e)}`)
   }
 
   // Publish the swipe bindings once, at boot, unconditionally: the empty map is the answer
@@ -1143,58 +1147,58 @@ async function main(): Promise<void> {
   const bmap = bindingsMap()
   onBindingsChanged(bmap)
   const bn = Object.keys(bmap).length
-  if (bn > 0) console.log(`[ew] swipe bindings: ${bn} (${bindingsPath()})`)
+  if (bn > 0) console.log(`[pw] swipe bindings: ${bn} (${bindingsPath()})`)
 
   // Publish the enrolled set once, at boot, unconditionally: "no keys enrolled" must also
   // prime a subscriber.
   publishClients(true)
-  for (const e of bindingErrors()) console.warn(`[ew] bindings.json: ${e}`)
+  for (const e of bindingErrors()) console.warn(`[pw] bindings.json: ${e}`)
 
   server.listen(PORT, HOST, () => {
     // What the env file set comes first: the lines below report values it may have chosen.
-    for (const line of envFileBanner(envFileReport)) console.log(`[ew] ${line}`)
+    for (const line of envFileBanner(envFileReport)) console.log(`[pw] ${line}`)
     const info = platform.session.info()
     console.log(
-      `[ew] http://${HOST}:${PORT}  display=${info.display} backend=${info.backend} fps=${info.fps}`,
+      `[pw] http://${HOST}:${PORT}  display=${info.display} backend=${info.backend} fps=${info.fps}`,
     )
     const loopback = HOST === '127.0.0.1' || HOST === 'localhost' || HOST === '::1'
     if (authEnabled()) {
-      console.log(`[ew] auth ENFORCED (EW_AUTH) — state ${stateDir()}`)
+      console.log(`[pw] auth ENFORCED (PINHOLE_AUTH) — state ${stateDir()}`)
       // How many keys, and in which registry: this makes a start against the wrong
-      // EW_STATE_DIR obvious.
+      // PINHOLE_STATE_DIR obvious.
       const enrolled = listClients().length
       const cap = maxClients()
       const overCap = cap > 0 && enrolled > cap
       for (const l of clientCountBanner(enrolled, cap, stateDir(), true)) {
-        if (enrolled > 0 && !overCap) console.log(`[ew] ${l}`)
-        else console.warn(`[ew] ${l}`)
+        if (enrolled > 0 && !overCap) console.log(`[pw] ${l}`)
+        else console.warn(`[pw] ${l}`)
       }
       // Reported on every start, enforced or not: with `tailscale serve` in front
-      // `transportWarning` is silent, so this is the only line that reports an unset EW_ORIGIN.
+      // `transportWarning` is silent, so this is the only line that reports an unset PINHOLE_ORIGIN.
       const sb = sessionBindingStatus()
-      if (sb.enforced) console.log(`[ew] ${sb.line}`)
-      else console.warn(`[ew] ${sb.line}`)
+      if (sb.enforced) console.log(`[pw] ${sb.line}`)
+      else console.warn(`[pw] ${sb.line}`)
       // Silent at the default cap of 1.
-      for (const line of clientLimitWarning()) console.warn(`[ew] ${line}`)
+      for (const line of clientLimitWarning()) console.warn(`[pw] ${line}`)
       // A state dir looser than 0700 is reported, not silently chmod'ed.
       try {
-        for (const line of stateDirWarning(statSync(stateDir()).mode)) console.warn(`[ew] ${line}`)
+        for (const line of stateDirWarning(statSync(stateDir()).mode)) console.warn(`[pw] ${line}`)
       } catch {
         /* no state dir yet: nothing to warn about, and the next write creates it 0700 */
       }
-      for (const line of transportWarning(HOST, true)) console.warn(`[ew] ${line}`)
+      for (const line of transportWarning(HOST, true)) console.warn(`[pw] ${line}`)
     } else {
       // Printed on every start: auth being off must never go unnoticed.
-      console.warn('[ew] WARNING: EW_AUTH is OFF — every route is UNAUTHENTICATED.')
+      console.warn('[pw] WARNING: PINHOLE_AUTH is OFF — every route is UNAUTHENTICATED.')
       console.warn(
-        '[ew]   /api/spawn and /api/desktop/input are both arbitrary code execution as this user.\n' +
-          `[ew]   Anything that can reach ${HOST}:${PORT} owns this account.` +
+        '[pw]   /api/spawn and /api/desktop/input are both arbitrary code execution as this user.\n' +
+          `[pw]   Anything that can reach ${HOST}:${PORT} owns this account.` +
           (loopback ? ' Bound to loopback, so that is this machine only.' : ''),
       )
       if (!loopback) {
         console.warn(
-          `[ew]   and it is listening on ${HOST}: the whole LAN / tailnet can reach it.\n` +
-            '[ew]   Stop this now: unset EW_AUTH (enforcement is the default) or set EW_HOST=127.0.0.1.',
+          `[pw]   and it is listening on ${HOST}: the whole LAN / tailnet can reach it.\n` +
+            '[pw]   Stop this now: unset PINHOLE_AUTH (enforcement is the default) or set PINHOLE_HOST=127.0.0.1.',
         )
       }
     }
@@ -1204,7 +1208,7 @@ async function main(): Promise<void> {
   const shutdown = (sig: string): void => {
     if (closing) return
     closing = true
-    console.log(`[ew] ${sig}: stopping capture, leaving the X stack up`)
+    console.log(`[pw] ${sig}: stopping capture, leaving the X stack up`)
     clearInterval(poll)
     platform.session.stopCapture() // only the capture stops; the desktop stays up (docs/platform.md)
     for (const c of sseClients) {

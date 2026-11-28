@@ -7,10 +7,10 @@
 // the real server refuses a signature made out to anywhere else.
 //
 // Pinned here, because each one is a way the check could become decorative:
-//   * a signature for another origin is refused when EW_ORIGIN is set;
+//   * a signature for another origin is refused when PINHOLE_ORIGIN is set;
 //   * the body's `origin` field is not trusted — it is folded back into the signed material;
-//   * EW_ORIGIN is compared after canonicalisation;
-//   * `EW_ORIGIN=*` (a CORS habit) is not "allow anything";
+//   * PINHOLE_ORIGIN is compared after canonicalisation;
+//   * `PINHOLE_ORIGIN=*` (a CORS habit) is not "allow anything";
 //   * there is no bare-nonce fallback.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -32,21 +32,21 @@ let prevOrigin: string | undefined
 let prevMax: string | undefined
 beforeEach(() => {
   dispose = useTempStateDir()
-  prevOrigin = process.env.EW_ORIGIN
-  prevMax = process.env.EW_MAX_CLIENTS
+  prevOrigin = process.env.PINHOLE_ORIGIN
+  prevMax = process.env.PINHOLE_MAX_CLIENTS
 })
 afterEach(() => {
-  if (prevOrigin === undefined) delete process.env.EW_ORIGIN
-  else process.env.EW_ORIGIN = prevOrigin
-  if (prevMax === undefined) delete process.env.EW_MAX_CLIENTS
-  else process.env.EW_MAX_CLIENTS = prevMax
+  if (prevOrigin === undefined) delete process.env.PINHOLE_ORIGIN
+  else process.env.PINHOLE_ORIGIN = prevOrigin
+  if (prevMax === undefined) delete process.env.PINHOLE_MAX_CLIENTS
+  else process.env.PINHOLE_MAX_CLIENTS = prevMax
   dispose()
 })
 
 /** Enrol `key` and redeem a challenge the way a device at `claimed` would. `sent` defaults to
  *  `claimed`; passing them apart is the attacker who edits the body but cannot re-sign.
  *  Each test reuses one key (`addClient` is idempotent on the fingerprint), so the default
- *  `EW_MAX_CLIENTS=1` cap stays in force; a test that needs a second enrollment raises the
+ *  `PINHOLE_MAX_CLIENTS=1` cap stays in force; a test that needs a second enrollment raises the
  *  cap explicitly. */
 function redeem(key: TestKey, claimed: string, sent = claimed): ReturnType<typeof redeemSession> {
   const c = addClient(key.pub)
@@ -55,9 +55,9 @@ function redeem(key: TestKey, claimed: string, sent = claimed): ReturnType<typeo
   return redeemSession(c!.id, nonce, sig, sent)
 }
 
-describe('EW_ORIGIN unset — verify the signature, skip the comparison', () => {
-  it('accepts a bound signature naming any origin (loopback dev, the EW_AUTH=0 harness)', () => {
-    delete process.env.EW_ORIGIN
+describe('PINHOLE_ORIGIN unset — verify the signature, skip the comparison', () => {
+  it('accepts a bound signature naming any origin (loopback dev, the PINHOLE_AUTH=0 harness)', () => {
+    delete process.env.PINHOLE_ORIGIN
     expect(canonicalOrigin()).toBe('')
     const key = makeEd25519Key()
     expect(redeem(key, REAL)).not.toBeNull()
@@ -66,9 +66,9 @@ describe('EW_ORIGIN unset — verify the signature, skip the comparison', () => 
   })
 })
 
-describe('EW_ORIGIN set — a signature made out to somewhere else is refused', () => {
+describe('PINHOLE_ORIGIN set — a signature made out to somewhere else is refused', () => {
   beforeEach(() => {
-    process.env.EW_ORIGIN = REAL
+    process.env.PINHOLE_ORIGIN = REAL
   })
 
   it('accepts the device that named this server', () => {
@@ -118,7 +118,7 @@ describe('EW_ORIGIN set — a signature made out to somewhere else is refused', 
     expect(redeem(key, 'https://host.ts.net:8443/api/auth/session')).not.toBeNull()
     expect(redeem(key, 'https://HOST.TS.NET:8443')).not.toBeNull()
     // A default port written out explicitly is the same origin…
-    process.env.EW_ORIGIN = 'https://host.ts.net'
+    process.env.PINHOLE_ORIGIN = 'https://host.ts.net'
     expect(redeem(key, 'https://host.ts.net:443')).not.toBeNull()
     // …but a different port, or a different scheme, is a different server.
     expect(redeem(key, 'https://host.ts.net:8443')).toBeNull()
@@ -138,14 +138,14 @@ describe('EW_ORIGIN set — a signature made out to somewhere else is refused', 
     const key = makeEd25519Key()
     const c = addClient(key.pub)
     const { nonce } = issueChallenge()
-    const forged = ['ew-session-v2', c!.id, REAL, nonce].join('\n')
+    const forged = ['pw-session-v2', c!.id, REAL, nonce].join('\n')
     expect(redeemSession(c!.id, nonce, key.sign(forged), REAL)).toBeNull()
   })
 
   it('refuses material that names another client id', () => {
     // The id is inside the signature, so a signature made for one enrollment cannot be offered
     // as another's. Both keys are enrolled, which needs two slots: the cap is raised here.
-    process.env.EW_MAX_CLIENTS = '2'
+    process.env.PINHOLE_MAX_CLIENTS = '2'
     const a = makeEd25519Key(),
       b = makeEd25519Key()
     const ca = addClient(a.pub),
@@ -183,7 +183,7 @@ describe('normaliseOrigin', () => {
 })
 
 describe('sessionBindingStatus — an unenforced control says so', () => {
-  it('reports enforced with the canonical origin when EW_ORIGIN is a URL', () => {
+  it('reports enforced with the canonical origin when PINHOLE_ORIGIN is a URL', () => {
     const s = sessionBindingStatus('https://host.ts.net:8443/')
     expect(s.enforced).toBe(true)
     expect(s.origin).toBe(REAL)
@@ -191,11 +191,11 @@ describe('sessionBindingStatus — an unenforced control says so', () => {
     expect(s.line).toContain(REAL)
   })
 
-  it('reports not enforced, and how to fix it, when EW_ORIGIN is unset', () => {
+  it('reports not enforced, and how to fix it, when PINHOLE_ORIGIN is unset', () => {
     const s = sessionBindingStatus(undefined)
     expect(s.enforced).toBe(false)
     expect(s.line).toMatch(/NOT enforced/)
-    expect(s.line).toMatch(/EW_ORIGIN/)
+    expect(s.line).toMatch(/PINHOLE_ORIGIN/)
   })
 
   it('never reads a misconfigured value as enforced, and quotes what it got', () => {

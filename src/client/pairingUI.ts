@@ -64,7 +64,7 @@ export function pairingTarget(pasted: string): { code: string; server: string } 
 }
 
 /** How the enrolled-slot count reads on the device, and whether approval would be refused.
- *  Pure. `EW_MAX_CLIENTS` is enforced by `ew-auth approve` on the host, so the device warns
+ *  Pure. `PINHOLE_MAX_CLIENTS` is enforced by `pw-auth approve` on the host, so the device warns
  *  beforehand. `alreadyEnrolled` is never blocked: re-submitting an enrolled key takes no slot. */
 export function slotLine(
   used: number,
@@ -88,8 +88,8 @@ export function slotLine(
     text:
       `${used} of ${max} slot(s) used — NO FREE SLOT, so approving this device will be` +
       ' REFUSED. On the server, either revoke the key it replaces' +
-      ' (`ew-auth list` then `ew-auth revoke <id>`), or raise the cap for the whole run' +
-      ' (EW_MAX_CLIENTS=2 in ~/.pinhole-window/env, then restart).',
+      ' (`pw-auth list` then `pw-auth revoke <id>`), or raise the cap for the whole run' +
+      ' (PINHOLE_MAX_CLIENTS=2 in ~/.pinhole-window/env, then restart).',
     blocked: true,
   }
 }
@@ -130,14 +130,14 @@ export interface PairingHooks {
 /** Non-empty `initialCode`: URL-triggered. Empty: manual, with an input for the code or the
  *  whole pairing URL. Nothing is submitted until the Pair button is tapped. */
 async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void> {
-  const existing = document.getElementById('ew-pair')
+  const existing = document.getElementById('pw-pair')
   if (existing) existing.remove()
 
   const back = el(
     'div',
     'position:fixed;inset:0;z-index:99999;background:#151515e8;color:#e5e5e5;display:flex;align-items:flex-start;justify-content:center;font:14px/1.4 system-ui,sans-serif;padding:16px;box-sizing:border-box;overflow:auto',
   )
-  back.id = 'ew-pair'
+  back.id = 'pw-pair'
   const card = el(
     'div',
     'max-width:520px;width:100%;background:#232323;border:1px solid #3a3a3a;border-radius:10px;padding:20px;text-align:center',
@@ -149,7 +149,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     initialCode
       ? 'Tap “Pair this device” to register it with your server. It is enrolled only after you' +
           ' approve it there, so nothing is granted by this tap alone.'
-      : 'Paste the pairing URL (or just the code) printed by `ew-auth pair`, then tap Pair.' +
+      : 'Paste the pairing URL (or just the code) printed by `pw-auth pair`, then tap Pair.' +
           ' A full URL also tells this app which server to talk to.',
   )
 
@@ -208,19 +208,19 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     `<pre style="${pS}">tailscale serve --bg --yes --https 8443 \\\n  --set-path /api http://127.0.0.1:8787/api\ntailscale serve --bg --yes --https 8443 http://127.0.0.1:5273</pre>` +
     'it prints an https URL that works inside your tailnet only.</li>' +
     `<li>Put that URL in <code style="${cS}">~/.pinhole-window/env</code> as` +
-    ` <code style="${cS}">EW_ORIGIN=…</code> and restart the server.</li>` +
+    ` <code style="${cS}">PINHOLE_ORIGIN=…</code> and restart the server.</li>` +
     '<li>Open a pairing window:' +
-    `<pre style="${pS}">node scripts/ew-auth.mjs pair '&lt;that https URL&gt;'</pre>` +
+    `<pre style="${pS}">node scripts/pw-auth.mjs pair '&lt;that https URL&gt;'</pre>` +
     'it prints a pairing URL, and a QR if <code style="' +
     cS +
     '">qrencode</code> is installed.</li>' +
     '<li>Open that URL on this device (or paste it above), then tap <b>Pair</b>.</li>' +
     '<li>Compare the pattern that appears here with the one on the server, and approve it' +
-    ` there — answer <b>y</b>, or run <code style="${cS}">node scripts/ew-auth.mjs approve &lt;id&gt;</code>` +
+    ` there — answer <b>y</b>, or run <code style="${cS}">node scripts/pw-auth.mjs approve &lt;id&gt;</code>` +
     ' (the device id is shown on this screen; the first 4 characters are enough).</li>' +
     '</ol>' +
     '<div style="margin-top:8px;color:#8a8a8a">If pairing is approved but the app still gets' +
-    ` 401s, the server's <code style="${cS}">EW_ORIGIN</code> does not match the URL this` +
+    ` 401s, the server's <code style="${cS}">PINHOLE_ORIGIN</code> does not match the URL this` +
     ' device dials: every signature names its destination, and the server refuses one made' +
     ' out to anywhere else.</div>'
 
@@ -232,12 +232,12 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     'pre',
     'display:none;font:12px/1.15 ui-monospace,Menlo,Consolas,monospace;background:#111;border:1px solid #333;border-radius:6px;padding:10px;overflow:auto;text-align:left;white-space:pre',
   )
-  art.id = 'ew-pair-art'
+  art.id = 'pw-pair-art'
   const idLine = el(
     'div',
     'display:none;margin-top:6px;font:12px ui-monospace,monospace;color:#9ad',
   )
-  idLine.id = 'ew-pair-id'
+  idLine.id = 'pw-pair-id'
   const hint = el('div', 'display:none;margin-top:12px;color:#bdbdbd')
 
   const btnRow = el('div', 'display:flex;gap:10px;justify-content:center;margin-top:16px')
@@ -330,7 +330,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
       hint.innerHTML =
         'The key your server staged is <b>not the key on this device</b>, so ' +
         'something between them changed it. Reject it on the server:' +
-        '<br><code style="font:12px ui-monospace,monospace;color:#9ad">node scripts/ew-auth.mjs pending</code>' +
+        '<br><code style="font:12px ui-monospace,monospace;color:#9ad">node scripts/pw-auth.mjs pending</code>' +
         '<br>Then check the server URL below and pair again over a trusted path ' +
         '(<code style="font:12px ui-monospace,monospace;color:#9ad">tailscale serve</code>, docs/getting-started.md).'
       return
@@ -338,7 +338,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     msg.textContent = 'Your server is waiting to approve this device.'
     hint.innerHTML =
       'Check that this pattern matches the one your server shows, then approve it there:' +
-      '<br><code style="font:12px ui-monospace,monospace;color:#9ad">node scripts/ew-auth.mjs pending</code>' +
+      '<br><code style="font:12px ui-monospace,monospace;color:#9ad">node scripts/pw-auth.mjs pending</code>' +
       '<br>Waiting for approval…'
   }
 
@@ -368,10 +368,10 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
       msg.textContent =
         r?.error === 'pairing closed'
           ? 'The pairing window closed, or it was already used — one window pairs one device.' +
-            ' Run `ew-auth pair` again on the server.'
+            ' Run `pw-auth pair` again on the server.'
           : r?.error === 'bad code'
             ? 'That pairing code is invalid. Copy it again from the' +
-              ' `ew-auth pair` output — a code is single-use and expires in a few minutes.'
+              ' `pw-auth pair` output — a code is single-use and expires in a few minutes.'
             : r?.error === 'bad key'
               ? 'The server rejected this device key. Reload the app and try' +
                 ' once more; if it keeps happening, this WebView may not support WebCrypto keys.'
@@ -414,7 +414,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
             timer = null
           }
           title.textContent = 'Rejected'
-          msg.textContent = 'The server rejected this device. Run `ew-auth pair` again to retry.'
+          msg.textContent = 'The server rejected this device. Run `pw-auth pair` again to retry.'
           hint.style.display = 'none'
           hooks.log('pairing rejected by operator')
         } else if (st === 'unknown') {
@@ -423,7 +423,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
             timer = null
           }
           title.textContent = 'Expired'
-          msg.textContent = 'The pairing request expired. Run `ew-auth pair` again to retry.'
+          msg.textContent = 'The pairing request expired. Run `pw-auth pair` again to retry.'
           hint.style.display = 'none'
           hooks.log('pairing request expired')
         }

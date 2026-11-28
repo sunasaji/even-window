@@ -163,7 +163,7 @@ export async function voiceStart(): Promise<void> {
     return
   }
   if (!sttReady) {
-    log('voice: the server has no recogniser configured (EW_STT_URL) — not starting')
+    log('voice: the server has no recogniser configured (PINHOLE_STT_URL) — not starting')
     return
   }
   // Which mic is decided once, here (`voiceMicFor`, src/shared/voiceDialog.ts). With the glasses

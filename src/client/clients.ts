@@ -18,7 +18,7 @@ let enrolledEnforced = true
  *  becomes the baseline instead of an alert. */
 let ackedKeyIds: string[] | null = null
 export let keysAlert: KeyDiff = { added: [], removed: [], alert: false }
-const ACKED_KEYS_STORE = 'ew.keys.acked'
+const ACKED_KEYS_STORE = 'pw.keys.acked'
 
 export interface KeyDiff {
   added: string[]
@@ -135,12 +135,12 @@ export function renderKeys(): void {
   if (!enrolledEnforced) parts.push('auth is OFF — these keys are not checked')
   if (keysAlert.added.length)
     parts.push(
-      `${keysAlert.added.length} key(s) enrolled since you last looked — if you did not approve this, revoke it on the host: ew-auth revoke <id>`,
+      `${keysAlert.added.length} key(s) enrolled since you last looked — if you did not approve this, revoke it on the host: pw-auth revoke <id>`,
     )
   if (keysAlert.removed.length)
     parts.push(`${keysAlert.removed.length} key(s) revoked since you last looked`)
   if (!parts.length)
-    parts.push('only the host can change this list (`ew-auth` there) — this is a read-only view')
+    parts.push('only the host can change this list (`pw-auth` there) — this is a read-only view')
   keysNoteEl.textContent = parts.join(' · ')
   keysNoteEl.style.color = keysAlert.alert ? '#ff6b57' : '#888'
   if (keysAckBtn)

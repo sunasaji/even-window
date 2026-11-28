@@ -229,7 +229,7 @@ deposed instance ids and tells them again.
 First firings (17:05, 17:34):
 
 ```
-[ew] stream inst=ew-fp0lf TAKES OVER from ew-fqlay — 0 live stream(s) told to stand down (the old page was already gone)
+[pw] stream inst=pw-fp0lf TAKES OVER from pw-fqlay — 0 live stream(s) told to stand down (the old page was already gone)
 ```
 
 - Zero told is a good outcome: the crash took the page with it. That was the case for all three
@@ -240,9 +240,9 @@ First firings (17:05, 17:34):
 - In a crash nobody sees the old page's curtain. Verify in the server log:
 
 ```
-[ew] stream inst=<new> TAKES OVER from <old>
-[ew] CLIENT … SUPERSEDED by instance <new>                       (only with ?debug=1)
-[ew] stream inst=<old> CLOSED after being told to stand down
+[pw] stream inst=<new> TAKES OVER from <old>
+[pw] CLIENT … SUPERSEDED by instance <new>                       (only with ?debug=1)
+[pw] stream inst=<old> CLOSED after being told to stand down
 ```
 
   The third line is the proof that the old page heard and let go.

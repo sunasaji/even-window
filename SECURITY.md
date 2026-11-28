@@ -10,6 +10,6 @@ the host. The security model, its assumptions and its limits are described in
 Please report vulnerabilities privately through GitHub's
 [private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)
 on this repository rather than in a public issue. Include the version or commit, the
-configuration (bind address, proxy, `EW_*` settings) and steps to reproduce.
+configuration (bind address, proxy, `PINHOLE_*` settings) and steps to reproduce.
 
 Only the latest commit on `main` is supported.

@@ -46,9 +46,9 @@ title of the Xephyr window on the host display.
 
 ## Reattach beats `--display`
 
-Passing `--display :105` while `.ew-x11/session.json` existed gave
+Passing `--display :105` while `.pw-x11/session.json` existed gave
 `"display":":100"` from `/api/health`: the server reattached to the existing session instead
-of starting a new one. Isolated runs therefore set `EW_X11_RUNTIME_DIR`.
+of starting a new one. Isolated runs therefore set `PINHOLE_X11_RUNTIME_DIR`.
 
 ## A foreign service satisfied the readiness poll
 

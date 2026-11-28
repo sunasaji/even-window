@@ -12,7 +12,7 @@ whose mirrored desktop is a nested X display.
 
 | Part | Started as | Listens on | Notes |
 | --- | --- | --- | --- |
-| Server | `node src/server/main.ts` | `EW_PORT`, default `8787` | Owns the mirrored desktop (`EW_X11_DISPLAY`, default `:100`) and captures it |
+| Server | `node src/server/main.ts` | `PINHOLE_PORT`, default `8787` | Owns the mirrored desktop (`PINHOLE_X11_DISPLAY`, default `:100`) and captures it |
 | WebView app | `vite` | `5273` (`host: true`, `strictPort`) | Phone UI and glasses side; served from the working tree |
 | Even Hub simulator | `@evenrealities/evenhub-simulator` | automation API, default `9899` | Renders the app and a 576x288 glasses panel, in its own X display (`:180` and up) |
 
@@ -24,7 +24,7 @@ The server runs TypeScript directly, so it needs a Node.js with built-in type st
 (22.18 or newer). Linux packages are listed in
 [getting-started.md](getting-started.md).
 
-Runtime state and logs live in `<repo>/.ew-x11/` (`EW_X11_RUNTIME_DIR`, git-ignored):
+Runtime state and logs live in `<repo>/.pw-x11/` (`PINHOLE_X11_RUNTIME_DIR`, git-ignored):
 `session.json` (the display session), `state/` (the harness's auth registry) and
 `logs/{dev,sim}-{api,vite}.log`, `logs/sim-{sim,x}.log`.
 
@@ -33,21 +33,21 @@ Runtime state and logs live in `<repo>/.ew-x11/` (`EW_X11_RUNTIME_DIR`, git-igno
 ```bash
 scripts/dev.sh                                   # server + Vite, logs prefixed [api] / [vite]
 scripts/dev.sh --port 5273 --api-port 8787 --display :100
-scripts/dev.sh --no-auth                         # EW_AUTH=0, announced on every run
+scripts/dev.sh --no-auth                         # PINHOLE_AUTH=0, announced on every run
 ```
 
 `dev.sh` is a harness, not the way to run a long-lived server (use the systemd unit or plain
 `node src/server/main.ts`; see [getting-started.md](getting-started.md)). It differs from a
 normal run in these ways:
 
-- Authentication is on. Pair each browser profile once with the `ew-auth.mjs pair` command the
+- Authentication is on. Pair each browser profile once with the `pw-auth.mjs pair` command the
   script prints; the key persists in that profile.
-- The auth registry is its own: `EW_STATE_DIR=.ew-x11/state`. `~/.pinhole-window` is not touched.
-  Point `scripts/ew-auth.mjs` at the same directory (the printed command does).
+- The auth registry is its own: `PINHOLE_STATE_DIR=.pw-x11/state`. `~/.pinhole-window` is not touched.
+  Point `scripts/pw-auth.mjs` at the same directory (the printed command does).
 - `~/.pinhole-window/env` is not read. A `dev.env` in the repo root (git-ignored, mode `600`,
   same format as the env file in [configuration.md](configuration.md)) is read if present.
-  `EW_ENV_FILE=<path>` overrides both; `EW_ENV_FILE=` reads nothing. `EW_PORT`,
-  `EW_X11_DISPLAY`, `EW_AUTH` and `EW_STATE_DIR` come from the script and win over any file.
+  `PINHOLE_ENV_FILE=<path>` overrides both; `PINHOLE_ENV_FILE=` reads nothing. `PINHOLE_PORT`,
+  `PINHOLE_X11_DISPLAY`, `PINHOLE_AUTH` and `PINHOLE_STATE_DIR` come from the script and win over any file.
 - It refuses to start if the server or Vite port is already in use, polls readiness (a `401`
   from `/api/health` counts as ready), and on `Ctrl-C` stops both by recorded pid.
 
@@ -67,7 +67,7 @@ reattaches through `session.json` (`reattached to … on :100`). Windows and run
 stay.
 
 Because of that reattach, `--display` has no effect while a session file exists in the runtime
-directory. To start on another display, use another `EW_X11_RUNTIME_DIR`, or stop the old X
+directory. To start on another display, use another `PINHOLE_X11_RUNTIME_DIR`, or stop the old X
 server by pid and delete `session.json`.
 
 ### Client/server version skew
@@ -101,14 +101,14 @@ scripts/sim.sh --headless --screenshot /tmp/glasses.png   # one-shot: up, settle
 
 | Option | Meaning |
 | --- | --- |
-| `--screenshot <path>` | After `EW_SETTLE_MS` (default 6000), fetch the glasses frame and write it. Non-zero exit if the fetch failed or the bytes are not a PNG; warns if the frame is blank |
+| `--screenshot <path>` | After `PINHOLE_SETTLE_MS` (default 6000), fetch the glasses frame and write it. Non-zero exit if the fetch failed or the bytes are not a PNG; warns if the frame is blank |
 | `--headless` | Put the simulator in Xvfb instead of Xephyr. Chosen automatically when `$DISPLAY` is unset. The simulator has no headless mode of its own; screenshots come from the automation API, so results are identical |
 | `--keep` | Leave everything running until `Ctrl-C` |
-| `--auth` | Run the server with the real auth gate. Default is `EW_AUTH=0` with a printed notice |
-| `--app-query <qs>` | Extra query parameters for the app URL (also `EW_APP_QUERY`), e.g. `invert=1` or `debug=1`. Use it to pin settings: a query parameter beats what an earlier run left in `localStorage` |
-| `--port`, `--api-port`, `--automation-port <N>` | Vite, server and automation ports (`VITE_PORT` 5273, `EW_PORT` 8787, `EW_AUTOMATION_PORT` 9899) |
-| `--display <:N>` | The server's display, the one being mirrored (`EW_X11_DISPLAY`, default `:100`) |
-| `--sim-display <:N>` | The simulator's own display (`EW_SIM_DISPLAY`, default `:180`; the next free one is picked if busy) |
+| `--auth` | Run the server with the real auth gate. Default is `PINHOLE_AUTH=0` with a printed notice |
+| `--app-query <qs>` | Extra query parameters for the app URL (also `PINHOLE_APP_QUERY`), e.g. `invert=1` or `debug=1`. Use it to pin settings: a query parameter beats what an earlier run left in `localStorage` |
+| `--port`, `--api-port`, `--automation-port <N>` | Vite, server and automation ports (`VITE_PORT` 5273, `PINHOLE_PORT` 8787, `PINHOLE_AUTOMATION_PORT` 9899) |
+| `--display <:N>` | The server's display, the one being mirrored (`PINHOLE_X11_DISPLAY`, default `:100`) |
+| `--sim-display <:N>` | The simulator's own display (`PINHOLE_SIM_DISPLAY`, default `:180`; the next free one is picked if busy) |
 
 `--display` is what gets captured; `--sim-display` is where the simulator's windows are
 drawn. Reach the simulator's display over TCP: `DISPLAY=127.0.0.1:<N>`.
@@ -125,16 +125,16 @@ would make the new server reattach to the live desktop). Give a parallel run its
 everything:
 
 ```bash
-EW_X11_RUNTIME_DIR=/tmp/ew-iso scripts/sim.sh --headless --keep \
+PINHOLE_X11_RUNTIME_DIR=/tmp/pw-iso scripts/sim.sh --headless --keep \
   --display :191 --api-port 8791 --port 5291 --sim-display :186 --automation-port 9909
 ```
 
 The recipes below assume this isolated run: `E=http://127.0.0.1:8791` (server),
 `A=http://127.0.0.1:9909` (automation), mirrored display `127.0.0.1:191` or `:191`, simulator
 display `127.0.0.1:186`. With `--auth`, pair the WebView first:
-`EW_STATE_DIR=<runtime>/state node scripts/ew-auth.mjs open '<app-url>'`, start with
+`PINHOLE_STATE_DIR=<runtime>/state node scripts/pw-auth.mjs open '<app-url>'`, start with
 `--app-query "pair=<CODE>"`, click "Pair this device" in the WebView (see
-[driving the phone UI](#driving-the-phone-ui)), then `ew-auth.mjs pending` / `approve <id>`.
+[driving the phone UI](#driving-the-phone-ui)), then `pw-auth.mjs pending` / `approve <id>`.
 
 ### Automation API
 
@@ -222,13 +222,13 @@ The client has one log (`log()`), with a 400-line buffer and two outlets:
 
 - The `▶ log` panel at the bottom of the phone UI ([phone-ui.md](phone-ui.md)).
 - With `?debug=1`, each line is also sent to the server (`POST /api/debug/log`, batched every
-  700 ms) and printed on the server's stdout as `[ew] CLIENT HH:MM:SS.mmm …`, in the same
-  stream as `[ew] input gesture=…` and, from `POST /api/debug/event`, `[ew] RAW <envelope> ->
+  700 ms) and printed on the server's stdout as `[pw] CLIENT HH:MM:SS.mmm …`, in the same
+  stream as `[pw] input gesture=…` and, from `POST /api/debug/event`, `[pw] RAW <envelope> ->
   <gesture>`. When the app dies on the phone, this is the only copy; the last batch before a
   crash can be lost.
 
 In the simulator, `$A/api/console` gives the same client lines without `?debug=1`. Read it
-next to the server log (`.ew-x11/logs/sim-api.log`) to match client intent with server action.
+next to the server log (`.pw-x11/logs/sim-api.log`) to match client intent with server action.
 
 Lines worth knowing:
 
@@ -238,7 +238,7 @@ Lines worth knowing:
 | `sticky: invert=on — …` | A setting came from `localStorage`, not from this URL |
 | `gesture double SWALLOWED by de-burst` | A gesture arrived and was deliberately dropped (as opposed to never arriving) |
 | `UNCAUGHT …` | An uncaught error or rejection |
-| `[ew] input gesture=up count=1 action=key key=ctrl+u via=comm:vim` | Server side: what a gesture resolved to and which binding matched (`via` absent = built-in default) |
+| `[pw] input gesture=up count=1 action=key key=ctrl+u via=comm:vim` | Server side: what a gesture resolved to and which binding matched (`via` absent = built-in default) |
 
 SDK calls returning success (`create => 0`, `rebuild => true`, `overlay text => true`) mean
 "accepted", not "drawn" ([glasses.md](glasses.md)). Decide rendering questions from the glasses
@@ -368,7 +368,7 @@ Separate the simulator windows, then click `task`, `window` and `apps` at coordi
 `screenshot/webview`. Pass: each opens; `task` lists windows most-recent-first and a window
 spawned with `POST /api/spawn` appears while it is open; tapping a row logs `select … => ok`;
 a `window` action logs `window palette ratpoison … => ok`; a destructive row asks for a second
-tap; launching from `apps` logs `[ew] spawn id=… => ok` on the server. Background:
+tap; launching from `apps` logs `[pw] spawn id=… => ok` on the server. Background:
 [notes/2026-10-apps-and-palettes-sim-verification.md](notes/2026-10-apps-and-palettes-sim-verification.md).
 
 ### Voice without a microphone
@@ -379,7 +379,7 @@ reachable as `/name.pcm`. No audio file ships with the repo.
 
 ```bash
 ffmpeg -y -i speech.wav -ar 16000 -ac 1 -f s16le ja.pcm        # any speech recording
-EW_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions EW_X11_RUNTIME_DIR=/tmp/ew-iso \
+PINHOLE_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions PINHOLE_X11_RUNTIME_DIR=/tmp/pw-iso \
   scripts/sim.sh --headless --keep --display :191 --api-port 8791 --port 5291 \
                  --sim-display :186 --automation-port 9909 --app-query 'voicefeed=/ja.pcm'
 curl -s $A/api/console | grep -i voice
@@ -394,21 +394,21 @@ true`. `touch` a client source file to reload the WebView and replay the feed. B
 ### Authenticated curl
 
 ```bash
-export EW_STATE_DIR="$PWD/.ew-x11/state"         # the registry the server under test uses
-S=http://127.0.0.1:8787; O=$S                    # O must equal EW_ORIGIN when that is set
+export PINHOLE_STATE_DIR="$PWD/.pw-x11/state"         # the registry the server under test uses
+S=http://127.0.0.1:8787; O=$S                    # O must equal PINHOLE_ORIGIN when that is set
 J() { python3 -c "import sys,json;print(json.load(sys.stdin)['$1'])"; }
-TID=$(node scripts/ew-auth.mjs add-test)
+TID=$(node scripts/pw-auth.mjs add-test)
 N=$(curl -s $S/api/auth/challenge | J nonce)
-SIG=$(node scripts/ew-auth.mjs sign "$N" "$O")
+SIG=$(node scripts/pw-auth.mjs sign "$N" "$O")
 TOK=$(curl -s -X POST $S/api/auth/session -H "$H" \
   -d "{\"clientId\":\"$TID\",\"nonce\":\"$N\",\"sig\":\"$SIG\",\"origin\":\"$O\"}" | J token)
 curl -s -H "Authorization: Bearer $TOK" $S/api/health
 T=$(curl -s -H "Authorization: Bearer $TOK" $S/api/auth/ticket | J ticket)
 curl -sN -m 2 "$S/api/stream?ticket=$T" | head -3      # the stream takes a ticket, not the token
-node scripts/ew-auth.mjs revoke "${TID:0:12}"          # clean up
+node scripts/pw-auth.mjs revoke "${TID:0:12}"          # clean up
 ```
 
-A nonce works once. `add-test` counts against `EW_MAX_CLIENTS`. Every auth failure is the
+A nonce works once. `add-test` counts against `PINHOLE_MAX_CLIENTS`. Every auth failure is the
 same `401`, and `/api/health` is gated too, so a liveness probe must treat `401` as alive.
 Contract: [security.md](security.md). Background:
 [notes/2026-11-authenticated-curl-checks.md](notes/2026-11-authenticated-curl-checks.md).
@@ -422,7 +422,7 @@ npm test           # vitest run
 ```
 
 - Suites are `tests/<area>.<subject>.test.ts` with `<area>` one of `client`, `server`,
-  `shared`. Vitest is configured in `vite.config.ts`; `tests/setup.ts` sets `EW_ENV_FILE=''`
+  `shared`. Vitest is configured in `vite.config.ts`; `tests/setup.ts` sets `PINHOLE_ENV_FILE=''`
   so no suite depends on the developer's own env file. `tests/authFixture.ts` provides auth
   state; `tests/fixtures/` is excluded from Biome.
 - Prefer behaviour tests through exported functions. Where behaviour cannot run without the
@@ -455,7 +455,7 @@ packer is `@evenrealities/evenhub-cli`, a dev dependency; nothing else is needed
   needs a network connection and `evenhub login`.
 - A packaged app is served from the Even App's own origin, not from the server, so it starts
   without a server address. CORS allows it by default while authentication is enforced; with
-  `EW_AUTH=0` its origin must be in `EW_ORIGINS`. See
+  `PINHOLE_AUTH=0` its origin must be in `PINHOLE_ORIGINS`. See
   [getting-started.md](getting-started.md#load-the-app-in-the-even-app).
 
 ## Vite rules
@@ -469,8 +469,8 @@ packer is `@evenrealities/evenhub-cli`, a dev dependency; nothing else is needed
   App cannot be hard-reloaded, so it must never be handed something cacheable.
 - An HTTP response from Vite does not prove the simulator's WebView runs the new code; check
   the `boot:` timestamp in `/api/console`.
-- Hosts other than `.ts.net` need `EW_ALLOWED_HOSTS`; HMR behind a TLS proxy needs
-  `EW_HMR_HOST` / `EW_HMR_PORT` ([configuration.md](configuration.md)).
+- Hosts other than `.ts.net` need `PINHOLE_ALLOWED_HOSTS`; HMR behind a TLS proxy needs
+  `PINHOLE_HMR_HOST` / `PINHOLE_HMR_PORT` ([configuration.md](configuration.md)).
 
 ## Process hygiene
 

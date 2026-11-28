@@ -357,7 +357,7 @@ function renderRows(
     cmd.style.cssText =
       'margin:6px 0;font:12px ui-monospace,monospace;color:#cfe;user-select:text;' +
       '-webkit-user-select:text'
-    cmd.textContent = 'node scripts/ew-auth.mjs list\nnode scripts/ew-auth.mjs revoke <id>'
+    cmd.textContent = 'node scripts/pw-auth.mjs list\nnode scripts/pw-auth.mjs revoke <id>'
     cmd.style.whiteSpace = 'pre'
     const q = document.createElement('div')
     q.style.cssText = 'font-weight:600'
@@ -568,7 +568,7 @@ export function mountUi(): void {
   ui.appendChild(mirrorEl)
   // The server list takes the mirror's place while no server is open (`renderRootPanel`).
   rootPanelEl = document.createElement('div')
-  rootPanelEl.id = 'ew-servers'
+  rootPanelEl.id = 'pw-servers'
   rootPanelEl.style.cssText =
     `max-width:${String(SCREEN_W)}px;box-sizing:border-box;padding:12px;` +
     'border:1px solid #a78bfa;border-radius:8px;background:#161616'
@@ -994,7 +994,7 @@ export function mountUi(): void {
   // outside the fold.
   //
   // Nothing here changes server state: the only action is "mark as seen", which writes to this
-  // device's localStorage. Enrolling and revoking stay on the host (`ew-auth`), so a stolen
+  // device's localStorage. Enrolling and revoking stay on the host (`pw-auth`), so a stolen
   // session token can neither enrol a second key nor revoke the operator's.
   const keysHead = document.createElement('div')
   keysHead.style.cssText = 'display:flex;gap:8px;align-items:baseline;margin-top:10px'

@@ -6,14 +6,14 @@ place requests are dispatched from; the wire types live in `src/shared/types.ts`
 
 ## Conventions
 
-- Plain HTTP on `EW_PORT` (default `8787`), bound to `EW_HOST` (default `127.0.0.1`). The server
+- Plain HTTP on `PINHOLE_PORT` (default `8787`), bound to `PINHOLE_HOST` (default `127.0.0.1`). The server
   terminates no TLS; see [security.md](security.md).
 - Request and response bodies are JSON unless stated. Responses carry `cache-control: no-store`.
 - A JSON request body is capped at 64 KiB. An empty, oversized or malformed body is read as
   `{}`, so a route then answers as it would for missing fields.
 - Every route requires authentication except the four marked *open*. A gated request carries
   `Authorization: Bearer <session token>`; the stream carries `?ticket=` instead. With
-  `EW_AUTH=0` the gate admits everything. How tokens are obtained: [security.md](security.md).
+  `PINHOLE_AUTH=0` the gate admits everything. How tokens are obtained: [security.md](security.md).
 - Route and field names are the same on every backend. Key names are X keysym names and a few
   labels describe Linux sources ([platform.md](platform.md#names-that-stay)).
 
@@ -26,7 +26,7 @@ A request is processed in this order:
 5. Gated routes pass the gate or get `401 {"ok":false,"msg":"unauthorized"}`.
 6. The handler runs. An exception becomes `500 {"ok":false,"msg":"<message>"}`.
 
-One access-log line is written per request unless `EW_QUIET=1`.
+One access-log line is written per request unless `PINHOLE_QUIET=1`.
 
 A failure of the action itself (a window could not be selected, an injection failed) is `200`
 with `ok: false` and a `msg`. An HTTP error means the request was wrong or refused.
@@ -244,7 +244,7 @@ application/octet-stream`), exactly as the microphone delivered it. `?rate=` is 
 | 400 | `rate` out of range, or an odd number of bytes |
 | 413 | More than 60 seconds of audio (`STT_MAX_SECONDS`). The connection stays open so the client can read the answer |
 | 502 | The recogniser did not answer or returned an error |
-| 503 | No recogniser configured (`EW_STT_URL`) |
+| 503 | No recogniser configured (`PINHOLE_STT_URL`) |
 
 `error` is for a human to read; a client never injects it as text. Details:
 [voice.md](voice.md).
@@ -263,8 +263,8 @@ The client posts to these only when it runs with `?debug=1`.
 
 | Route | Body | Effect |
 | --- | --- | --- |
-| `POST /api/debug/event` | `{"event":<raw envelope>,"gesture":<normalised or null>}` | One `[ew] RAW …` line on the server's stdout. Response `{"ok":true}` |
-| `POST /api/debug/log` | `{"lines":[{"t":<epoch ms>,"m":"…"}]}` | One `[ew] CLIENT HH:MM:SS.mmm <m>` line each, stamped with the client's clock. At most 200 lines per request and 600 characters per line; newlines are flattened. Response `{"ok":true,"n":<lines taken>}` |
+| `POST /api/debug/event` | `{"event":<raw envelope>,"gesture":<normalised or null>}` | One `[pw] RAW …` line on the server's stdout. Response `{"ok":true}` |
+| `POST /api/debug/log` | `{"lines":[{"t":<epoch ms>,"m":"…"}]}` | One `[pw] CLIENT HH:MM:SS.mmm <m>` line each, stamped with the client's clock. At most 200 lines per request and 600 characters per line; newlines are flattened. Response `{"ok":true,"n":<lines taken>}` |
 
 ## Stream
 
@@ -354,10 +354,10 @@ Background: [decision record](decisions/wire-additions-are-optional.md),
 
 | Request | Result |
 | --- | --- |
-| `EW_ORIGINS` contains `*` | `access-control-allow-origin: *` |
-| `EW_ORIGINS` unset or empty, authentication enforced | `access-control-allow-origin: *` |
+| `PINHOLE_ORIGINS` contains `*` | `access-control-allow-origin: *` |
+| `PINHOLE_ORIGINS` unset or empty, authentication enforced | `access-control-allow-origin: *` |
 | No `Origin` header | No CORS headers; not a browser cross-origin request |
-| `Origin` listed in `EW_ORIGINS` (comma-separated) | Allowed |
+| `Origin` listed in `PINHOLE_ORIGINS` (comma-separated) | Allowed |
 | `Origin` host is loopback (`localhost`, `127.0.0.1`, `::1`) | Allowed |
 | `Origin` host equals the request's `Host`, any port or scheme | Allowed |
 | Anything else | No CORS headers, so the browser refuses the exchange |
@@ -370,7 +370,7 @@ The rows are tried in order. The first two return `*` whether or not the request
 `Origin`; a `*` answer carries no `vary`.
 
 The same-host rule covers a phone that loads the page from one port of a host and calls the API
-on another. With `EW_AUTH=0` and no `EW_ORIGINS`, the policy keeps a foreign web page away
+on another. With `PINHOLE_AUTH=0` and no `PINHOLE_ORIGINS`, the policy keeps a foreign web page away
 from an unauthenticated server: a JSON `POST` needs a preflight, and a refused preflight means
 the request is never sent. With authentication enforced the gate does that, so the default is
 open and the packaged app, whose origin is chosen by the Even App, needs no configuration.

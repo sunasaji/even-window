@@ -22,7 +22,7 @@ public key. The `art` in the pairing response is used by the device only as a cr
   attacker substitutes its own key and echoes that key's grid, so both screens match and the
   operator approves the attacker. A grid proves something only when the verifier draws it
   from its own material, as OpenSSH's `VisualHostKey` does.
-- **Reimplement randomart in `ew-auth.mjs`.** It prints the `art` stored in `pending.json`
+- **Reimplement randomart in `pw-auth.mjs`.** It prints the `art` stored in `pending.json`
   instead. The CLI and the server are the same host and user, not a trust boundary, and a
   further copy of the formula is a liability.
 - **Auto-submit when the pairing link is opened.** The dialog is pre-filled but needs a tap,
@@ -31,8 +31,8 @@ public key. The `art` in the pairing response is used by the device only as a cr
 ## Consequences
 
 - First contact always needs an out-of-band human check; unattended runs cannot pair, which
-  is why the simulator harness defaults to `EW_AUTH=0` in a confined set-up.
+  is why the simulator harness defaults to `PINHOLE_AUTH=0` in a confined set-up.
 - The single-use window handles the attacker who has the code but is not in the path; the
   grid handles the one who is. Neither replaces the other.
 - A grid mismatch on the device stops the flow with "do not approve".
-- No route enrols or revokes. `scripts/ew-auth.mjs` on the host is the only enrolment UI.
+- No route enrols or revokes. `scripts/pw-auth.mjs` on the host is the only enrolment UI.

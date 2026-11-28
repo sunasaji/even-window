@@ -1,7 +1,7 @@
-// envFile.ts — `EW_*` settings from a file, in systemd's `EnvironmentFile=` format.
+// envFile.ts — `PINHOLE_*` settings from a file, in systemd's `EnvironmentFile=` format.
 //
-// A file in a known place makes the security settings (`EW_ORIGIN`, `EW_AUTH`,
-// `EW_MAX_CLIENTS`) independent of which shell started the server
+// A file in a known place makes the security settings (`PINHOLE_ORIGIN`, `PINHOLE_AUTH`,
+// `PINHOLE_MAX_CLIENTS`) independent of which shell started the server
 // (docs/decisions/env-file-format.md).
 //
 // The format is a strict subset of systemd's `EnvironmentFile=`, so one file works in both:
@@ -9,7 +9,7 @@
 // rejects is accepted: no `export`, no `$VAR` expansion (so `~` is literal), no line
 // continuations, no spaces around `=`.
 //
-// Invariants: the file is parsed, never sourced, so it cannot execute anything; only `EW_*`
+// Invariants: the file is parsed, never sourced, so it cannot execute anything; only `PINHOLE_*`
 // keys are accepted (a file that could set `PATH` or `LD_PRELOAD` would be code execution for
 // every child process); and the environment always wins — the file fills only what is unset,
 // and `applyEnvFile` reports which keys it set.
@@ -19,7 +19,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 export interface EnvFileParse {
-  /** Accepted `EW_*` assignments, in file order (a later line wins, as in systemd). */
+  /** Accepted `PINHOLE_*` assignments, in file order (a later line wins, as in systemd). */
   vars: Record<string, string>
   /** One line per rejected line, each naming the line number and what is wrong. */
   warnings: string[]
@@ -52,11 +52,11 @@ export function parseEnvFile(text: string): EnvFileParse {
       continue
     }
     const key = line.slice(0, eq)
-    if (!/^EW_[A-Z0-9_]+$/.test(key)) {
+    if (!/^PINHOLE_[A-Z0-9_]+$/.test(key)) {
       warnings.push(
         key.trim() !== key
           ? `${at}: no spaces around \`=\` (the key would be "${key}")`
-          : `${at}: "${key}" is not an EW_* setting — this file may only set EW_* keys`,
+          : `${at}: "${key}" is not a PINHOLE_* setting — this file may only set PINHOLE_* keys`,
       )
       continue
     }
@@ -80,12 +80,12 @@ export function parseEnvFile(text: string): EnvFileParse {
   return { vars, warnings }
 }
 
-/** Where to look, highest precedence first. `EW_ENV_FILE` overrides: a path means exactly that
+/** Where to look, highest precedence first. `PINHOLE_ENV_FILE` overrides: a path means exactly that
  *  file (and a complaint if it is missing); empty means no file and no search. The defaults
  *  are `~/.pinhole-window/env`, then `$XDG_CONFIG_HOME/pinhole-window/env`; both are read. The lookup does not follow
- *  `EW_STATE_DIR`: the file may set it. */
+ *  `PINHOLE_STATE_DIR`: the file may set it. */
 export function envFileCandidates(env: NodeJS.ProcessEnv = process.env): string[] {
-  const explicit = env.EW_ENV_FILE
+  const explicit = env.PINHOLE_ENV_FILE
   if (explicit !== undefined) return explicit === '' ? [] : [explicit]
   // HOME comes from the passed env so this stays a function of its argument (testable);
   // `homedir()` is the fallback for a context with no HOME.
@@ -121,17 +121,17 @@ export function applyEnvFile(env: NodeJS.ProcessEnv = process.env): EnvFileRepor
       st = statSync(file)
     } catch {
       // An explicit path that is missing is a typo worth a line; a missing default is normal.
-      if (env.EW_ENV_FILE)
-        report.lines.push(`env file ${file}: not found (EW_ENV_FILE points at it)`)
+      if (env.PINHOLE_ENV_FILE)
+        report.lines.push(`env file ${file}: not found (PINHOLE_ENV_FILE points at it)`)
       continue
     }
-    // Group- or world-writable: do not load it — another local account could set EW_AUTH=0.
+    // Group- or world-writable: do not load it — another local account could set PINHOLE_AUTH=0.
     // Refusing the file (not the start) fails safe: every control keeps its secure default.
     if ((st.mode & 0o022) !== 0) {
       report.lines.push(
         `env file ${file} is mode 0${(st.mode & 0o777).toString(8)} — WRITABLE by others, so it was IGNORED.`,
       )
-      report.lines.push(`  Someone else could set EW_AUTH=0 in it. Fix: chmod 600 ${file}`)
+      report.lines.push(`  Someone else could set PINHOLE_AUTH=0 in it. Fix: chmod 600 ${file}`)
       continue
     }
     let text: string

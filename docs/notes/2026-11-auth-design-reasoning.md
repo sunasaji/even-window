@@ -6,9 +6,9 @@ Snapshot — not maintained. Conditions: reasoning recorded up to 2026-11; the c
 ## Design points
 
 The authentication code is `src/server/auth.ts`, the client auth module and
-`scripts/ew-auth.mjs`. Choices worth recording:
+`scripts/pw-auth.mjs`. Choices worth recording:
 
-- The state directory is `~/.pinhole-window`, overridable with `EW_STATE_DIR` and resolved per
+- The state directory is `~/.pinhole-window`, overridable with `PINHOLE_STATE_DIR` and resolved per
   call, so the caches are keyed by the resolved path.
 - The gate checks the registry on every request, so a revoked key stops working at once.
   A stateless token would survive for its full lifetime after revocation.
@@ -58,7 +58,7 @@ same principle in the other direction.
 | Signature over a bare nonce | Relayable through `?server=` | Origin-bound material, no fallback |
 | Long-lived session token, also used in the stream URL | Long-lived credential in logs | 1-hour session, 60-second ticket, kind inside the MAC |
 | Device displays the server's randomart | Vacuous against an in-path attacker | Device draws its own |
-| Reminder to revoke after re-pairing | Not a control | `EW_MAX_CLIENTS` default 1 |
+| Reminder to revoke after re-pairing | Not a control | `PINHOLE_MAX_CLIENTS` default 1 |
 | Warn at start when the registry is over the cap | The exposure is wider than the warning suggests | Refuses to start |
 | An override for the cap | Guarded only by a log line | None; a test asserts no such switch exists |
 | Secret cached by directory only | Deleting the file has no effect until restart | Stat-gated cache |

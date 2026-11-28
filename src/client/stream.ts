@@ -53,7 +53,7 @@ export function stopStream(): void {
  *
  *  Async because EventSource cannot set an Authorization header: a short-lived ticket rides in
  *  the URL as `?ticket=` (docs/security.md) and fetching it is a promise. Unpaired means no
- *  ticket, which an EW_AUTH=0 server accepts.
+ *  ticket, which a PINHOLE_AUTH=0 server accepts.
  *
  *  EventSource reports a 401 as a bare `error` and retries forever, so a `fetch` probe of a
  *  gated route goes through `authFetch`, whose state machine opens the pairing dialog. */
@@ -117,7 +117,7 @@ async function startStreamAsync(): Promise<void> {
       sttReady = h.stt === true
       if (voiceBtn) voiceBtn.style.display = sttReady ? '' : 'none'
       log(
-        `voice: ${sttReady ? 'available — long-press opens it' : 'OFF (the server has no EW_STT_URL)'}`,
+        `voice: ${sttReady ? 'available — long-press opens it' : 'OFF (the server has no PINHOLE_STT_URL)'}`,
       )
       maybeOpenTourOnFirstRun(sttReady)
     },
@@ -157,7 +157,7 @@ async function startStreamAsync(): Promise<void> {
       return
     }
     // Caught, not left floating: one fault on the per-tile path would otherwise be an unhandled
-    // rejection per arriving tile (40 a second at EW_FPS=10).
+    // rejection per arriving tile (40 a second at PINHOLE_FPS=10).
     if (ev.t === 'tile') {
       void processTile(ev.i, b64ToBytes(ev.png)).catch(tileFault)
       return

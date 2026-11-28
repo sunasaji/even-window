@@ -9,7 +9,7 @@
 
 import { normaliseOrigin, sessionMaterial } from '../shared/sessionBinding.ts'
 
-const DB_NAME = 'ew-auth',
+const DB_NAME = 'pw-auth',
   STORE = 'keys',
   KEY_ID = 'client'
 
@@ -71,7 +71,7 @@ export interface DurableStore {
   get(key: string): Promise<string | null>
   set(key: string, val: string): Promise<void>
 }
-const JWK_KEY = 'ew-auth.jwk'
+const JWK_KEY = 'pw-auth.jwk'
 let durable: DurableStore | null = null
 /** Wire the durable identity store (the Even bridge). Its presence means "packaged app:
  *  mirror an extractable JWK here". */
@@ -96,21 +96,9 @@ async function importPair(priv: JsonWebKey, pub: JsonWebKey): Promise<CryptoKeyP
 // presented to another, pairing with a second server does not replace the first one's key, and
 // forgetting a server discards its key (docs/decisions/one-key-per-server.md).
 
-/** Pure: the suffix that names a server's key in both stores. Empty for no origin, which is
- *  also the name of the single key earlier versions kept. */
+/** Pure: the suffix that names a server's key in both stores. */
 export function keySlot(origin: string): string {
   return origin ? `@${origin}` : ''
-}
-
-/** Which origin took over the single key of earlier versions. Kept in both stores, because
- *  the packaged app loses localStorage on restart. */
-const LEGACY_OWNER = 'ew-auth.owner'
-
-/** May the current base adopt that single key? Only an address somebody chose: the built-in
- *  default is a guess, and a guess must not claim the key (serverLink.ts sets this). */
-let legacyAdoptable = false
-export function setLegacyAdoptable(v: boolean): void {
-  legacyAdoptable = v
 }
 
 const kpCache = new Map<string, CryptoKeyPair | null>() // absent = not loaded yet
@@ -140,54 +128,11 @@ async function readSlot(slot: string): Promise<CryptoKeyPair | null> {
   return kp
 }
 
-async function legacyOwner(): Promise<string> {
-  try {
-    const v = localStorage.getItem(LEGACY_OWNER)
-    if (v) return v
-  } catch {
-    /* storage blocked */
-  }
-  try {
-    return (await durable?.get(LEGACY_OWNER)) ?? ''
-  } catch {
-    return ''
-  }
-}
-
-/** The single key of earlier versions becomes the key of the first chosen server that asks
- *  for one, which is the server it was enrolled at: the stored address is opened first. */
-async function adoptLegacy(origin: string): Promise<CryptoKeyPair | null> {
-  if (!legacyAdoptable) return null
-  const owner = await legacyOwner()
-  if (owner && owner !== origin) return null
-  const kp = await readSlot('')
-  if (!kp) return null
-  try {
-    await idbPut(KEY_ID + keySlot(origin), kp)
-  } catch {
-    /* ignore */
-  }
-  try {
-    const raw = await durable?.get(JWK_KEY)
-    if (raw) await durable?.set(JWK_KEY + keySlot(origin), raw)
-  } catch {
-    /* ignore */
-  }
-  try {
-    localStorage.setItem(LEGACY_OWNER, origin)
-  } catch {
-    /* storage blocked */
-  }
-  void durable?.set(LEGACY_OWNER, origin)
-  return kp
-}
-
 async function loadKeypair(): Promise<CryptoKeyPair | null> {
   const origin = authOrigin()
   const hit = kpCache.get(origin)
   if (hit !== undefined) return hit
-  let kp = await readSlot(keySlot(origin))
-  if (!kp && origin) kp = await adoptLegacy(origin)
+  const kp = await readSlot(keySlot(origin))
   kpCache.set(origin, kp)
   return kp
 }
@@ -306,7 +251,7 @@ export async function publicJwk(): Promise<JsonWebKey | null> {
   return await crypto.subtle.exportKey('jwk', kp.publicKey)
 }
 /** Stable client id: SHA-256 of the public-key coordinates. Must match src/server/auth.ts
- *  and scripts/ew-auth.mjs: OKP (Ed25519) uses only `x`; EC (P-256) uses `x` and `y`. */
+ *  and scripts/pw-auth.mjs: OKP (Ed25519) uses only `x`; EC (P-256) uses `x` and `y`. */
 export async function clientId(): Promise<string | null> {
   const jwk = await publicJwk()
   if (!jwk) return null

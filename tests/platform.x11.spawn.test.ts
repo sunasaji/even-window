@@ -63,13 +63,13 @@ describe('the default parsed as a .desktop Exec line', () => {
   })
 })
 
-// Where the client starts (EW_SPAWN_CWD). A spawned client is usually a terminal whose prompt
+// Where the client starts (PINHOLE_SPAWN_CWD). A spawned client is usually a terminal whose prompt
 // the operator reads on the glasses, so its cwd is part of the UI and must not be the state
 // directory. These tests pin the resolution rules, including the two that exist because a
 // systemd EnvironmentFile never runs a shell and because a typo must degrade, not kill the spawn.
 
-describe('EW_SPAWN_CWD resolution', () => {
-  const home = mkdtempSync(join(tmpdir(), 'ew-home-'))
+describe('PINHOLE_SPAWN_CWD resolution', () => {
+  const home = mkdtempSync(join(tmpdir(), 'pw-home-'))
   const sub = join(home, 'work')
   mkdirSync(sub, { recursive: true })
   const file = join(home, 'notadir')
@@ -89,7 +89,7 @@ describe('EW_SPAWN_CWD resolution', () => {
     expect(resolveSpawnCwd(`  ${sub}  `, home, never)).toBe(sub)
   })
 
-  // systemd's EnvironmentFile does not run a shell: `EW_SPAWN_CWD=~/work` arrives as the
+  // systemd's EnvironmentFile does not run a shell: `PINHOLE_SPAWN_CWD=~/work` arrives as the
   // literal string '~/work'. Without this expansion it would mean a directory named '~'.
   it("expands a leading '~' itself, because no shell will", () => {
     expect(resolveSpawnCwd('~', home, never)).toBe(home)
@@ -118,7 +118,7 @@ describe('EW_SPAWN_CWD resolution', () => {
   })
 
   it('never silently points a client at our own state directory', () => {
-    expect(resolveSpawnCwd(undefined, home, never)).not.toContain('.ew-x11')
-    expect(SPAWN_CWD).not.toContain('.ew-x11')
+    expect(resolveSpawnCwd(undefined, home, never)).not.toContain('.pw-x11')
+    expect(SPAWN_CWD).not.toContain('.pw-x11')
   })
 })

@@ -956,7 +956,7 @@ describe('formatPumpStats', () => {
     expect(line).toContain('wasted 0/4 0%') // and nothing is claimed to be wasted
   })
 
-  it('reports decode at the arrival rate — the one thing EW_FPS still controls', () => {
+  it('reports decode at the arrival rate — the one thing PINHOLE_FPS still controls', () => {
     // At 10fps a moving screen emits ~39 tiles/s against a pump that sends ~2.5, so this line
     // says whether lowering the capture rate would buy anything.
     const line = formatPumpStats(healthy(), 10_000)

@@ -54,7 +54,7 @@ export interface ServerSetupOpts {
 
 /** The card. Nothing changes until `onServer` fires; "Later" leaves the guess in place. */
 export function openServerSetup(o: ServerSetupOpts): void {
-  document.getElementById('ew-server-setup')?.remove()
+  document.getElementById('pw-server-setup')?.remove()
 
   // Below the pairing card (99999) and the server-change confirm (100000): both are answers to
   // something the user did, and this one is unprompted.
@@ -62,7 +62,7 @@ export function openServerSetup(o: ServerSetupOpts): void {
     'div',
     'position:fixed;inset:0;z-index:99998;background:#151515e8;color:#e5e5e5;display:flex;align-items:flex-start;justify-content:center;font:14px/1.4 system-ui,sans-serif;padding:16px;box-sizing:border-box;overflow:auto',
   )
-  back.id = 'ew-server-setup'
+  back.id = 'pw-server-setup'
   const card = el(
     'div',
     'max-width:520px;width:100%;background:#232323;border:1px solid #555;border-radius:10px;padding:18px',

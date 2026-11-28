@@ -1,8 +1,8 @@
 // pinhole-window — the start-up banner's transport warning (src/server/main.ts).
 //
-// Pinned: `EW_AUTH` on (the default) plus a published `EW_HOST` must warn, because auth is
+// Pinned: `PINHOLE_AUTH` on (the default) plus a published `PINHOLE_HOST` must warn, because auth is
 // not a channel — on a plain HTTP bind the bearer token is replayable off the wire and nothing
-// proves this host to the device. Loopback stays silent, and the EW_AUTH=0 case stays silent
+// proves this host to the device. Loopback stays silent, and the PINHOLE_AUTH=0 case stays silent
 // here because its own banner covers it.
 
 import { describe, expect, it } from 'vitest'

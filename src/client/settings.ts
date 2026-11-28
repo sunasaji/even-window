@@ -23,9 +23,9 @@ import { refreshGrey, repaintMirror } from './tiles.ts'
 // stage: one subtraction per pixel, no server re-encode, and neither the capture nor the server's
 // tile diff is disturbed. Resolution: `?invert=1` → localStorage → off; the winner is persisted.
 
-const INVERT_KEY = 'ew.invert'
+const INVERT_KEY = 'pw.invert'
 
-const MIRROR_KEY = 'ew.mirror'
+const MIRROR_KEY = 'pw.mirror'
 /** What the user picked: persisted, and the only thing `?mirror=` and the button write. */
 export let mirrorChoice: MirrorMode = 'color'
 /** What the preview is drawn in. Every draw site reads this one; `applyMirrorMode` is the only
@@ -53,7 +53,7 @@ export function initMirrorMode(): void {
   applyMirrorMode()
 }
 /** Storage key for the two-finger wheel direction, a persisted setting (docs/phone-ui.md). */
-const SCROLLNAT_KEY = 'ew.scrollnat'
+const SCROLLNAT_KEY = 'pw.scrollnat'
 
 /** Resolve a boolean setting `?name=` → `localStorage[key]` → `fallback`, persist the winner and
  *  record which source decided. Not for instruments (`stats`, `debug`): those use `queryFlag`. */

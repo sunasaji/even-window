@@ -41,13 +41,13 @@ npm run server          # node src/server/main.ts と同じ
 
 サーバは次のように動きます。
 
-- `127.0.0.1:8787` で待ち受ける（`EW_HOST`、`EW_PORT`）
-- ディスプレイ `:100`（`EW_X11_DISPLAY`）でミラーデスクトップを起動し、暗い背景のターミナルを
-  1 つ入れる（`EW_SPAWN`）
+- `127.0.0.1:8787` で待ち受ける（`PINHOLE_HOST`、`PINHOLE_PORT`）
+- ディスプレイ `:100`（`PINHOLE_X11_DISPLAY`）でミラーデスクトップを起動し、暗い背景のターミナルを
+  1 つ入れる（`PINHOLE_SPAWN`）
 - 状態を `~/.pinhole-window` に置き、設定を `~/.pinhole-window/env` から読む
 
 起動時のバナーは、認証が強制されているか、登録済みの端末数、env ファイルから取った設定、
-セッション束縛（`EW_ORIGIN`）が強制されているかを表示します。設定を変えたら一度は
+セッション束縛（`PINHOLE_ORIGIN`）が強制されているかを表示します。設定を変えたら一度は
 読んでください。
 
 クライアントのページは別に配信します。開発中は Vite がポート 5273 で配信します。
@@ -57,7 +57,7 @@ npm run dev
 ```
 
 `scripts/dev.sh` は両方を起動しますが、これは開発用のハーネスで、専用の端末レジストリ
-（`.ew-x11/state`）を使い、`~/.pinhole-window/env` を読みません。開発にだけ使ってください。
+（`.pw-x11/state`）を使い、`~/.pinhole-window/env` を読みません。開発にだけ使ってください。
 [development.md](development.md) を参照してください。
 
 ## 端末をペアリングする
@@ -68,7 +68,7 @@ npm run dev
 1. サーバを動かした状態で、端末がアプリを読み込む URL を渡してペアリング窓を開きます。
 
    ```bash
-   node scripts/ew-auth.mjs pair 'https://host.ts.net:8443'
+   node scripts/pw-auth.mjs pair 'https://host.ts.net:8443'
    ```
 
    ペアリング URL（アプリの URL に `?pair=<code>` を付けたもの）が表示され、ターミナルに出力している場合は QR
@@ -84,26 +84,26 @@ npm run dev
 
 未ペアリングのあいだは、グラスにも同じ手順が表示されます。
 
-<img src="img/glasses-pairing.png" width="288" alt="レンズに出るペアリング手順：サーバを起動、ew-auth.mjs pair を実行、QR コードを読み取り、ペアリング URL をコピーして貼り付け">
+<img src="img/glasses-pairing.png" width="288" alt="レンズに出るペアリング手順：サーバを起動、pw-auth.mjs pair を実行、QR コードを読み取り、ペアリング URL をコピーして貼り付け">
 
 そのほかのコマンド:
 
 | コマンド | 用途 |
 | --- | --- |
-| `ew-auth.mjs list` | 登録済みの端末 |
-| `ew-auth.mjs pending` | 承認待ちの端末とそのパターン |
-| `ew-auth.mjs approve <id>` / `reject <id>` | 承認待ちの端末を承認／拒否する（ID の先頭 4 文字で足ります） |
-| `ew-auth.mjs rename <id> <名前>` | 端末に名前を付ける。登録時に付いた `client-…` の代わりに、`list` とスマホの登録済み鍵の表に表示されます |
-| `ew-auth.mjs revoke <id>` | 端末を外す。その端末の次のリクエストから効きます |
-| `ew-auth.mjs rotate` | 生きているセッションをすべて無効にする。登録は残ります |
+| `pw-auth.mjs list` | 登録済みの端末 |
+| `pw-auth.mjs pending` | 承認待ちの端末とそのパターン |
+| `pw-auth.mjs approve <id>` / `reject <id>` | 承認待ちの端末を承認／拒否する（ID の先頭 4 文字で足ります） |
+| `pw-auth.mjs rename <id> <名前>` | 端末に名前を付ける。登録時に付いた `client-…` の代わりに、`list` とスマホの登録済み鍵の表に表示されます |
+| `pw-auth.mjs revoke <id>` | 端末を外す。その端末の次のリクエストから効きます |
+| `pw-auth.mjs rotate` | 生きているセッションをすべて無効にする。登録は残ります |
 
-既定では同時に登録できる端末は 1 台です（`EW_MAX_CLIENTS=1`）。端末をペアリングし直すと、
+既定では同時に登録できる端末は 1 台です（`PINHOLE_MAX_CLIENTS=1`）。端末をペアリングし直すと、
 古い鍵が置き換わるのではなく新しい鍵が追加されるので、先に古い鍵を失効させます。
 
 ```bash
-node scripts/ew-auth.mjs list
-node scripts/ew-auth.mjs revoke <id>
-node scripts/ew-auth.mjs pair 'https://host.ts.net:8443'
+node scripts/pw-auth.mjs list
+node scripts/pw-auth.mjs revoke <id>
+node scripts/pw-auth.mjs pair 'https://host.ts.net:8443'
 ```
 
 背景とセキュリティモデル: [security.md](security.md)。
@@ -132,25 +132,25 @@ https://host.ts.net:8443 (tailnet only)
 
 8443 の代わりに、空いている任意のポートを使えます。続いて:
 
-1. `EW_ORIGIN` を端末がダイヤルする URL に設定し、サーバを再起動します。以後サーバは、
+1. `PINHOLE_ORIGIN` を端末がダイヤルする URL に設定し、サーバを再起動します。以後サーバは、
    ほかのオリジン宛てに作られたセッション署名を拒否します。
 
    ```bash
    install -d -m 700 ~/.pinhole-window
    install -m 600 /dev/null ~/.pinhole-window/env
-   echo 'EW_ORIGIN=https://host.ts.net:8443' >> ~/.pinhole-window/env
+   echo 'PINHOLE_ORIGIN=https://host.ts.net:8443' >> ~/.pinhole-window/env
    ```
 
 2. Vite の開発サーバを使う場合は、ホットリロードのクライアントに戻り先を教えます。
 
    ```bash
-   EW_HMR_HOST=host.ts.net EW_HMR_PORT=8443 npm run dev
+   PINHOLE_HMR_HOST=host.ts.net PINHOLE_HMR_PORT=8443 npm run dev
    ```
 
    Vite は `*.ts.net` のホスト名を最初から受け付けます。ほかの名前（LAN のアドレスなど）は
-   `EW_ALLOWED_HOSTS=name1,name2` で追加します。追加しないと Vite は
+   `PINHOLE_ALLOWED_HOSTS=name1,name2` で追加します。追加しないと Vite は
    `Blocked request. This host is not allowed.` と応答します。
-3. `node scripts/ew-auth.mjs pair 'https://host.ts.net:8443'` でスマホをペアリングします。
+3. `node scripts/pw-auth.mjs pair 'https://host.ts.net:8443'` でスマホをペアリングします。
    `?server=` パラメータは不要です。ループバック以外のオリジンから配信されたページは、
    自分のオリジンを API のベースとして使います。
 
@@ -189,7 +189,7 @@ tailnet 内の別の端末から結果を確認します。
   サーバのアドレスも一緒に設定されます。すでに鍵を持っている端末には、サーバの URL
   だけを尋ねます。アドレスはあとから **connection** で変更できます。
   認証が有効なあいだサーバはすべてのオリジンを許可するので、CORS の設定は不要です。
-  `EW_AUTH=0` の場合は、アプリのオリジンを `EW_ORIGINS` に指定する必要があります。
+  `PINHOLE_AUTH=0` の場合は、アプリのオリジンを `PINHOLE_ORIGINS` に指定する必要があります。
 
 - **ストアから。** pinhole-window の公開後は、Even App で pinhole-window を探してインストールし、
   アプリ一覧から開きます。ほかのアプリと同じ手順です。これはパッケージ版なので、
@@ -207,7 +207,7 @@ tailnet 内の別の端末から結果を確認します。
 mkdir -p ~/.config/systemd/user ~/.pinhole-window && chmod 700 ~/.pinhole-window
 cp systemd/pinhole-window@.service ~/.config/systemd/user/
 install -m 600 systemd/env.example ~/.pinhole-window/env
-${EDITOR:-vi} ~/.pinhole-window/env          # 少なくとも EW_ORIGIN を設定する
+${EDITOR:-vi} ~/.pinhole-window/env          # 少なくとも PINHOLE_ORIGIN を設定する
 
 unit="pinhole-window@$(systemd-escape --path "$PWD").service"
 systemctl --user daemon-reload
@@ -225,7 +225,7 @@ systemctl --user status "$unit"
 - 再起動するとミラーデスクトップに再アタッチします。開いているウィンドウは残ります。
 - ユーザユニットはログイン時の環境を引き継ぎません。それでもサーバはホストの
   ディスプレイを自分で見つけます。デスクトップがまだ無い時点から動かすには、env ファイルで
-  `EW_HOST_DISPLAY=`（空）を設定し、ヘッドレスのバックエンドを優先させます。
+  `PINHOLE_HOST_DISPLAY=`（空）を設定し、ヘッドレスのバックエンドを優先させます。
 - このユニットが提供するのは API だけです。クライアントのページは別に配信してください。
 
 ## 停止と片付け
@@ -236,14 +236,14 @@ systemctl --user status "$unit"
 ```bash
 pgrep -af 'Xephyr :100|Xvfb :100'     # pid を調べる
 kill <pid>                             # pid を指定する。pkill -f は使わない
-rm -f .ew-x11/session.json             # セッションの記録を消す
+rm -f .pw-x11/session.json             # セッションの記録を消す
 ```
 
 Xephyr と Xvfb のバックエンドを切り替えたいときも同じ手順が必要です。生きている
 セッションがあると、バックエンドを選ぶ前にそれへ再アタッチするためです。
 
 そのほかを消すには、`tailscale serve --https=8443 off` を実行し、`~/.pinhole-window`
-（登録済みの端末、割り当て、設定）とチェックアウト内の `.ew-x11/`（ランタイムファイルと
+（登録済みの端末、割り当て、設定）とチェックアウト内の `.pw-x11/`（ランタイムファイルと
 ログ）を削除します。
 
 ## 任意: 音声認識
@@ -272,12 +272,12 @@ Xephyr と Xvfb のバックエンドを切り替えたいときも同じ手順�
 3. `~/.pinhole-window/env` で pinhole-window にその場所を教え、サーバを再起動します。
 
    ```
-   EW_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions
-   EW_STT_LANG=en
+   PINHOLE_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions
+   PINHOLE_STT_LANG=en
    ```
 
 ユニットは `qwen3-asr-0.6b` を動かし、pinhole-window は既定でそのモデルの HTTP 上の ID
-`Qwen3-ASR-0.6B` を送るので、`EW_STT_MODEL` は未設定のままで構いません。この 2 つは同じ
+`Qwen3-ASR-0.6B` を送るので、`PINHOLE_STT_MODEL` は未設定のままで構いません。この 2 つは同じ
 モデルを指す別の文字列です。片方を変えるならもう片方も変えてください
 （[voice.md](voice.md#speechcpp)）。食い違うと、ルートが無いように見える `404` が返ります。
 

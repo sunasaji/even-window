@@ -68,7 +68,7 @@ process groups, and outlive the server. Only the capture process dies with it. B
 
 1. **Reuse** the session this process already has, if its X server still answers.
 2. **Reattach** through the state file `session.json` in the runtime directory
-   (`EW_X11_RUNTIME_DIR`, default `<repo>/.ew-x11`). It records the display, how to connect to
+   (`PINHOLE_X11_RUNTIME_DIR`, default `<repo>/.pw-x11`). It records the display, how to connect to
    it, the backend and the X and window-manager pids. If the X server is alive, the backend
    restarts the window manager only if it is gone, reapplies the window-manager settings,
    and restarts capture. A stale state file is deleted.
@@ -82,15 +82,15 @@ server and delete `session.json`.
 **Backend order.** Xephyr draws the nested desktop as a window on the host desktop, which lets
 the operator watch it on the PC. Xvfb is headless. With a host display available the order is
 Xephyr then Xvfb; without one, Xvfb then Xephyr. The second is tried on the same display
-before another display number is tried. `EW_BACKEND=xephyr|xvfb` pins one, with no fallback.
+before another display number is tried. `PINHOLE_BACKEND=xephyr|xvfb` pins one, with no fallback.
 
 **Host display discovery** (`resolveHostDisplay`). A service manager does not pass a login
 shell's `DISPLAY`, so the environment alone cannot say whether a desktop exists. The order is:
-`EW_HOST_DISPLAY` (empty means "no host desktop"), then `DISPLAY`, then the lowest-numbered
+`PINHOLE_HOST_DISPLAY` (empty means "no host desktop"), then `DISPLAY`, then the lowest-numbered
 socket in `/tmp/.X11-unix` that is not the nested display itself. The X server is started with
 `DISPLAY` set to the result; every other child gets the nested display.
 
-**Display probing.** The nested display is `EW_X11_DISPLAY` (default `:100`).
+**Display probing.** The nested display is `PINHOLE_X11_DISPLAY` (default `:100`).
 
 - A display counts as live only if it accepts a connection, on its unix socket or on TCP port
   6000 + n. A lock file alone does not, and an orphaned lock and socket on the configured
@@ -140,13 +140,13 @@ display.
 
 | Rule | Reason |
 | --- | --- |
-| `FONTCONFIG_FILE` points at a generated file with antialiasing off, full hinting, no subpixel rendering | Antialiased edges quantise to the wrong one of 16 colours and give text coloured fringes. `EW_AA=1` permits antialiasing for comparison |
+| `FONTCONFIG_FILE` points at a generated file with antialiasing off, full hinting, no subpixel rendering | Antialiased edges quantise to the wrong one of 16 colours and give text coloured fringes. `PINHOLE_AA=1` permits antialiasing for comparison |
 | `WAYLAND_DISPLAY` removed, `GDK_BACKEND=x11`, `MOZ_ENABLE_WAYLAND=0` | A toolkit that finds a Wayland socket renders on the host desktop, and the mirror stays empty |
 | `DISPLAY` is the resolved transport of the nested display | See display probing |
-| Applications and ratpoison start in `EW_SPAWN_CWD` (default the home directory; `~` is expanded; a bad value falls back with a warning) | A launched terminal's prompt is read on the glasses, so its directory is part of the interface. ratpoison passes its own directory to what it launches |
+| Applications and ratpoison start in `PINHOLE_SPAWN_CWD` (default the home directory; `~` is expanded; a bad value falls back with a warning) | A launched terminal's prompt is read on the glasses, so its directory is part of the interface. ratpoison passes its own directory to what it launches |
 | The X server and capture start in the runtime directory | They write nothing relative |
 
-The default application (`EW_SPAWN`; empty disables it) is an xterm with a black background,
+The default application (`PINHOLE_SPAWN`; empty disables it) is an xterm with a black background,
 white foreground and cursor, a 9x18 bold bitmap font, no border and no scrollbar: 64 columns
 by 16 rows. Dark background is a correctness matter on a see-through panel, where bright
 pixels emit light. Background: [decision record](decisions/default-terminal-client.md).
@@ -154,11 +154,11 @@ pixels emit light. Background: [decision record](decisions/default-terminal-clie
 ### Capture
 
 ```
-ffmpeg -f x11grab -draw_mouse 0 -video_size 576x288 -framerate <EW_FPS> -i <display>.0 \
+ffmpeg -f x11grab -draw_mouse 0 -video_size 576x288 -framerate <PINHOLE_FPS> -i <display>.0 \
        -pix_fmt rgb24 -f rawvideo -
 ```
 
-- `EW_FPS` defaults to 10 and is clamped to 1 to 30.
+- `PINHOLE_FPS` defaults to 10 and is clamped to 1 to 30.
 - The pointer is not drawn: the query fails on some nested servers, and the client composites
   its own cursor.
 - The output is a byte stream, cut at exactly `FRAME_BYTES` per frame. If more than four
@@ -253,7 +253,7 @@ renamed per backend:
   names and the remark in `note`. The X11 backend uses `desktop`, `section-x11` and `user`, with
   ids `desktop:<file id>`, `x11:<command>` and `user:<slug>`.
 - Binding keys `comm:`, `exe:` and `cls:`.
-- Environment variables such as `EW_X11_DISPLAY` and `EW_BACKEND` configure the X11 backend
+- Environment variables such as `PINHOLE_X11_DISPLAY` and `PINHOLE_BACKEND` configure the X11 backend
   only.
 
 ### What is still X11-shaped above the seam

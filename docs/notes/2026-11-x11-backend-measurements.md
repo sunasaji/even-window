@@ -150,5 +150,5 @@ for the top-left and bottom-left tiles only.
 ## Working directory of launched programs
 
 An early version started every child in the runtime directory, so each shell opened at
-`<repo>/.ew-x11`. systemd's `EnvironmentFile` does not run a shell, so `EW_SPAWN_CWD=~/work`
+`<repo>/.pw-x11`. systemd's `EnvironmentFile` does not run a shell, so `PINHOLE_SPAWN_CWD=~/work`
 arrives as the literal string and has to be expanded by the server.

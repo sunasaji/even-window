@@ -14,12 +14,12 @@ const BOOT = 'xterm'
 describe("launch recency — the glasses menu's curated slots", () => {
   let dir = ''
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'ew-apps-'))
-    process.env.EW_STATE_DIR = dir
+    dir = mkdtempSync(join(tmpdir(), 'pw-apps-'))
+    process.env.PINHOLE_STATE_DIR = dir
     resetAppRecency()
   })
   afterEach(() => {
-    delete process.env.EW_STATE_DIR
+    delete process.env.PINHOLE_STATE_DIR
     resetAppRecency()
     rmSync(dir, { recursive: true, force: true })
   })
@@ -44,7 +44,7 @@ describe("launch recency — the glasses menu's curated slots", () => {
   ]
 
   it('seeds with the default client, so a fresh install has a non-empty menu', () => {
-    // EW_SPAWN's program is the one application we know the operator wants on that display.
+    // PINHOLE_SPAWN's program is the one application we know the operator wants on that display.
     expect(recentApps(list, BOOT)).toEqual(['desktop:debian-xterm'])
   })
 

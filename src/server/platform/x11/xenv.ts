@@ -22,10 +22,10 @@ function clampInt(v: string | undefined, def: number, lo: number, hi: number): n
 }
 
 /** The nested X display, e.g. ':100'. Must not collide with the host display (:0). */
-export const DISPLAY: string = process.env.EW_X11_DISPLAY || ':100'
+export const DISPLAY: string = process.env.PINHOLE_X11_DISPLAY || ':100'
 
 /** Where session.json / ratpoisonrc / fonts.conf live. Tree-local by default. */
-export const RUNTIME_DIR: string = process.env.EW_X11_RUNTIME_DIR || join(REPO_ROOT, '.ew-x11')
+export const RUNTIME_DIR: string = process.env.PINHOLE_X11_RUNTIME_DIR || join(REPO_ROOT, '.pw-x11')
 
 /** The directory a listening X server publishes its unix socket in, as `X<display number>`. */
 const X11_SOCKET_DIR = '/tmp/.X11-unix'
@@ -40,7 +40,7 @@ function x11Sockets(): string[] {
 
 /** The host display: the desktop Xephyr maps its window into. `null` means no host desktop,
  *  which makes session.ts prefer headless Xvfb. Resolution order:
- *  1. EW_HOST_DISPLAY (the empty string asserts "no host desktop");
+ *  1. PINHOLE_HOST_DISPLAY (the empty string asserts "no host desktop");
  *  2. DISPLAY;
  *  3. the lowest `X<n>` socket in /tmp/.X11-unix that is not our own nested display, because a
  *     systemd unit has no DISPLAY even when a desktop is reachable. Excluding our own number
@@ -51,7 +51,7 @@ export function resolveHostDisplay(
   sockets: () => string[] = x11Sockets,
   nested: string = DISPLAY,
 ): string | null {
-  if (env.EW_HOST_DISPLAY !== undefined) return env.EW_HOST_DISPLAY.trim() || null
+  if (env.PINHOLE_HOST_DISPLAY !== undefined) return env.PINHOLE_HOST_DISPLAY.trim() || null
   const fromEnv = (env.DISPLAY ?? '').trim()
   if (fromEnv) return fromEnv
   const ours = Number(nested.replace(/^:/, ''))
@@ -67,7 +67,7 @@ export function resolveHostDisplay(
 /** Where Xephyr can draw. `null` ⇒ headless; session.ts turns that into the Xvfb preference. */
 export const HOST_DISPLAY: string | null = resolveHostDisplay()
 
-/** Resolve EW_SPAWN_CWD (callers want SPAWN_CWD). Unset or blank → `home`. A leading `~` is
+/** Resolve PINHOLE_SPAWN_CWD (callers want SPAWN_CWD). Unset or blank → `home`. A leading `~` is
  *  expanded here because a systemd EnvironmentFile runs no shell. A relative path resolves
  *  against `home`, never process.cwd(), which is whatever the launcher used. A missing or
  *  non-directory path falls back to `home` with one warning, so a typo cannot fail the client
@@ -83,22 +83,22 @@ export function resolveSpawnCwd(
   const abs = isAbsolute(expanded) ? expanded : resolve(home, expanded)
   try {
     if (statSync(abs).isDirectory()) return abs
-    warn(`EW_SPAWN_CWD is not a directory: ${abs} — using ${home}`)
+    warn(`PINHOLE_SPAWN_CWD is not a directory: ${abs} — using ${home}`)
   } catch {
-    warn(`EW_SPAWN_CWD does not exist: ${abs} — using ${home}`)
+    warn(`PINHOLE_SPAWN_CWD does not exist: ${abs} — using ${home}`)
   }
   return home
 }
 
-/** Where a client launched into the nested X starts: $HOME unless EW_SPAWN_CWD says
+/** Where a client launched into the nested X starts: $HOME unless PINHOLE_SPAWN_CWD says
  *  otherwise. User-visible, so not the runtime dir. */
-export const SPAWN_CWD: string = resolveSpawnCwd(process.env.EW_SPAWN_CWD)
+export const SPAWN_CWD: string = resolveSpawnCwd(process.env.PINHOLE_SPAWN_CWD)
 
 /** ffmpeg capture framerate. Clamped to a sane 1..30 — the BLE link cannot use more. */
-export const FPS: number = clampInt(process.env.EW_FPS, 10, 1, 30)
+export const FPS: number = clampInt(process.env.PINHOLE_FPS, 10, 1, 30)
 
-/** EW_AA=1 permits antialiasing, for comparison experiments only. Default off. */
-export const ALLOW_AA: boolean = process.env.EW_AA === '1'
+/** PINHOLE_AA=1 permits antialiasing, for comparison experiments only. Default off. */
+export const ALLOW_AA: boolean = process.env.PINHOLE_AA === '1'
 
 try {
   mkdirSync(RUNTIME_DIR, { recursive: true })
@@ -150,12 +150,12 @@ export function ensureFontsConf(): string {
 }
 
 /** Build the env for a process that must talk to the nested X. DISPLAY defaults to
- *  EW_X11_DISPLAY_ENV when session.ts has set it, because the nested server may be reachable
+ *  PINHOLE_X11_DISPLAY_ENV when session.ts has set it, because the nested server may be reachable
  *  over TCP only ('127.0.0.1:100' instead of ':100'). `extra` wins over everything. */
 export function childEnv(extra?: Record<string, string>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    DISPLAY: process.env.EW_X11_DISPLAY_ENV || DISPLAY,
+    DISPLAY: process.env.PINHOLE_X11_DISPLAY_ENV || DISPLAY,
     FONTCONFIG_FILE: ensureFontsConf(),
     GDK_BACKEND: 'x11',
     MOZ_ENABLE_WAYLAND: '0',

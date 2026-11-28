@@ -1,7 +1,7 @@
 # Authentication gate: measured behaviour
 
 Snapshot — not maintained. Conditions: 2026-11, server on loopback under WSL2 (ext4), driven
-with `curl` and `scripts/ew-auth.mjs`.
+with `curl` and `scripts/pw-auth.mjs`.
 
 Token-kind, origin-binding and rate-limit request tables are in
 [2026-11-authenticated-curl-checks.md](2026-11-authenticated-curl-checks.md).
@@ -15,12 +15,12 @@ refilled.
 
 ## Rotation without a restart
 
-Same server process throughout: `GET /api/health` → 200; `ew-auth rotate`; same token → 401;
+Same server process throughout: `GET /api/health` → 200; `pw-auth rotate`; same token → 401;
 re-established with the same key → 200.
 
 ## Enrolled-clients event
 
-Stream held open with `curl` while another process ran `ew-auth`:
+Stream held open with `curl` while another process ran `pw-auth`:
 
 ```
 {"t":"clients","list":[],"enforced":true}                          primed on connect

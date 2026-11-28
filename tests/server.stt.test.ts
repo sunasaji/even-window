@@ -92,13 +92,13 @@ afterAll(async () => {
 })
 
 beforeEach(() => {
-  delete process.env.EW_STT_URL
-  delete process.env.EW_STT_MODEL
-  delete process.env.EW_STT_LANG
-  delete process.env.EW_STT_PROMPT
-  delete process.env.EW_STT_OPTIONS
-  delete process.env.EW_STT_API_KEY
-  delete process.env.EW_STT_DUMP_DIR
+  delete process.env.PINHOLE_STT_URL
+  delete process.env.PINHOLE_STT_MODEL
+  delete process.env.PINHOLE_STT_LANG
+  delete process.env.PINHOLE_STT_PROMPT
+  delete process.env.PINHOLE_STT_OPTIONS
+  delete process.env.PINHOLE_STT_API_KEY
+  delete process.env.PINHOLE_STT_DUMP_DIR
   up.refuseChunking = false
   up.lastAuth = ''
   up.hits = 0
@@ -193,9 +193,9 @@ describe('caps and configuration', () => {
     }
   })
 
-  it('is off until EW_STT_URL is set — a microphone path must not default to on', () => {
+  it('is off until PINHOLE_STT_URL is set — a microphone path must not default to on', () => {
     expect(sttEnabled()).toBe(false)
-    process.env.EW_STT_URL = 'http://127.0.0.1:8757/v1/audio/transcriptions'
+    process.env.PINHOLE_STT_URL = 'http://127.0.0.1:8757/v1/audio/transcriptions'
     expect(sttEnabled()).toBe(true)
   })
 
@@ -203,7 +203,7 @@ describe('caps and configuration', () => {
     // A model's CLI name and its HTTP id differ (qwen3-asr-0.6b -> Qwen3-ASR-0.6B), and this
     // default must name what systemd/speech-cpp.service serves (docs/voice.md).
     expect(sttModel()).toBe('Qwen3-ASR-0.6B')
-    process.env.EW_STT_MODEL = 'whisper-1'
+    process.env.PINHOLE_STT_MODEL = 'whisper-1'
     expect(sttModel()).toBe('whisper-1')
   })
 })
@@ -212,7 +212,7 @@ describe('caps and configuration', () => {
 
 describe('transcribe', () => {
   it('puts a real WAVE file and the model on the wire as multipart', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     const r = await transcribe(new Uint8Array([1, 2, 3, 4]), 16000)
     expect(r).toEqual({ ok: true, text: 'こんにちは' })
     expect(up.lastType).toMatch(/^multipart\/form-data; *boundary=/)
@@ -225,37 +225,37 @@ describe('transcribe', () => {
   })
 
   it('sends language and prompt only when they are configured', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastBody).not.toContain('name="language"')
     expect(up.lastBody).not.toContain('name="prompt"')
 
-    process.env.EW_STT_LANG = 'ja'
-    process.env.EW_STT_PROMPT = 'Claude Code'
+    process.env.PINHOLE_STT_LANG = 'ja'
+    process.env.PINHOLE_STT_PROMPT = 'Claude Code'
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastBody).toContain('name="language"')
     expect(up.lastBody).toContain('name="prompt"')
     expect(up.lastBody).toContain('Claude Code')
   })
 
-  it('sends no extra field by default, and the ones EW_STT_OPTIONS names when it is set', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+  it('sends no extra field by default, and the ones PINHOLE_STT_OPTIONS names when it is set', async () => {
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastBody).not.toContain('name="chunking_strategy"')
 
-    process.env.EW_STT_OPTIONS = 'chunking_strategy=auto'
+    process.env.PINHOLE_STT_OPTIONS = 'chunking_strategy=auto'
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastBody).toContain('name="chunking_strategy"')
     expect(up.lastBody).toContain('auto')
   })
 
   it('sends the API key as a bearer token, on the retry too, and no header without one', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastAuth).toBe('')
 
-    process.env.EW_STT_API_KEY = ' sk-test-123 '
-    process.env.EW_STT_OPTIONS = 'chunking_strategy=auto'
+    process.env.PINHOLE_STT_API_KEY = ' sk-test-123 '
+    process.env.PINHOLE_STT_OPTIONS = 'chunking_strategy=auto'
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastAuth).toBe('Bearer sk-test-123')
     // The key is a header, never a form field.
@@ -278,8 +278,8 @@ describe('transcribe', () => {
     expect(sttKeyExposed('http://[::1]:8757/x', 'k')).toBe(false)
     expect(sttKeyExposed('http://stt.example/x', '')).toBe(false)
 
-    process.env.EW_STT_URL = 'http://stt.example/v1/audio/transcriptions'
-    process.env.EW_STT_API_KEY = 'sk-test-123'
+    process.env.PINHOLE_STT_URL = 'http://stt.example/v1/audio/transcriptions'
+    process.env.PINHOLE_STT_API_KEY = 'sk-test-123'
     const r = await transcribe(new Uint8Array([1, 2]), 16000)
     expect(r.ok).toBe(false)
     // The complaint goes to the phone: it must not carry the key.
@@ -287,9 +287,9 @@ describe('transcribe', () => {
     expect(up.hits).toBe(0)
   })
 
-  it('sends whatever fields EW_STT_OPTIONS names, in place of the default', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
-    process.env.EW_STT_OPTIONS = 'vad_filter=true&temperature=0'
+  it('sends whatever fields PINHOLE_STT_OPTIONS names, in place of the default', async () => {
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_OPTIONS = 'vad_filter=true&temperature=0'
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastBody).toContain('name="vad_filter"')
     expect(up.lastBody).toContain('name="temperature"')
@@ -297,29 +297,29 @@ describe('transcribe', () => {
   })
 
   it('parses the options as a query string: encoded values, blanks and `file` left out', () => {
-    process.env.EW_STT_OPTIONS = ' a=1&b=x%20y&&=z&file=evil&c '
+    process.env.PINHOLE_STT_OPTIONS = ' a=1&b=x%20y&&=z&file=evil&c '
     expect(sttOptions()).toEqual([
       ['a', '1'],
       ['b', 'x y'],
       ['c', ''],
     ])
-    process.env.EW_STT_OPTIONS = 'chunking_strategy={"type":"server_vad"}'
+    process.env.PINHOLE_STT_OPTIONS = 'chunking_strategy={"type":"server_vad"}'
     expect(sttOptions()).toEqual([['chunking_strategy', '{"type":"server_vad"}']])
-    delete process.env.EW_STT_OPTIONS
+    delete process.env.PINHOLE_STT_OPTIONS
     expect(sttOptions()).toEqual([])
   })
 
   it('lets an option replace the same field from its own setting', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
-    process.env.EW_STT_LANG = 'ja'
-    process.env.EW_STT_OPTIONS = 'language=en'
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_LANG = 'ja'
+    process.env.PINHOLE_STT_OPTIONS = 'language=en'
     await transcribe(new Uint8Array([1, 2]), 16000)
     expect(up.lastBody.split('name="language"').length - 1).toBe(1)
   })
 
   it('sends the utterance again without the options when the recogniser refuses them', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
-    process.env.EW_STT_OPTIONS = 'chunking_strategy=auto'
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_OPTIONS = 'chunking_strategy=auto'
     up.refuseChunking = true
     expect(await transcribe(new Uint8Array([1, 2]), 16000)).toEqual({
       ok: true,
@@ -331,42 +331,43 @@ describe('transcribe', () => {
   })
 
   it('does not retry a 400 when no options were sent', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
-    process.env.EW_STT_OPTIONS = ''
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_OPTIONS = ''
     up.reply = { status: 400, body: 'bad audio' }
     const r = await transcribe(new Uint8Array([1, 2]), 16000)
     expect(r.ok).toBe(false)
     expect(up.hits).toBe(1)
   })
 
-  it('keeps nothing on disk unless EW_STT_DUMP_DIR is set', () => {
+  it('keeps nothing on disk unless PINHOLE_STT_DUMP_DIR is set', () => {
     expect(sttDumpDir()).toBe('')
   })
 
-  it('keeps the WAV it sent and the text it got back when EW_STT_DUMP_DIR is set', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'ew-stt-dump-'))
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
-    process.env.EW_STT_DUMP_DIR = join(dir, 'made', 'on', 'demand')
+  it('keeps the WAV it sent and the text it got back when PINHOLE_STT_DUMP_DIR is set', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pw-stt-dump-'))
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_DUMP_DIR = join(dir, 'made', 'on', 'demand')
     try {
       const pcm = new Uint8Array([1, 0, 2, 0])
       expect(await transcribe(pcm, 16000)).toEqual({ ok: true, text: 'こんにちは' })
-      const kept = readdirSync(process.env.EW_STT_DUMP_DIR).sort()
+      const kept = readdirSync(process.env.PINHOLE_STT_DUMP_DIR).sort()
       expect(kept).toHaveLength(2)
       expect(kept[0]).toMatch(/^utt-\d{8}-\d{6}-\d{3}\.txt$/)
       expect(kept[1]).toBe(kept[0]?.replace('.txt', '.wav'))
-      const at = (f: string | undefined): string => join(process.env.EW_STT_DUMP_DIR ?? '', f ?? '')
+      const at = (f: string | undefined): string =>
+        join(process.env.PINHOLE_STT_DUMP_DIR ?? '', f ?? '')
       expect(new Uint8Array(readFileSync(at(kept[1])))).toEqual(pcmToWav(pcm, 16000))
       expect(readFileSync(at(kept[0]), 'utf8')).toBe('こんにちは\n')
     } finally {
-      delete process.env.EW_STT_DUMP_DIR
+      delete process.env.PINHOLE_STT_DUMP_DIR
       rmSync(dir, { recursive: true, force: true })
     }
   })
 
   it('keeps the WAV even when the recogniser fails, and only the newest few', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'ew-stt-dump-'))
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
-    process.env.EW_STT_DUMP_DIR = dir
+    const dir = mkdtempSync(join(tmpdir(), 'pw-stt-dump-'))
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_DUMP_DIR = dir
     try {
       for (let i = 0; i < STT_DUMP_KEEP; i++) {
         const stem = `utt-20200101-0000${String(i).padStart(2, '0')}-000`
@@ -382,37 +383,37 @@ describe('transcribe', () => {
       expect(kept).not.toContain('utt-20200101-000000-000.txt')
       expect(kept).toContain('notes.md')
     } finally {
-      delete process.env.EW_STT_DUMP_DIR
+      delete process.env.PINHOLE_STT_DUMP_DIR
       rmSync(dir, { recursive: true, force: true })
     }
   })
 
   it('still answers the transcript when the dump directory cannot be written', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     // A path under a regular file: no directory can be made there.
-    const dir = mkdtempSync(join(tmpdir(), 'ew-stt-dump-'))
+    const dir = mkdtempSync(join(tmpdir(), 'pw-stt-dump-'))
     writeFileSync(join(dir, 'file'), '')
-    process.env.EW_STT_DUMP_DIR = join(dir, 'file', 'sub')
+    process.env.PINHOLE_STT_DUMP_DIR = join(dir, 'file', 'sub')
     try {
       expect(await transcribe(new Uint8Array([1, 0]), 16000)).toEqual({
         ok: true,
         text: 'こんにちは',
       })
     } finally {
-      delete process.env.EW_STT_DUMP_DIR
+      delete process.env.PINHOLE_STT_DUMP_DIR
       rmSync(dir, { recursive: true, force: true })
     }
   })
 
   it('treats silence as success with an empty string, not as an error', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     up.reply = { status: 200, body: '{"text":"   "}' }
     // Nobody spoke is an outcome, not a fault: the dialog offers another go.
     expect(await transcribe(new Uint8Array([1, 2]), 16000)).toEqual({ ok: true, text: '' })
   })
 
   it('short-circuits an empty capture without troubling the recogniser', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     up.lastBody = 'untouched'
     expect(await transcribe(new Uint8Array(0), 16000)).toEqual({ ok: true, text: '' })
     expect(up.lastBody).toBe('untouched')
@@ -421,11 +422,11 @@ describe('transcribe', () => {
   it('reports an unconfigured recogniser by naming the setting', async () => {
     const r = await transcribe(new Uint8Array([1, 2]), 16000)
     expect(r.ok).toBe(false)
-    expect(r.ok === false && r.error).toContain('EW_STT_URL')
+    expect(r.ok === false && r.error).toContain('PINHOLE_STT_URL')
   })
 
   it('reports an upstream status, with an excerpt of what it said', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     up.reply = { status: 404, body: 'no such model' }
     const r = await transcribe(new Uint8Array([1, 2]), 16000)
     expect(r.ok).toBe(false)
@@ -434,7 +435,7 @@ describe('transcribe', () => {
   })
 
   it('does not throw on a non-JSON answer', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     up.reply = { status: 200, body: '<html>nope</html>', type: 'text/html' }
     const r = await transcribe(new Uint8Array([1, 2]), 16000)
     expect(r.ok).toBe(false)
@@ -442,7 +443,7 @@ describe('transcribe', () => {
   })
 
   it('does not throw on JSON without a text field', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     up.reply = { status: 200, body: '{"error":"busy"}' }
     const r = await transcribe(new Uint8Array([1, 2]), 16000)
     expect(r.ok).toBe(false)
@@ -452,7 +453,7 @@ describe('transcribe', () => {
   it('says what to do when the recogniser is not running', async () => {
     // Port 1 is never listening. The message has to name the URL and suggest starting the
     // recogniser, which is a separate process.
-    process.env.EW_STT_URL = 'http://127.0.0.1:1/v1/audio/transcriptions'
+    process.env.PINHOLE_STT_URL = 'http://127.0.0.1:1/v1/audio/transcriptions'
     const r = await transcribe(new Uint8Array([1, 2]), 16000)
     expect(r.ok).toBe(false)
     expect(r.ok === false && r.error).toContain('127.0.0.1:1')
@@ -486,7 +487,7 @@ describe('POST /api/stt', () => {
   })
   beforeEach(() => {
     dispose = useTempStateDir()
-    delete process.env.EW_AUTH
+    delete process.env.PINHOLE_AUTH
     token = enrolAndSession(makeEd25519Key()).token
   })
   afterEach(() => {
@@ -515,17 +516,17 @@ describe('POST /api/stt', () => {
     expect(res.status).toBe(503)
     expect(await res.json()).toMatchObject({ ok: false })
     // The operator must not have to read the source to find out what to set.
-    expect(JSON.stringify(await (await post('', bytes(0, 0))).json())).toContain('EW_STT_URL')
+    expect(JSON.stringify(await (await post('', bytes(0, 0))).json())).toContain('PINHOLE_STT_URL')
   })
 
   it('refuses a rate it cannot interpret', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     const res = await post('?rate=999999', bytes(0, 0))
     expect(res.status).toBe(400)
   })
 
   it('refuses an odd byte count — that cannot be s16le, so the client is framing wrong', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     const res = await post('', bytes(0, 0, 0))
     expect(res.status).toBe(400)
     expect(JSON.stringify(await res.json())).toContain('s16le')
@@ -533,7 +534,7 @@ describe('POST /api/stt', () => {
 
   it('refuses more audio than the cap, rather than truncating it', async () => {
     // A truncated recording would transcribe into a sentence that is wrong, not missing.
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     const res = await post('?rate=8000', zeros(maxPcmBytes(8000) + 2))
     expect(res.status).toBe(413)
     // The 413 body must arrive: the server drains the request instead of destroying the
@@ -542,7 +543,7 @@ describe('POST /api/stt', () => {
   })
 
   it('answers the transcript on the happy path', async () => {
-    process.env.EW_STT_URL = `${up.origin}/v1/audio/transcriptions`
+    process.env.PINHOLE_STT_URL = `${up.origin}/v1/audio/transcriptions`
     up.reply = { status: 200, body: '{"text":"このファイルのバグを直して"}' }
     const res = await post('', bytes(1, 2, 3, 4))
     expect(res.status).toBe(200)
@@ -550,7 +551,7 @@ describe('POST /api/stt', () => {
   })
 
   it('answers 502 when the recogniser is the thing that broke', async () => {
-    process.env.EW_STT_URL = 'http://127.0.0.1:1/v1/audio/transcriptions'
+    process.env.PINHOLE_STT_URL = 'http://127.0.0.1:1/v1/audio/transcriptions'
     const res = await post('', bytes(1, 2))
     expect(res.status).toBe(502)
     expect(await res.json()).toMatchObject({ ok: false })
