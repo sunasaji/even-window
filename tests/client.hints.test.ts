@@ -7,6 +7,8 @@ import {
   HINT_SHOWS,
   hintDue,
   retireHint,
+  setupNoticeKind,
+  setupNoticeText,
   startupHintText,
   submitOffHintText,
   takeHint,
@@ -104,5 +106,29 @@ describe('wiring', () => {
 
   it('the Submit toast skips a hold-send and a send that pressed a key', () => {
     expect(src.has("ok && press === null && !bare && takeHint('submit-off')")).toBe(true)
+  })
+})
+
+describe('setup notice', () => {
+  it('appears only when the server cannot be used', () => {
+    expect(setupNoticeKind('unknown', true)).toBeNull()
+    expect(setupNoticeKind('ok', false)).toBeNull()
+    expect(setupNoticeKind('unpaired', false)).toBe('pair')
+    expect(setupNoticeKind('unauthorized', false)).toBe('pair')
+    expect(setupNoticeKind('offline', true)).toBe('address')
+    expect(setupNoticeKind('offline', false)).toBe('unreachable')
+  })
+
+  it('fits the panel, names the phone or the PC step, and keeps the way out', () => {
+    const long = 'https://a-rather-long-machine-name.some-tailnet-name.ts.net:8443'
+    for (const kind of ['pair', 'address', 'unreachable'] as const) {
+      const lines = setupNoticeText(kind, long).split('\n')
+      expect(lines.length).toBeLessThanOrEqual(PANEL_LINES)
+      for (const l of lines) expect(glassWidth(l)).toBeLessThan(LINE_UNITS)
+      expect(lines.at(-1)).toContain('Exit')
+    }
+    expect(setupNoticeText('pair', long)).toContain('ew-auth.mjs pair')
+    expect(setupNoticeText('address', long)).toContain('server URL')
+    expect(setupNoticeText('unreachable', 'http://pc:8787/')).toContain('pc:8787')
   })
 })

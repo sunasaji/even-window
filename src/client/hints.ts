@@ -61,6 +61,61 @@ export function startupHintText(voice: boolean): string {
   ].join('\n')
 }
 
+/** What stands between this device and a mirror, or null when nothing does. `guess` is
+ *  `serverIsGuess`: the address in use is the built-in default, not one a person gave. */
+export type SetupNotice = 'pair' | 'address' | 'unreachable'
+
+export function setupNoticeKind(auth: string, guess: boolean): SetupNotice | null {
+  if (auth === 'unpaired' || auth === 'unauthorized') return 'pair'
+  if (auth === 'offline') return guess ? 'address' : 'unreachable'
+  return null
+}
+
+/** Pure: the lens text while the app cannot reach or use a server. The glasses would otherwise
+ *  be black with nothing to act on, so it says where the fix is (the phone) and the short form
+ *  of it. It stays until the state clears; no gesture closes it, the menu still opens over it.
+ *  `server` is shortened because a tailnet address is wider than a line. */
+export function setupNoticeText(kind: SetupNotice, server: string): string {
+  const last = 'double-tap: menu (Exit is in it)'
+  if (kind === 'pair')
+    return [
+      'even-window — pair this phone',
+      '1. PC: start the server (npm run server)',
+      '2. PC: node scripts/ew-auth.mjs pair URL',
+      '    URL = how the phone reaches the PC',
+      '3. Phone: open the pairing URL it prints',
+      '    or paste it in the dialog in this app',
+      '',
+      last,
+    ].join('\n')
+  if (kind === 'address')
+    return [
+      'even-window — set the server address',
+      'Use the card on the phone.',
+      '- paired before: enter the server URL',
+      '- first time, on the PC:',
+      '    node scripts/ew-auth.mjs pair URL',
+      '    then paste the pairing URL it prints',
+      '',
+      last,
+    ].join('\n')
+  return [
+    'even-window — server unreachable',
+    shortServer(server),
+    '- is the server running on the PC?',
+    '- is the phone on the same network / VPN?',
+    'To change the address: phone, connection',
+    '',
+    last,
+  ].join('\n')
+}
+
+/** Host and port only, cut to a width the panel does not fold. */
+function shortServer(server: string): string {
+  const s = server.replace(/^https?:\/\//, '').replace(/\/$/, '')
+  return s.length > 38 ? `${s.slice(0, 37)}…` : s
+}
+
 /** Pure: the phone toast after a Submit that typed without pressing a key. */
 export function submitOffHintText(): string {
   return "Typed only — this app's submit key is off. Set Enter (or another key) in ▶ app below."

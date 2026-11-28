@@ -229,7 +229,19 @@ Decision: [instance supersede](decisions/glasses-instance-supersede.md).
 ## Overlay
 
 Container 6 shows one text at a time. `overlayContent()` picks it in this order: voice dialog,
-menu, `X unavailable` notice, `mirror paused` notice, startup hint, blank (`' '`).
+menu, setup notice, `X unavailable` notice, `mirror paused` notice, startup hint, blank (`' '`).
+
+The setup notice is what the lens shows while there is no usable server, so that a first start
+is never a black panel (`setupNoticeText()` in `src/client/hints.ts`). It has three forms:
+
+| Auth state | Notice |
+| --- | --- |
+| `unpaired`, `unauthorized` | Pair this phone: start the server, run `ew-auth.mjs pair URL` on the PC, open the pairing URL on the phone |
+| `offline` on the built-in default address | Set the server address in the card on the phone |
+| `offline` on an address a person gave | Server unreachable: the address, two things to check, where to change it |
+
+No gesture closes it; it goes when the state clears (`syncSetupNotice()`, called from
+`setAuthState`). The menu still opens over it, which keeps Exit reachable.
 
 The startup hint lists the gestures (`startupHintText()` in `src/client/hints.ts`). It is
 considered once per page load, at the first establish, and shown on the first three launches

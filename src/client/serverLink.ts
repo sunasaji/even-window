@@ -7,6 +7,7 @@ import { bearer, type DurableStore, isPaired, resetSession, setAuthBase } from '
 import { log } from './debugLog.ts'
 import { flagSource, noteFlag } from './flags.ts'
 import { maybePromptPairing } from './main.ts'
+import { syncSetupNotice } from './overlay.ts'
 import { syncServerField } from './phoneUi.ts'
 import { kickPump, setForcePending } from './pump.ts'
 import { confirmServerChange, serverChangeNeedsConfirm } from './serverGuard.ts'
@@ -192,6 +193,7 @@ export function setAuthState(s: AuthState): void {
   if (authState === s) return
   authState = s
   renderStatus()
+  syncSetupNotice()
   // A refused paired device (key revoked, registry wiped) and an unpaired one both need the
   // pairing dialog.
   if (s === 'unpaired' || s === 'unauthorized') maybePromptPairing()

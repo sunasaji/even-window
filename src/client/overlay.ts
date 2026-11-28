@@ -10,7 +10,7 @@ import { LatestAsyncWriter } from '../shared/latestAsyncWriter.ts'
 import { voiceOverlay } from '../shared/voiceDialog.ts'
 import { log } from './debugLog.ts'
 import { established, flushLogNow, glassLinkUp, pushImage, renderPageWarning } from './glassPage.ts'
-import { startupHintText, takeHint } from './hints.ts'
+import { setupNoticeKind, setupNoticeText, startupHintText, takeHint } from './hints.ts'
 import {
   formatLinkBase,
   LINK_BASE_PUSHES,
@@ -35,6 +35,7 @@ import { showSupersededOverlay } from './palette.ts'
 import { lensBtn } from './phoneUi.ts'
 import { kickPump, lastTiles, pumpQuiesce, setForcePending } from './pump.ts'
 import { sameBytes, TILE_NAMES } from './pumpStats.ts'
+import { authState, SERVER, serverIsGuess } from './serverLink.ts'
 import { applyMirrorMode } from './settings.ts'
 import { renderStatus, setStatus, syncPreviewOverlay } from './statusUi.ts'
 import { availMsg, stopStream, sttReady } from './stream.ts'
@@ -445,6 +446,10 @@ export async function applyOverlayTransition(content: string, ops: PlaneOps): Pr
 export function overlayContent(): string {
   const acted = interactiveOverlay()
   if (acted !== null) return acted
+  // No usable server: there is no mirror to show, and the fix is on the phone. Above the other
+  // notices because none of them can be true or useful until this clears.
+  const setup = setupNoticeKind(authState, serverIsGuess)
+  if (setup !== null) return setupNoticeText(setup, SERVER)
   if (availMsg !== null) return `X unavailable\n${availMsg}`
   // The pause notice, last before blank: anything above it is more urgent.
   const paused = mirrorPaused()
@@ -452,6 +457,19 @@ export function overlayContent(): string {
   if (paused !== null) return `mirror paused — ${paused}\ntask / window / apps still work there`
   if (startupHint) return startupHintText(sttReady)
   return ' ' // blank again — the content container 6 was established with
+}
+
+/** The setup notice last stated, so a state change that does not change it costs no transition. */
+let setupStated: string | null = null
+
+/** Called when the auth state changes: shows, swaps or clears the setup notice. */
+export function syncSetupNotice(): void {
+  const kind = setupNoticeKind(authState, serverIsGuess)
+  const now = kind === null ? null : setupNoticeText(kind, SERVER)
+  if (now === setupStated) return
+  setupStated = now
+  log(`setup notice ${kind === null ? 'OFF' : `ON (${kind})`}`)
+  syncOverlay()
 }
 
 /** The overlay text a person acts on — the voice dialog, else the menu — or null. It is also
