@@ -35,6 +35,7 @@ import { pageWarnEl, pageWarnText } from './phoneUi.ts'
 import { kickPump, setForcePending } from './pump.ts'
 import { applyMirrorMode } from './settings.ts'
 import { renderStatus } from './statusUi.ts'
+import { rootOpen } from './targets.ts'
 import { errText, sleep, withTimeout } from './util.ts'
 
 // ── glasses page ───────────────────────────────────────────────────────────────────────────
@@ -232,7 +233,8 @@ function markEstablished(ok: boolean): boolean {
     // that it can discover one.
     setGlassLink(true)
     // The first establish of this page load: point a first-time user at the gestures.
-    maybeShowStartupHint()
+    // Not at the server list: its header carries its own two gestures (root.ts).
+    if (!rootOpen) maybeShowStartupHint()
     return true
   }
   established = false
@@ -262,7 +264,7 @@ export function renderPageWarning(): void {
     // reached while this app is in the foreground. Leaving the app, from the phone, is the lever.
     txt.textContent = stuck
       ? // Only the steps, and hedged: a reload is not known to never help.
-        'the Even App has lost the glasses — a reload probably will not help. Quit pinhole-window' +
+        'the Even App has lost the glasses — a reload probably will not help. Quit PinholeWindow' +
         ' from the phone, reconnect them in the Even App, then start it again; the glasses' +
         ' may need a reboot.'
       : 'the glasses are not connected — nothing is being sent to them. This screen re-checks' +

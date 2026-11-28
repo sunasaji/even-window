@@ -41,6 +41,7 @@ import {
   syncOverlay,
 } from './overlay.ts'
 import { palettePanelUpdate, renderAppsEntry } from './palette.ts'
+import { enterRoot } from './root.ts'
 import { apiPost } from './serverLink.ts'
 import { invert, setInvert } from './settings.ts'
 import { renderStatus } from './statusUi.ts'
@@ -468,21 +469,21 @@ export async function runRowToken(
       log(`${where} close ${w.wid} => ${r?.ok ? 'ok' : (r?.msg ?? 'failed')}`)
       return
     }
-    // Exit is terminal — nothing to resume into, so it forgets rather than remembers.
-    case 'exit':
+    // Back to the server list: nothing to resume into, so it forgets rather than remembers.
+    case 'disconnect':
       menuResume = null
-      await exitApp()
+      enterRoot('Disconnect in the menu')
       return
   }
 }
 
-/** Leave the app from the glasses: the Exit menu item, and the only use of
+/** Leave the app from the glasses: a double-tap at the server list (root.ts), and the only use of
  *  `shutDownPageContainer` in the client. That call exits the app; it is not page recovery and
  *  must never be reached from an error path (docs/glasses.md). `exitMode: 1` pops the
  *  foreground interaction layer and lets the user decide, so a stray selection is cancellable.
  *  It is not an escape hatch for a page that never established: there it answers `false`, and
  *  `exitMode: 0` answers `true` without the app closing. */
-async function exitApp(): Promise<void> {
+export async function exitApp(): Promise<void> {
   if (!bridge) {
     log('exit: no bridge')
     return
@@ -525,7 +526,7 @@ export async function launchApp(
 
 /** Act on one root-list item selected from the overlay. */
 async function activateMenuItem(it: MenuItem): Promise<void> {
-  // The hierarchy's entrance: the first row of the root list. (Exit lives inside the hierarchy
+  // The hierarchy's entrance: the first row of the root list. (Disconnect lives inside the hierarchy
   // behind a confirm level, src/shared/glassMenu.ts.) The breadcrumb says `Menu` whatever the
   // row read, since `Menu/Prev/Next...` is the same level.
   if (it.kind === 'menu') {

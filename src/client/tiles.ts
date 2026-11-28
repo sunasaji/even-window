@@ -16,7 +16,7 @@ import { assemblePng, indexPlaneFromPng, plteFrom } from '../shared/png.ts'
 import { encodeOffload, log } from './debugLog.ts'
 import { ANSI_U32, GREEN_U32, LEVEL_BY_ANSI, RAMP_GREYS } from './grey.ts'
 import { mirrorEl } from './phoneUi.ts'
-import { publishTile, sample, stats, statsOn } from './pump.ts'
+import { forgetFrames, publishTile, sample, stats, statsOn } from './pump.ts'
 import { invert, mirrorMode } from './settings.ts'
 import { drawMirror } from './statusUi.ts'
 import { errText, errWhere } from './util.ts'
@@ -141,6 +141,16 @@ export function tileFault(e: unknown): void {
 const tileAnsi: (Uint8Array | null)[] = [null, null, null, null]
 /** Arrival counter per quadrant, so an out-of-order inflate can be dropped. */
 const tileSeq = [0, 0, 0, 0]
+
+/** Drop every cached tile. The cache belongs to the server that sent it: without this, opening
+ *  another server repaints the previous one's picture until the new tiles arrive (root.ts). */
+export function forgetTiles(): void {
+  for (let i = 0; i < TILES; i++) {
+    tileAnsi[i] = null
+    tileSeq[i] = (tileSeq[i] ?? 0) + 1 // an inflate still in flight must not land afterwards
+  }
+  forgetFrames()
+}
 
 /** Take a received tile: inflate it to indices, paint the colour mirror, hand it to the pump.
  *  No canvas and no derive here; the derive runs at dequeue (see `greyPending` in pump.ts). */

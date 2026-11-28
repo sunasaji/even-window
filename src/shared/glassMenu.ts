@@ -210,7 +210,7 @@ export type MenuToken =
   | { kind: 'rp'; key: string }
   | { kind: 'app'; id: string }
   | { kind: 'close' }
-  | { kind: 'exit' }
+  | { kind: 'disconnect' }
   | { kind: 'invert' }
   | { kind: 'page'; dir: 1 | -1 }
 
@@ -218,7 +218,7 @@ export type MenuToken =
 export function parseToken(token: string): MenuToken | null {
   if (token === BACK_TOKEN) return { kind: 'back' }
   if (token === 'close') return { kind: 'close' }
-  if (token === 'exit') return { kind: 'exit' }
+  if (token === 'disconnect') return { kind: 'disconnect' }
   if (token === 'invert') return { kind: 'invert' }
   if (token === PAGE_PREV_TOKEN) return { kind: 'page', dir: -1 }
   if (token === PAGE_NEXT_TOKEN) return { kind: 'page', dir: 1 }
@@ -355,7 +355,9 @@ function levelContent(id: string, s: MenuState): MenuRow[] | null {
     if (s.apps?.length) out.push({ label: 'Launch' + SUB, token: 'sub:' + LAUNCH_ID })
     out.push({ label: mark(s.invert) + 'Invert', token: 'invert' })
     if (s.hasWindow) out.push({ label: 'Close Window', token: 'close' })
-    out.push({ label: 'Exit' + SUB, token: 'sub:cexit' })
+    // Back to the server list. Leaving the app is a double-tap there, and the system menu's
+    // Close row, so this menu has no exit of its own.
+    out.push({ label: 'Disconnect', token: 'disconnect' })
     return out
   }
   // Keys: the groups of src/shared/keys.ts, one row each, plus the sticky modifiers and the
@@ -412,7 +414,6 @@ function levelContent(id: string, s: MenuState): MenuRow[] | null {
     const k = RP_KEYS.find(x => x.destructive)
     return k ? [{ label: CONFIRM_LABEL, token: 'rp:' + k.key }] : null
   }
-  if (id === 'cexit') return [{ label: 'Exit the app - confirm', token: 'exit' }]
   if (id === LAUNCH_ID || id.startsWith(LAUNCH_ID + '/')) return launchRows(id, s.apps ?? [])
   // Paged children: `<id>/N`.
   const slash = id.lastIndexOf('/')
@@ -570,7 +571,7 @@ export interface PanelRow extends MenuRow {
 /** The rows of the phone's `window` palette: the catalogue of the glasses' `Window...` level
  *  in the same order, plus `Close Window`. It is a separate builder because `< Back`, the
  *  confirm level and the row budget are properties of the glasses surface; the phone arms a
- *  destructive row in place and scrolls. `Keys...`, `Invert` and `Exit...` are absent
+ *  destructive row in place and scrolls. `Keys...`, `Invert` and `Disconnect` are absent
  *  (docs/phone-ui.md). */
 export function windowPanelRows(s: MenuState): PanelRow[] {
   const out: PanelRow[] = RP_KEYS.filter(k => !k.destructive || s.hasWindow).map(k =>
@@ -584,7 +585,7 @@ export function windowPanelRows(s: MenuState): PanelRow[] {
 
 /** The levels that end with `< Back`: the confirmations, whose only other row is the action.
  *  There the row is somewhere to put the cursor that does nothing. */
-const CONFIRM_LEVELS: ReadonlySet<string> = new Set(['rpkill', 'cexit'])
+const CONFIRM_LEVELS: ReadonlySet<string> = new Set(['rpkill'])
 
 /** The rows of one level; `null` = no such level. A confirmation level ends with `< Back`, and
  *  `Menu...` ends with `Prev Page` / `Next Page` while the root list is paged. Every other

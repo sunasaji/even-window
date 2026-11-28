@@ -71,7 +71,7 @@ export function openServerSetup(o: ServerSetupOpts): void {
   const msg = el(
     'div',
     'margin-bottom:12px;color:#bdbdbd',
-    'pinhole-window shows a window from the server on your own PC. Enter the address this phone ' +
+    'PinholeWindow shows a window from the server on your own PC. Enter the address this phone ' +
       'reaches it at, for example https://host.ts.net:8443. A pairing URL works too.',
   )
   const tried = el(

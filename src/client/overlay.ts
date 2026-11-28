@@ -39,6 +39,7 @@ import { authState, SERVER, serverIsGuess } from './serverLink.ts'
 import { applyMirrorMode } from './settings.ts'
 import { renderStatus, setStatus, syncPreviewOverlay } from './statusUi.ts'
 import { availMsg, stopStream, sttReady } from './stream.ts'
+import { rootOpen, rootSel, rootText, targetList } from './targets.ts'
 import { encodeTilePng } from './tiles.ts'
 import { errText, withTimeout } from './util.ts'
 import { voice } from './voice.ts'
@@ -501,6 +502,8 @@ export function interactiveOverlay(): string | null {
     )
     return [head, ...rows].join('\n')
   }
+  // The server list: the top of the app, shown while no server is open (targets.ts).
+  if (rootOpen) return rootText(targetList(), rootSel)
   return null
 }
 
@@ -526,7 +529,7 @@ let overlayTxn: Promise<void> = Promise.resolve()
 export function syncOverlay(): void {
   // The menu or the voice dialog coming up retires the startup hint, whoever opened it (the
   // glasses, a phone pill, a palette): the hint must not reappear when they close.
-  if (startupHint && interactiveOverlay() !== null) dismissStartupHint(false)
+  if (startupHint && !rootOpen && interactiveOverlay() !== null) dismissStartupHint(false)
   renderStatus()
   syncPreviewOverlay()
   const content = overlayContent()

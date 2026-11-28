@@ -15,8 +15,10 @@ import { DEBUG_EVENTS, log } from './debugLog.ts'
 import { chooseMenu, closeMenu, menuOpen, menuPath, moveMenu, openMenu, popLevel } from './menu.ts'
 import { NavDebouncer } from './navDebounce.ts'
 import { dismissStartupHint, setGlassCovered } from './overlay.ts'
+import { rootGesture } from './root.ts'
 import { apiPost } from './serverLink.ts'
 import { sttReady } from './stream.ts'
+import { rootOpen } from './targets.ts'
 import { onVoiceFrame, voiceActive, voiceGestureRoute, voiceStart } from './voice.ts'
 
 async function sendGesture(gesture: GestureName, count = 1): Promise<void> {
@@ -178,6 +180,10 @@ export function ringFire(kind: string, fn: () => void): void {
  *  otherwise it does nothing. `source` only labels the log line. Shared by the ring (PB 9) and
  *  vRing's bottom band, so the two cannot drift apart. */
 export function onLong(source: string): void {
+  if (rootOpen) {
+    log(`long (${source}) — nothing to dictate into at the server list`)
+    return
+  }
   if (sttReady && !voiceActive()) {
     log(`long press (${source}) — opening voice`)
     void voiceStart()
@@ -206,6 +212,10 @@ export function vRingTapKind(
 
 export function onSwipe(dir: -1 | 1): void {
   if (voiceGestureRoute(dir < 0 ? 'swipe-up' : 'swipe-down')) return // the dialog is in front
+  if (rootOpen) {
+    rootGesture(dir < 0 ? 'up' : 'down')
+    return
+  }
   if (dismissStartupHint()) return // it only closes the hint: its key could not be seen landing
   if (menuOpen) {
     moveMenu(dir)
@@ -216,6 +226,10 @@ export function onSwipe(dir: -1 | 1): void {
 
 export async function onTap(): Promise<void> {
   if (voiceGestureRoute('tap')) return
+  if (rootOpen) {
+    rootGesture('tap')
+    return
+  }
   if (dismissStartupHint()) return // as for a swipe
   if (menuOpen) {
     await chooseMenu()
@@ -231,6 +245,11 @@ export async function onTap(): Promise<void> {
 export async function onDouble(): Promise<void> {
   await nav.flush()
   if (voiceGestureRoute('double')) return
+  // At the server list a double-tap leaves the app: it is the top (root.ts).
+  if (rootOpen) {
+    rootGesture('double')
+    return
+  }
   if (menuOpen) {
     const depth = menuPath.length + 1 // the root list is depth 1
     const act = menuActionFor('double', depth)

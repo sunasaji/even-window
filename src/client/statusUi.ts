@@ -11,9 +11,10 @@ import { established, glassLinkUp } from './glassPage.ts'
 import { apps, menuItems, menuOpen, menuPath, menuRowCount, menuSel, windows } from './menu.ts'
 import { glassCovered, glassInCase, interactiveOverlay, lensOn, superseded } from './overlay.ts'
 import { connDetailsEl, connSumEl, mirrorEl, statusEl } from './phoneUi.ts'
-import { authState } from './serverLink.ts'
+import { authState, SERVER } from './serverLink.ts'
 import { invert } from './settings.ts'
 import { availMsg } from './stream.ts'
+import { rootOpen, targetLabel } from './targets.ts'
 import { cursor, cursorArrow, cursorTilePixel, repaintMirror, tileFaultTotal } from './tiles.ts'
 
 export function invertLabel(): string {
@@ -60,7 +61,10 @@ export function renderConnSummary(): void {
         ? "connection — ⚠ this device's key is not enrolled: open to re-pair"
         : authState === 'offline'
           ? 'connection — ⚠ server unreachable'
-          : 'connection'
+          : // The open server is named here, since its row is inside the fold.
+            rootOpen
+            ? 'connection'
+            : `connection — ${targetLabel(SERVER)}`
   connSumEl.style.color = keysNew ? '#ff6b57' : needs || offline ? '#ffb46e' : ''
   if (!connDetailsEl) return
   const reason = keysNew > 0 ? 'keys' : needs || offline ? authState : ''
@@ -133,7 +137,16 @@ export function syncPreviewOverlay(): void {
   const was = previewText
   previewText = next
   if (next !== null) drawPreviewOverlay(next)
-  else if (was !== null) repaintMirror() // the tiles come back from the cache
+  else if (was !== null) {
+    // Black first: after a disconnect the cache is empty, and the text must not stay up
+    // until the next server's first tiles arrive.
+    const ctx = mirrorEl?.getContext('2d')
+    if (ctx) {
+      ctx.fillStyle = '#000'
+      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H)
+    }
+    repaintMirror() // the tiles come back from the cache
+  }
 }
 
 function drawPreviewOverlay(text: string): void {

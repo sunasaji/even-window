@@ -14,6 +14,7 @@ import { voiceBtn } from './phoneUi.ts'
 import { kickPump, setForcePending } from './pump.ts'
 import { authFetch, SERVER } from './serverLink.ts'
 import { setStatus } from './statusUi.ts'
+import { rootOpen } from './targets.ts'
 import { processTile, tileFault } from './tiles.ts'
 import { maybeOpenTourOnFirstRun } from './tour.ts'
 import { errText } from './util.ts'
@@ -60,6 +61,14 @@ export function startStream(): void {
   void startStreamAsync()
 }
 
+/** Forget what the last server said. A notice it raised or the fact that its stream had
+ *  opened must not carry over to the next one (root.ts). */
+export function resetStreamState(): void {
+  availMsg = null
+  streamOpened = false
+  streamTicketed = false
+}
+
 /** Debounce for the fresh-ticket re-open in `onerror`: long enough that a flapping link cannot
  *  make it a handshake loop, short enough that a real drop recovers promptly. */
 const STREAM_REOPEN_MS = 3000
@@ -74,6 +83,8 @@ let streamGen = 0
 async function startStreamAsync(): Promise<void> {
   // A superseded instance must not come back through the stream's own retry path.
   if (superseded) return
+  // At the server list nothing is open; an old retry timer must not connect behind it.
+  if (rootOpen) return
   const gen = ++streamGen
   stopStream()
   // A 60-second ticket, not the session token: a URL is the worst place for a long-lived

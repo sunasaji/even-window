@@ -37,8 +37,9 @@ import {
 } from './menu.ts'
 import { INSTANCE_ID, measureLinkBaseline, syncOverlay } from './overlay.ts'
 import { maybeStartPairing, openPairingDialog, type PairingHooks } from './pairingUI.ts'
-import { invertBtn, mountUi, textBox } from './phoneUi.ts'
+import { invertBtn, mountUi, renderRootPanel, textBox } from './phoneUi.ts'
 import { initStats, kickPump, STATS_PERIOD_MS, setForcePending, statsOn } from './pump.ts'
+import { ROOT_STATUS, startsAtRoot } from './root.ts'
 import {
   identityIsSettled,
   initServer,
@@ -61,6 +62,7 @@ import {
 } from './settings.ts'
 import { invertLabel, setStatus } from './statusUi.ts'
 import { startStream, streamTicketed, sttReady } from './stream.ts'
+import { loadTargets, rootOpen, setRootOpen, setRootSel, targetList } from './targets.ts'
 import { cursor, refreshGrey } from './tiles.ts'
 import { errText, withTimeout } from './util.ts'
 import {
@@ -106,6 +108,11 @@ export const pairingHooks: PairingHooks = {
     switchServer(origin)
   },
   onPaired: () => {
+    // Paired by code at the server list: the server is the one the dialog talked to.
+    if (rootOpen) {
+      switchServer(SERVER)
+      return
+    }
     setAuthState('ok')
     setStatus(`paired — reconnecting: ${SERVER}`)
     setForcePending(true)
@@ -129,6 +136,8 @@ export function maybePromptPairing(): void {
 async function boot(): Promise<void> {
   // First, before anything that can throw, so an uncaught error below still leaves a log line.
   installErrorFunnel()
+  // Before the address is resolved: a stored address is added to this list as it is adopted.
+  loadTargets()
   initServer()
   initInvert()
   initMirrorMode()
@@ -146,6 +155,15 @@ async function boot(): Promise<void> {
   }
   // The instance id matches this page load to the server's `stream inst=` log line.
   log(`boot: query=${rawQuery || '(none)'} inst=${INSTANCE_ID}`)
+  // The app starts at the server list unless the URL asks for a server (root.ts).
+  setRootOpen(startsAtRoot(rawQuery))
+  setRootSel(targetList().indexOf(SERVER))
+  log(
+    rootOpen
+      ? `root: at the server list (${String(targetList().length)} known)`
+      : 'root: the URL names a server — opening it directly',
+  )
+  renderRootPanel()
   log(
     `config: server=${SERVER} ` +
       `invert=${invert ? 'on' : 'off'} mirror=${mirrorMode} debug=${DEBUG_EVENTS ? 'on' : 'off'} ` +
@@ -166,7 +184,7 @@ async function boot(): Promise<void> {
   // Only when something is actually sticky; the quiet case is the common one.
   const sticky = stickyLine(stickyFlags)
   if (sticky) log(sticky)
-  setStatus('connecting')
+  setStatus(rootOpen ? ROOT_STATUS : 'connecting')
   // A `?pair=<code>` URL takes precedence over the auto-prompt: it already carries the
   // one-time code, so the dialog opens pre-filled and `maybePromptPairing` must not replace
   // it with the blank manual form when the first 401 lands a moment later.
@@ -188,7 +206,9 @@ async function boot(): Promise<void> {
     .catch(() => {
       /* unpaired, or no WebCrypto: the table simply marks no row */
     })
-  startStream() // works with no bridge at all, so desktop dev sees the pipeline
+  // Works with no bridge at all, so desktop dev sees the pipeline. Not at the server list:
+  // there a server is opened by hand.
+  if (!rootOpen) startStream()
 
   try {
     sdk = await import('@evenrealities/even_hub_sdk')
@@ -238,6 +258,10 @@ async function boot(): Promise<void> {
     log(`settings recovered from the durable store: ${restored.join(' ')}`)
     reapplyStoredSettings()
     if (invertBtn) invertBtn.textContent = invertLabel()
+    // The list of servers is one of the restored keys in the packaged app.
+    loadTargets()
+    setRootSel(targetList().indexOf(SERVER))
+    renderRootPanel()
   }
   // Before the identity is declared settled: an address kept in the store must be adopted
   // before anyone is asked for one.
@@ -247,7 +271,7 @@ async function boot(): Promise<void> {
   identityIsSettled()
   // The stream above was opened before the bridge existed, so it may be running without a
   // ticket while the durable mirror does hold an identity. Re-open it once if so.
-  if (!streamTicketed && (await isPaired())) {
+  if (!rootOpen && !streamTicketed && (await isPaired())) {
     log('identity recovered from the durable store')
     startStream()
   }
@@ -263,7 +287,9 @@ async function boot(): Promise<void> {
     // reaches the server log as well as the phone's status line.
     log(`establish => ${ok ? 'ESTABLISHED' : 'NOT established (streaming anyway)'}`)
     // The narrative says what the client is doing; `renderStatus()` already prints the page bit.
-    setStatus(ok ? `mirroring ${SERVER}` : 'streaming without an established page')
+    setStatus(
+      rootOpen ? ROOT_STATUS : ok ? `mirroring ${SERVER}` : 'streaming without an established page',
+    )
   } catch (e) {
     log(`establish FAILED: ${errText(e)}`)
     setStatus(`establish failed: ${errText(e)}`)

@@ -483,18 +483,18 @@ describe('a page that cannot be made says so where it will be read', () => {
     expect(src.has('exitArmed')).toBe(false)
   })
 
-  it('`shutDownPageContainer` has one caller: the glasses Exit row', () => {
+  it('`shutDownPageContainer` has one caller: the double-tap at the server list', () => {
     const code = src.code()
     expect(code.count('bridge.shutDownPageContainer(')).toBe(1)
     expect(code.has('bridge.shutDownPageContainer(1)')).toBe(true)
-    expect(src.count('exitApp()')).toBe(2) // the definition + the menu row
+    expect(src.count('exitApp()')).toBe(2) // the definition + root.ts
   })
 
   it('the stuck text names the recovery steps, in order', () => {
     const body = src.fn('renderPageWarning')
     expect(body.has('const stuck = linkDown && !established && establishFails >= 2')).toBe(true)
     // Fragments, because the string is wrapped across source lines.
-    expect(body.has('Quit pinhole-window')).toBe(true)
+    expect(body.has('Quit PinholeWindow')).toBe(true)
     expect(body.has('the glasses')).toBe(true)
     expect(body.has('may need a reboot')).toBe(true)
     // Hedged wording.

@@ -896,7 +896,7 @@ describe('randomart', () => {
     const art = randomart('a'.repeat(64))
     const lines = art.split('\n')
     expect(lines).toHaveLength(11) // top bar + 9 rows + bottom bar
-    expect(lines[0]).toContain('[pinhole-window]')
+    expect(lines[0]).toContain('[PinholeWindow]')
     expect(lines.every(l => l.length === 19)).toBe(true)
     expect(art).toContain('S') // start marker
     expect(art).toContain('E') // end marker

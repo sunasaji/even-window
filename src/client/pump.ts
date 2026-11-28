@@ -49,6 +49,14 @@ export let forcePending = false
 export function setForcePending(v: boolean): void {
   forcePending = v
 }
+/** Forget the frames waiting to be pushed, with their encodes. `lastTiles` stays: it records
+ *  what the glass holds, and that is still true. */
+export function forgetFrames(): void {
+  for (let i = 0; i < frameTiles.length; i++) {
+    frameTiles[i] = null
+    greyPending[i] = false
+  }
+}
 let pumping = false
 /** Where the next dequeue scan starts (see `pickTile`). Survives drains, overlay stand-downs
  *  and `forcePending`: a rotation that restarted at TL every drain would be an absolute

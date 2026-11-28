@@ -148,7 +148,7 @@ Even App 2.2.10 or newer. This table is the blast radius of an SDK upgrade.
 | `ImageContainerProperty`, `updateImageRawData` | The four tiles. Pushes are serial; a newer tile replaces a queued one |
 | `TextContainerProperty`, `textContainerUpgrade` | The overlay in container 6 |
 | `zOrderIndex` on every container | Always set, all or nothing; puts text in front of the tiles |
-| `shutDownPageContainer(1)` | The menu's Exit item |
+| `shutDownPageContainer(1)` | A double-tap at the server list |
 | `onEvenHubEvent` (`listEvent`, `textEvent`, `sysEvent`, `audioEvent`) | Gestures, foreground enter and exit, microphone PCM |
 | `OsEventTypeList.LONG_PRESS_EVENT` (9) | Starts voice input when the server reports a recogniser. `LONG_PRESS_RELEASE_EVENT` (10) is not bound |
 | `onDeviceStatusChanged`, `getDeviceInfo` | Link state (`connectType`) and `isInCase`. `isWearing` is only logged |

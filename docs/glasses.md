@@ -229,9 +229,15 @@ Decision: [instance supersede](decisions/glasses-instance-supersede.md).
 ## Overlay
 
 Container 6 shows one text at a time. `overlayContent()` picks it in this order: voice dialog,
-menu, setup notice, `X unavailable` notice, `mirror paused` notice, startup hint, blank (`' '`).
+menu, server list, setup notice, `X unavailable` notice, `mirror paused` notice, startup hint, blank (`' '`).
 
-The setup notice is what the lens shows while there is no usable server, so that a first start
+The server list is the top of the app (`rootText()` in `src/client/targets.ts`): a header and
+one row per known server, or the steps to add one when there is none. It is up whenever no
+server is open, and its gestures are its own: swipe moves the cursor, tap opens, double tap
+leaves the app, long press does nothing (`rootGesture()` in `src/client/root.ts`).
+Decision: [the app starts at the server list](decisions/root-is-the-server-list.md).
+
+The setup notice is what the lens shows while an open server cannot be used, so that a first start
 is never a black panel (`setupNoticeText()` in `src/client/hints.ts`). It has three forms:
 
 | Auth state | Notice |
@@ -241,7 +247,7 @@ is never a black panel (`setupNoticeText()` in `src/client/hints.ts`). It has th
 | `offline` on an address a person gave | Server unreachable: the address, two things to check, where to change it |
 
 No gesture closes it; it goes when the state clears (`syncSetupNotice()`, called from
-`setAuthState`). The menu still opens over it, which keeps Exit reachable.
+`setAuthState`). The menu still opens over it, which keeps `Disconnect` reachable.
 
 The startup hint lists the gestures (`startupHintText()` in `src/client/hints.ts`). It is
 considered once per page load, at the first establish, and shown on the first three launches
@@ -390,13 +396,13 @@ towards it.
 
 | Level id | Rows |
 | --- | --- |
-| `menu` | `Keys...`, `Window...`, `Launch...` (only with applications), `[x] Invert`, `Close Window` (only with a focused window), `Exit...` |
+| `menu` | `Keys...`, `Window...`, `Launch...` (only with applications), `[x] Invert`, `Close Window` (only with a focused window), `Disconnect` |
 | `keys` | `Mods...`, `Move...`, `Edit...`, `Func...`, `Chars...` (`Letters...`, `Digits...`, `Punct...`, `Keypad...`), `Clicks...` |
 | `kmods` | `[ ] Ctrl`, `[ ] Alt`, `[ ] Shift`: sticky for the next key, then cleared |
 | `kmove`, `kedit`, `kfn` | the `nav`, `edit` and `fn` groups of the key catalogue |
 | `kclick` | `Click`, `Double-click`, `Click-hold`, `Click-release`, `Wheel up`, `Wheel down`, at the current pointer position |
 | `rp` (`Window...`) | the window-manager key catalogue `RP_KEYS`: help, last window, next, previous, new terminal, redisplay, banish pointer, `Kill (force)...` |
-| `rpkill`, `cexit` | confirmation levels: the action, then `< Back` |
+| `rpkill` | confirmation level: the action, then `< Back` |
 | `launch` (`Launch...`) | every application in `{t:'apps'}.list`, in name order |
 | `<id>/N` | page N of a group too long for one level |
 | `launch/I/J...` | the page, or group of pages, at that path of indices |
@@ -481,7 +487,7 @@ dropped.
 | `app:<id>` | `POST /api/spawn {id}` | reset |
 | `close` | `POST /api/windows/close {wid}` for the focused window | reset |
 | `invert` | toggle polarity | reset |
-| `exit` | `shutDownPageContainer(1)` | reset |
+| `disconnect` | back to the server list (`enterRoot`) | reset |
 
 - `stay`: the menu remains open.
 - `resume`: the menu closes so the result is visible and remembers its level; the next double tap
@@ -490,7 +496,7 @@ dropped.
 - `reset`: the menu closes and the next open starts at the root list.
 
 The menu closes before the action runs, because the tiles are black and the pump is stood down
-while it is open. `Exit` and `Kill (force)` sit behind a confirmation level. Repetition belongs on
+while it is open. `Kill (force)` sits behind a confirmation level. Repetition belongs on
 swipe bindings; the menu is for one-shot operations.
 
 Background: [gestures and the firmware menu](notes/2026-10-gestures-and-firmware-menu.md).
@@ -536,7 +542,7 @@ encode path.
 4. Frames are never queued; the newest replaces the pending one.
 5. Container 1 is never written after creation. All visible text goes to container 6.
 6. Every container carries a unique `zOrderIndex` and no `menuObject` is registered.
-7. `shutDownPageContainer` ends the app. Its only caller is the menu's `Exit` row. It is never
+7. `shutDownPageContainer` ends the app. Its only caller is the double-tap at the server list. It is never
    called from error handling, recovery or supersede.
 8. Whenever the grey derivation changes, or the tiles hold something other than the diff
    baseline says (overlay hide, link up, stream reopen, link baseline), set `forcePending` and

@@ -92,7 +92,7 @@ describe('the tree', () => {
     for (const id of reachableLevels(ST)) {
       const rows = levelRows(id, ST)!
       const backs = rows.filter(r => r.token === BACK_TOKEN)
-      if (id === 'cexit' || id === 'rpkill') {
+      if (id === 'rpkill') {
         expect(rows[rows.length - 1], id).toEqual({ label: BACK_LABEL, token: BACK_TOKEN })
         expect(backs.length, id).toBe(1)
       } else {
@@ -129,16 +129,22 @@ describe('the tree', () => {
     expect((levelRows(MENU_ROOT_ID, ST) ?? []).map(r => r.token)).toContain('close')
   })
 
-  // The two actions that cannot be undone must never be one pick deep.
-  it('puts both irreversible actions behind a confirm level', () => {
+  // The action that cannot be undone must never be one pick deep. Leaving the app is not in
+  // this menu at all: `Disconnect` goes back to the server list, which is undone by a tap.
+  it('puts the irreversible action behind a confirm level', () => {
     const kill = RP_KEYS.find(k => k.destructive)!
     for (const id of reachableLevels(ST)) {
       const rows = levelRows(id, ST)!
-      const direct = rows.filter(r => r.token === 'exit' || r.token === `rp:${kill.key}`)
-      if (direct.length) expect(['cexit', 'rpkill'], `${id} acts directly`).toContain(id)
+      const direct = rows.filter(r => r.token === `rp:${kill.key}`)
+      if (direct.length) expect(['rpkill'], `${id} acts directly`).toContain(id)
+      expect(
+        rows.map(r => r.token),
+        id,
+      ).not.toContain('exit')
     }
     // And the confirm levels are reachable, so the actions are not merely hidden.
-    expect((levelRows('cexit', ST) ?? []).map(r => r.token)).toContain('exit')
+    expect(levelRows('cexit', ST)).toBeNull()
+    expect(levelRows(MENU_ROOT_ID, ST)!.map(r => r.token)).toContain('disconnect')
     expect((levelRows('rpkill', ST) ?? []).map(r => r.token)).toContain(`rp:${kill.key}`)
   })
 
@@ -257,7 +263,7 @@ describe('parseToken', () => {
   it('names the kinds the action router switches on', () => {
     expect(parseToken('back')).toEqual({ kind: 'back' })
     expect(parseToken('close')).toEqual({ kind: 'close' })
-    expect(parseToken('exit')).toEqual({ kind: 'exit' })
+    expect(parseToken('disconnect')).toEqual({ kind: 'disconnect' })
     expect(parseToken('invert')).toEqual({ kind: 'invert' })
     expect(parseToken('sub:keys')).toEqual({ kind: 'sub', id: 'keys' })
     expect(parseToken('key:Page_Up')).toEqual({ kind: 'key', key: 'Page_Up' })
@@ -392,7 +398,7 @@ describe('rowMenuEffect', () => {
 
   // Everything else ends the interaction; repetition belongs on a per-app swipe binding.
   it('returns to the top for a finished operation', () => {
-    for (const token of ['rp:question', 'close', 'exit', 'invert']) {
+    for (const token of ['rp:question', 'close', 'disconnect', 'invert']) {
       expect(rowMenuEffect(token), token).toBe('reset')
     }
   })
@@ -540,12 +546,12 @@ describe('Menu... level — the root list page turns', () => {
 
   it('ends with Prev Page / Next Page only while the root list is paged', () => {
     const one = levelRows(MENU_ROOT_ID, ST2)!.map(r => r.label)
-    expect(one.at(-1)).toBe('Exit...')
+    expect(one.at(-1)).toBe('Disconnect')
     expect(one).not.toContain('Next Page')
     // The fullest it gets: every optional row present.
     const full: MenuState = { ...ST2, rootPaged: true, apps: [{ id: 'a', name: 'a' }] }
     const paged = levelRows(MENU_ROOT_ID, full)!
-    expect(paged.slice(-3).map(r => r.label)).toEqual(['Exit...', 'Prev Page', 'Next Page'])
+    expect(paged.slice(-3).map(r => r.label)).toEqual(['Disconnect', 'Prev Page', 'Next Page'])
     expect(paged.length).toBeLessThanOrEqual(LEVEL_MAX_ROWS)
     // Only the Menu... level.
     expect(levelRows('keys', full)!.map(r => r.label)).not.toContain('Next Page')

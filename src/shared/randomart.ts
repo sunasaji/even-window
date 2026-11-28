@@ -8,7 +8,7 @@
 
 /** Randomart over a hex fingerprint: a small ASCII grid a human can compare at a glance.
  *  Pure; both sides import this one implementation. */
-export function randomart(fpHex: string, label = 'pinhole-window'): string {
+export function randomart(fpHex: string, label = 'PinholeWindow'): string {
   const W = 17,
     H = 9,
     CH = ' .o+=*BOX@%&#/^SE'

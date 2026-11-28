@@ -38,6 +38,7 @@ alternatives considered, consequences.
 - [Client-drawn glasses menu instead of the firmware menu](decisions/client-drawn-glasses-menu.md)
 - [The CORS default follows authentication](decisions/cors-follows-auth.md)
 - [Renamed from even-window to pinhole-window](decisions/rename-to-pinhole-window.md)
+- [The app starts at the server list](decisions/root-is-the-server-list.md)
 - [The default application is a dark xterm with a bold bitmap font](decisions/default-terminal-client.md)
 - [The display session outlives the server](decisions/display-session-outlives-server.md)
 - [The env file is a parsed subset of systemd's EnvironmentFile](decisions/env-file-format.md)

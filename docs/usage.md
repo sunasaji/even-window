@@ -6,21 +6,38 @@ How to use pinhole-window once it is running and a device is paired
 ([getting-started.md](getting-started.md)). The glasses show the mirrored desktop;
 you operate it with gestures on the glasses and with the phone screen.
 
+## The server list
+
+The app starts at the list of servers it knows, on the glasses and on the phone. Nothing is
+mirrored until you open one, even when there is only one. On the glasses, swipe to the server
+and tap; on the phone, tap its row. The cursor starts on the server you used last.
+
+To add a server, type its URL under **connection** and tap **apply**, or tap **pair** and paste
+a pairing URL. To come back to the list, choose `Disconnect` in the menu on the glasses, or tap
+**disconnect** under **connection** on the phone. The **✕** beside a row forgets that server on this phone.
+
+A double tap at the list leaves the app, after the system's confirmation.
+
+<img src="img/glasses-servers.png" width="288" alt="The server list on the lens: a header with tap=open and dbl=exit, and one server under the cursor">
+
 ## Glasses gestures
 
 Gestures come from either temple or from the ring.
 
-| Gesture | While mirroring | While the menu is open |
-| --- | --- | --- |
-| Swipe up / down | Sends a key to the focused window: `Up` / `Down` by default, configurable per application | Moves the cursor (wraps around) |
-| Tap | Sends `Return` | Selects the row |
-| Double tap | Opens the menu | Goes up one level; closes the menu at the top |
-| Long press | Starts voice input, when a recogniser is configured | — |
+| Gesture | At the server list | While mirroring | While the menu is open |
+| --- | --- | --- | --- |
+| Swipe up / down | Moves the cursor (wraps around) | Sends a key to the focused window: `Up` / `Down` by default, configurable per application | Moves the cursor (wraps around) |
+| Tap | Opens the server | Sends `Return` | Selects the row |
+| Double tap | Leaves the app | Opens the menu | Goes up one level; closes the menu at the top |
+| Long press | — | Starts voice input, when a recogniser is configured | — |
+
+Tap and then long press opens the system menu of the glasses (display off, brightness, close)
+wherever you are.
 
 Several swipes in quick succession are sent together as one batch, so a burst of
 five swipes arrives as five key presses.
 
-On the first few launches, the lens lists these gestures when the app starts. The list
+On the first few launches, the lens lists these gestures when the first server opens. The list
 stays until you make a gesture: any gesture closes it, and a double tap also opens the menu.
 
 <img src="img/glasses-hint.png" width="288" alt="The gesture list on the lens: double-tap for the menu, swipe for Up and Down, tap for Enter">
@@ -58,15 +75,15 @@ Under `Menu...`:
 | `Launch...` | Launch any application: the full list in name order. Up to nine are listed directly; more are split into pages, each row naming its range and the start of each name in it, such as `Fi-Gn (Files\|Firefox\|GIMP\|Gnome Te)` |
 | `Invert` | Flip light and dark |
 | `Close Window` | Ask the focused window to close |
-| `Exit...` | Quit the app on the glasses, after a confirmation row |
+| `Disconnect` | Go back to the server list |
 | `Prev Page` / `Next Page` | Only with several pages, last: turn the first level's page |
 
 | `Menu...` | `Keys...` | `Launch...` |
 | --- | --- | --- |
-| <img src="img/glasses-menu.png" width="240" alt="The menu: Keys, Window, Launch, Invert, Close Window, Exit"> | <img src="img/glasses-menu-keys.png" width="240" alt="Keys: Mods, Move, Edit, Func, Chars, Clicks"> | <img src="img/glasses-menu-launch.png" width="240" alt="Launch: applications grouped by name range, six rows"> |
+| <img src="img/glasses-menu.png" width="240" alt="The menu: Keys, Window, Launch, Invert, Close Window, Disconnect"> | <img src="img/glasses-menu-keys.png" width="240" alt="Keys: Mods, Move, Edit, Func, Chars, Clicks"> | <img src="img/glasses-menu-launch.png" width="240" alt="Launch: applications grouped by name range, six rows"> |
 
-A double tap goes up one level, and closes the menu from the first one. Only the two
-confirmation levels (`Exit...`, `Kill (force)...`) have a `< Back` row.
+A double tap goes up one level, and closes the menu from the first one. Only the
+confirmation level (`Kill (force)...`) has a `< Back` row.
 
 Choosing an action closes the menu so that you can see its result. After a row
 under `Keys...`, the next double tap reopens the menu at the same place, which makes

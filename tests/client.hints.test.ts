@@ -100,7 +100,10 @@ describe('wiring', () => {
 
   it('the menu or the voice dialog retires the hint', () => {
     expect(
-      src.has('if (startupHint && interactiveOverlay() !== null) dismissStartupHint(false)'),
+      // Not at the server list: the hint waits there for the first server to be opened.
+      src.has(
+        'if (startupHint && !rootOpen && interactiveOverlay() !== null) dismissStartupHint(false)',
+      ),
     ).toBe(true)
   })
 
@@ -125,7 +128,7 @@ describe('setup notice', () => {
       const lines = setupNoticeText(kind, long).split('\n')
       expect(lines.length).toBeLessThanOrEqual(PANEL_LINES)
       for (const l of lines) expect(glassWidth(l)).toBeLessThan(LINE_UNITS)
-      expect(lines.at(-1)).toContain('Exit')
+      expect(lines.at(-1)).toContain('Disconnect')
     }
     expect(setupNoticeText('pair', long)).toContain('ew-auth.mjs pair')
     expect(setupNoticeText('address', long)).toContain('server URL')

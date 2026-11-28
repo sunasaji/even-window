@@ -8,12 +8,14 @@ import { log } from './debugLog.ts'
 import { flagSource, noteFlag } from './flags.ts'
 import { maybePromptPairing } from './main.ts'
 import { syncSetupNotice } from './overlay.ts'
-import { syncServerField } from './phoneUi.ts'
+import { renderRootPanel, syncServerField } from './phoneUi.ts'
 import { kickPump, setForcePending } from './pump.ts'
+import { rootLeft } from './root.ts'
 import { confirmServerChange, serverChangeNeedsConfirm } from './serverGuard.ts'
 import { needsServerAddress, openServerSetup } from './serverSetup.ts'
 import { renderStatus, setStatus } from './statusUi.ts'
 import { startStream } from './stream.ts'
+import { addTarget, rootOpen, setRootOpen, targetList } from './targets.ts'
 import { errText, withTimeout } from './util.ts'
 
 // ── server address ─────────────────────────────────────────────────────────────────────────
@@ -103,6 +105,8 @@ export function setServer(raw: string, guess = false): void {
       /* storage blocked */
     }
     void serverStore?.set(SERVER_KEY, SERVER)
+    // Every address somebody chose is a server this device can open again (targets.ts).
+    if (addTarget(SERVER)) renderRootPanel()
   }
   // A different server has a different signing secret: drop the cached session so the old
   // server's token is never sent to the new one.
@@ -133,12 +137,21 @@ export async function wireServerStore(store: DurableStore): Promise<void> {
   }
   if (!kept || !serverIsGuess) return
   log(`server: ${kept} recovered from the durable store`)
+  // At the list the address is only adopted: it becomes a row, and opening it is a tap.
+  if (rootOpen) {
+    setServer(kept)
+    syncServerField()
+    return
+  }
   switchServer(kept)
 }
 
 /** Adopt a new API base mid-run: re-point the handshake, drop the old session and re-open
  *  the stream. Never a reload, which would re-establish the glasses page (docs/glasses.md). */
 export function switchServer(raw: string): void {
+  // Connecting is what leaves the server list, whoever asked for it.
+  const fromRoot = rootOpen
+  if (fromRoot) setRootOpen(false)
   setServer(raw)
   syncServerField()
   setAuthState('unknown')
@@ -146,6 +159,7 @@ export function switchServer(raw: string): void {
   setForcePending(true)
   startStream()
   kickPump()
+  if (fromRoot) rootLeft()
 }
 
 /** Resolve a `?server=` that `initServer` deferred. Unpaired: adopt it. Paired: one human
@@ -218,15 +232,27 @@ export function identityIsSettled(): void {
 
 async function maybeAskForServer(): Promise<void> {
   if (askedForServer || !identitySettled) return
-  if (!needsServerAddress(serverIsGuess, authState === 'offline')) return
+  // At the list there is no request to fail, so the question is only whether a server is known.
+  if (
+    rootOpen ? targetList().length > 0 : !needsServerAddress(serverIsGuess, authState === 'offline')
+  )
+    return
   askedForServer = true
   const tried = SERVER
   if (!(await isPaired())) {
-    log(`server: no answer from the default ${tried} and no identity — opening the pairing dialog`)
+    log(
+      rootOpen
+        ? 'server: none in the list and no identity — opening the pairing dialog'
+        : `server: no answer from the default ${tried} and no identity — opening the pairing dialog`,
+    )
     maybePromptPairing()
     return
   }
-  log(`server: no answer from the default ${tried} on a paired device — asking for the address`)
+  log(
+    rootOpen
+      ? 'server: none in the list on a paired device — asking for the address'
+      : `server: no answer from the default ${tried} on a paired device — asking for the address`,
+  )
   try {
     openServerSetup({
       tried,
@@ -247,6 +273,9 @@ export async function authFetch(path: string, init?: RequestInit): Promise<Respo
     return await fetch(`${SERVER}${path}`, { ...init, headers: h })
   }
   const isAuthPath = path.startsWith('/api/auth/')
+  // At the server list no server is open. The pairing routes are let through: enrolling is how
+  // the first server gets into the list.
+  if (rootOpen && !isAuthPath) throw new Error('no server is open')
   const tok = await bearer()
   let r: Response
   try {

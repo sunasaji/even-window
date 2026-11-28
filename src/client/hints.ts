@@ -51,7 +51,7 @@ export function retireHint(id: HintId): void {
  *  only when the server has a recogniser, because a long press does nothing otherwise. */
 export function startupHintText(voice: boolean): string {
   return [
-    'pinhole-window — gestures (ring or temple)',
+    'PinholeWindow — gestures (ring or temple)',
     '- double-tap: menu (windows, apps, keys)',
     '- swipe: Up / Down keys to the window',
     '- tap: Enter',
@@ -76,10 +76,10 @@ export function setupNoticeKind(auth: string, guess: boolean): SetupNotice | nul
  *  of it. It stays until the state clears; no gesture closes it, the menu still opens over it.
  *  `server` is shortened because a tailnet address is wider than a line. */
 export function setupNoticeText(kind: SetupNotice, server: string): string {
-  const last = 'double-tap: menu (Exit is in it)'
+  const last = 'double-tap: menu (Disconnect is in it)'
   if (kind === 'pair')
     return [
-      'pinhole-window — pair this phone',
+      'PinholeWindow — pair this phone',
       '1. PC: start the server (npm run server)',
       '2. PC: node scripts/ew-auth.mjs pair URL',
       '    URL = how the phone reaches the PC',
@@ -91,7 +91,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
     ].join('\n')
   if (kind === 'address')
     return [
-      'pinhole-window — set the server address',
+      'PinholeWindow — set the server address',
       'Use the card on the phone.',
       '- paired before: enter the server URL',
       '- first time, on the PC:',
@@ -101,7 +101,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
       last,
     ].join('\n')
   return [
-    'pinhole-window — server unreachable',
+    'PinholeWindow — server unreachable',
     shortServer(server),
     '- is the server running on the PC?',
     '- is the phone on the same network / VPN?',

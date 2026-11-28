@@ -289,7 +289,7 @@ describe('buildMenuItems', () => {
     expect(items.filter(i => i.kind === 'menu')).toHaveLength(1)
   })
 
-  // The entry row is the only way into Keys / Ratpoison / Close Window / Exit, so it must
+  // The entry row is the only way into Keys / Ratpoison / Close Window / Disconnect, so it must
   // exist with nothing else to show.
   it('always offers the entry row, even with no windows and no apps at all', () => {
     expect(buildMenuItems([])).toEqual([

@@ -90,7 +90,7 @@ export interface MenuItem {
    *  time, from `active`, which keeps focus out of `menuSignature`. */
   itemName: string
   /** `window` = switch to `wid`; `app` = launch `appId`; `menu` = descend into the hierarchy
-   *  (Exit and the page turns live inside it — they are not root rows). */
+   *  (Disconnect and the page turns live inside it — they are not root rows). */
   kind: 'window' | 'app' | 'menu'
   /** X window id, the only selector ever posted. `null` (not `''`) for anything that is not a
    *  window. */
@@ -219,7 +219,7 @@ export function mruOrderItems(
 // The panel shows a header and nine rows. Every page opens with `Menu...` and holds up to
 // eight windows and apps under it. With several pages the row reads `Menu/Prev/Next...`: the
 // page turns are the last two rows of the level it enters, so a page spends no row on them,
-// and the way into the hierarchy (and from there to Exit) is on every page.
+// and the way into the hierarchy (and from there to Disconnect) is on every page.
 //
 // Windows and apps are paged together, windows first: apps are never dropped for lack of
 // room, they go onto a further page. At most `MENU_MAX_APPS` of them (`buildMenuItems`).

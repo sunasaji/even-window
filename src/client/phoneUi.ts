@@ -26,7 +26,7 @@ import { KEY_PROBE, mountKeyProbe } from './keyProbe.ts'
 import { pairingHooks, setPairingPrompted } from './main.ts'
 import { wireMirrorTouch } from './mirrorTouch.ts'
 import { buildKeyPad } from './oskb.ts'
-import { glassInCase, lensLabel, lensOn, overrideCase, setLensOn } from './overlay.ts'
+import { glassInCase, lensLabel, lensOn, overrideCase, setLensOn, syncOverlay } from './overlay.ts'
 import { openPairingDialog } from './pairingUI.ts'
 import {
   appsPaletteOpen,
@@ -35,7 +35,8 @@ import {
   openWindowPalette,
   renderAppsEntry,
 } from './palette.ts'
-import { SERVER, setServer } from './serverLink.ts'
+import { enterRoot, openTarget } from './root.ts'
+import { SERVER, switchServer } from './serverLink.ts'
 import {
   applyMirrorMode,
   invert,
@@ -46,7 +47,8 @@ import {
   setMirrorMode,
 } from './settings.ts'
 import { connFoldToggledByUser, invertLabel, renderConnSummary, renderStatus } from './statusUi.ts'
-import { startStream, sttReady } from './stream.ts'
+import { sttReady } from './stream.ts'
+import { removeTarget, rootOpen, rootSel, targetLabel, targetList } from './targets.ts'
 import { openTour, registerTourDemo, registerTourTarget } from './tour.ts'
 import { onVoiceBtn, voiceResolve } from './voice.ts'
 import { closeVPad, openVPad, SUBMIT_HINT_MS, SUBMIT_HOLD_MS, vpadOpen } from './vpad.ts'
@@ -79,6 +81,85 @@ let serverFieldEl: HTMLInputElement | null = null
  *  pasted pairing URL, the server-address card). */
 export function syncServerField(): void {
   if (serverFieldEl) serverFieldEl.value = SERVER
+}
+/** The server list at the top of the page, shown only at the root (`renderRootPanel`). */
+let rootPanelEl: HTMLElement | null = null
+/** Where the open server and `disconnect` are shown: the first row inside `connection`. */
+let connServerEl: HTMLElement | null = null
+
+/** Redraw the server list panel from `targets.ts`. Safe before the page is mounted. */
+export function renderRootPanel(): void {
+  const top = rootPanelEl
+  if (!top) return
+  top.replaceChildren()
+  connServerEl?.replaceChildren()
+  // At the list the panel is at the top of the page, where the choice is made. Inside a server
+  // it would only take room from the mirror, so the open server and `disconnect` go into the
+  // `connection` fold: leaving a server is rare.
+  top.style.display = rootOpen ? '' : 'none'
+  if (connServerEl) connServerEl.style.display = rootOpen ? 'none' : ''
+  renderConnSummary() // it names the open server
+  const box = rootOpen ? top : connServerEl
+  if (!box) return
+  const line = (text: string, color = '#aaa'): HTMLElement => {
+    const d = document.createElement('div')
+    d.style.cssText = `font:13px/1.4 system-ui;color:${color}`
+    d.textContent = text
+    return d
+  }
+  if (!rootOpen) {
+    const row = document.createElement('div')
+    row.style.cssText = 'display:flex;align-items:center;gap:8px'
+    const name = line(`● ${targetLabel(SERVER)}`, '#9e9')
+    name.style.cssText +=
+      ';flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'
+    row.append(
+      name,
+      button(
+        'disconnect',
+        () => {
+          enterRoot('disconnect on the phone')
+        },
+        'back to the list of servers',
+      ),
+    )
+    box.append(row)
+    return
+  }
+  const list = targetList()
+  box.append(line(list.length ? 'Choose a server to open:' : 'No server yet.', '#e5e5e5'))
+  list.forEach((server, i) => {
+    const row = document.createElement('div')
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:6px'
+    const open = button(
+      `${i === rootSel ? '▸ ' : ''}${targetLabel(server)}`,
+      () => {
+        openTarget(server)
+      },
+      'open this server',
+    )
+    open.style.cssText +=
+      ';flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis'
+    const del = button(
+      '✕',
+      () => {
+        removeTarget(server)
+        renderRootPanel()
+        syncOverlay()
+      },
+      'forget this server (its pairing on the server stays until revoked there)',
+    )
+    del.setAttribute('aria-label', `forget ${targetLabel(server)}`)
+    row.append(open, del)
+    box.append(row)
+  })
+  box.append(
+    line(
+      list.length
+        ? 'Add another under connection below: type its URL and apply, or paste a pairing URL in pair.'
+        : 'Under connection below: type the server URL and apply, or tap pair and paste a pairing URL.',
+    ),
+  )
 }
 export let logEl: HTMLElement | null = null
 export let logCountEl: HTMLElement | null = null
@@ -145,7 +226,7 @@ export function mountUi(): void {
   const titleRow = document.createElement('div')
   titleRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin:0 0 4px'
   const title = document.createElement('h1')
-  title.textContent = 'pinhole-window'
+  title.textContent = 'PinholeWindow'
   // Ellipsised rather than wrapped: on a narrow phone the title gives way to the buttons.
   title.style.cssText =
     'font-size:16px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;' +
@@ -209,6 +290,13 @@ export function mountUi(): void {
     },
   })
   ui.appendChild(titleRow)
+
+  rootPanelEl = document.createElement('div')
+  rootPanelEl.id = 'ew-servers'
+  rootPanelEl.style.cssText =
+    'margin:0 0 6px;padding:8px;border:1px solid #333;border-radius:8px;background:#161616'
+  ui.appendChild(rootPanelEl)
+  renderRootPanel()
 
   // Above the preview, because it explains a mirror that never lights up. Not a toast: it must
   // persist.
@@ -613,6 +701,9 @@ export function mountUi(): void {
   statusEl.style.cssText =
     'margin:6px 0 0;font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;' +
     'color:#5f6;white-space:pre-wrap;word-break:break-word'
+  connServerEl = document.createElement('div')
+  connServerEl.style.cssText = 'margin:6px 0 0'
+  srv.appendChild(connServerEl)
   srv.appendChild(statusEl)
   const srvRow = document.createElement('div')
   srvRow.style.cssText = 'display:flex;gap:6px;margin-top:6px'
@@ -625,9 +716,9 @@ export function mountUi(): void {
   srvRow.append(
     field,
     button('apply', () => {
-      setServer(field.value)
+      // Adds the address to the server list and opens it.
+      switchServer(field.value)
       field.value = SERVER
-      startStream()
     }),
   )
   srv.appendChild(srvRow)

@@ -14,7 +14,8 @@ Top to bottom, one scrolling column (max width 720 px):
 
 | Row | Contents |
 | --- | --- |
-| Title row | `pinhole-window`, `?` (the [tour](#tour)), then the three palette openers `task`, `window`, `apps N` |
+| Title row | `PinholeWindow`, `?` (the [tour](#tour)), then the three palette openers `task`, `window`, `apps N` |
+| Server list | Only at the list: one row per known server (tap to open) with `✕` to forget it (see [the server list](#server-list)) |
 | Page warning | Hidden unless the glasses page is not established (see [glasses.md](glasses.md)) |
 | Mirror preview | 576x288 canvas showing the mirrored desktop; also a touch surface |
 | Text row | Text box, `🎤 voice` (only when the server reports speech-to-text; see [voice.md](voice.md)), `Submit` |
@@ -22,7 +23,7 @@ Top to bottom, one scrolling column (max width 720 px):
 | Tools row | `keys`, `vRing`, `vPad`, `inv:off`, `color`, `lens:on` |
 | Keys panel | On-screen keyboard, hidden until `keys` is latched |
 | `app` fold | Per-app bindings editor; the summary shows what is in force |
-| `connection` fold | Status line, server URL + `apply`, `pair`, enrolled keys |
+| `connection` fold | The open server with `disconnect`, status line, server URL + `apply`, `pair`, enrolled keys. The summary names the open server |
 | Key probe | Only with `?keyprobe=1` |
 | `log N/400` fold | Client log with `copy`, `follow:on/off`, `clear` |
 
@@ -345,26 +346,45 @@ opened, or tapped or typed in after it opened by itself, is left alone. A user w
 the same problem does not open it a second time.
 
 Inside: the status line (the client's own bookkeeping), the server URL field with `apply`
-(sets the API base, stored as `ew.server`, and restarts the stream), and `pair`, which opens
+(adds the address to the server list, stores it as `ew.server` and opens it), and `pair`, which opens
 the pairing dialog regardless of auth state, because a device that cannot reach the server
 never learns its state. Pairing is described in [security.md](security.md).
 
-### When no server address was chosen
+### Server list
 
-With no `?server=` and no stored address the client uses a default: its own origin, or
-`http://localhost:8787` when the page is on loopback or has no origin. The packaged app is in
-the second case, and on a phone that address leads nowhere. The default is used but not
-stored, so the client can tell that nobody chose it.
+The app starts at the list of servers this device knows and connects to none until one is
+opened ([decision](decisions/root-is-the-server-list.md)). The panel under the title row is
+the phone's view of it, and the mirror preview shows the same text the lens does.
 
-When the default does not answer, the client asks once per page load:
+| Element | Effect |
+| --- | --- |
+| A server row | `openTarget()`: connects, and the panel is hidden so the mirror has the room |
+| `✕` | Removes the row from this phone. The enrolment on that server is not touched |
+| `disconnect` (inside a server, in the `connection` fold) | `enterRoot()`: stops the stream and returns to the list. It is in the fold because leaving a server is rare |
+
+The list is `ew.targets`, a JSON array of origins, kept like the settings (localStorage,
+mirrored to the bridge's storage). It holds nine. An address becomes a row when somebody
+chooses it: `apply`, a pasted pairing URL, the server-address card, a `?server=` that was
+adopted. The address stored as `ew.server` by an earlier version becomes the first row.
+
+A URL with `?server=` or `?pair=` opens that server directly, without stopping at the list.
+While the list is up the client sends no request except to the pairing routes.
+
+### When the list is empty
+
+With no `?server=` and no stored address the list is empty. The client's built-in default
+(its own origin, or `http://localhost:8787` on loopback or with no origin) is never added to
+the list, because nobody chose it.
+
+With an empty list the client asks once per page load:
 
 | Device | What opens |
 | --- | --- |
 | Holds no key | The pairing dialog. A pasted pairing URL carries the server address |
 | Holds a key | A card asking for the server address only. It accepts an origin, any URL on the server, a pairing URL, or a bare `host:port` (taken as https) |
 
-A chosen address that stops answering opens nothing; the summary line says `server
-unreachable`.
+A server that does not answer after it was opened opens nothing; the summary line says `server
+unreachable`, and the lens shows the setup notice.
 
 In the packaged app `localStorage` does not survive a restart of the Even App, so a chosen
 address is also written to the bridge's storage (`setLocalStorage`, key `ew.server`) and read

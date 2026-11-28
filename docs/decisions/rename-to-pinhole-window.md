@@ -11,7 +11,11 @@ tied to one vendor described less than the project is.
 
 ## Decision
 
-The name is pinhole-window: a small, single-colour image of something that is elsewhere. It
+The name is pinhole-window: a small, single-colour image of something that is elsewhere. It is
+written `PinholeWindow` where a person meets the app (the Even Hub name, the page title, the
+lens texts) and `pinhole-window` in the repository, the package and the paths. One word,
+because the system menu's last row reads "Close" plus the app's name, and "Close Pinhole
+Window" would read as the app's own `Close Window`. It
 replaces the old name wherever a person reads it: the app name in `app.json`, the page title,
 the lens notices, the package name, the repository and the documentation.
 
