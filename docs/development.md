@@ -133,7 +133,7 @@ The recipes below assume this isolated run: `E=http://127.0.0.1:8791` (server),
 `A=http://127.0.0.1:9909` (automation), mirrored display `127.0.0.1:191` or `:191`, simulator
 display `127.0.0.1:186`. With `--auth`, pair the WebView first:
 `PINHOLE_STATE_DIR=<runtime>/state node scripts/pw-auth.mjs open '<app-url>'`, start with
-`--app-query "pair=<CODE>"`, click "Pair this device" in the WebView (see
+`--app-query "pair=<CODE>"`, click "Pair this app" in the WebView (see
 [driving the phone UI](#driving-the-phone-ui)), then `pw-auth.mjs pending` / `approve <id>`.
 
 ### Automation API

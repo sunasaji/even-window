@@ -65,6 +65,10 @@ development only; see [development.md](development.md).
 Authentication is on by default: a device that is not enrolled gets `401` from every
 route. Pairing enrols the key pair that the device generates for itself.
 
+What is paired is the app or the browser, not the phone: the key is kept in that app's own
+storage, one per server. The Even App build, the dev version and a browser on the same phone
+each pair separately, and each takes a slot (`PINHOLE_MAX_CLIENTS`).
+
 1. With the server running, open a pairing window, passing the URL the device will
    load the app from:
 
@@ -76,7 +80,7 @@ route. Pairing enrols the key pair that the device generates for itself.
    code. The window stays open for two minutes and admits one device.
 2. Open that URL on the device, or open the app, expand **connection**, tap **pair**
    and paste the URL or the code.
-3. Tap **Pair this device**. The device shows a pattern (randomart) and its id.
+3. Tap **Pair this app**. The screen shows a pattern (randomart) and the key's id.
 4. The terminal shows the pattern it received. If both screens show the same pattern,
    answer `y`. The client connects without a reload.
 

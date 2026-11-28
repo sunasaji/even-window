@@ -117,7 +117,7 @@ in a browser on the same machine:
 node scripts/pw-auth.mjs pair 'http://127.0.0.1:5273/?server=http://127.0.0.1:8787'
 ```
 
-Open the printed URL, tap **Pair this device**, compare the pattern shown on both
+Open the printed URL, tap **Pair this app**, compare the pattern shown on both
 screens, and answer `y`. To use a real phone and the glasses, put the server behind
 `tailscale serve` and load the app in the Even App:
 [docs/getting-started.md](docs/getting-started.md).

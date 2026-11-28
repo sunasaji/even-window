@@ -116,7 +116,7 @@ npm run dev         # クライアントのページをポート 5273 で配信�
 node scripts/pw-auth.mjs pair 'http://127.0.0.1:5273/?server=http://127.0.0.1:8787'
 ```
 
-表示された URL を開き、**Pair this device** をタップし、両方の画面に出るパターンを
+表示された URL を開き、**Pair this app** をタップし、両方の画面に出るパターンを
 見比べて `y` と答えます。実機のスマホとグラスで使うには、サーバを `tailscale serve`
 の後ろに置き、Even App でアプリを読み込みます:
 [docs/getting-started.ja.md](docs/getting-started.ja.md)。

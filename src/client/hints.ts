@@ -79,7 +79,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
   const last = 'double-tap: menu (Disconnect is in it)'
   if (kind === 'pair')
     return [
-      'PinholeWindow — pair this phone',
+      'PinholeWindow — pair this app',
       '1. PC: start the server (npm run server)',
       '2. PC: node scripts/pw-auth.mjs pair URL',
       '    URL = how the phone reaches the PC',

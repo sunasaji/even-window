@@ -229,9 +229,9 @@ const maxClients = () => {
  *  command for each, and how to raise the cap. */
 const printSlotRemedy = (clients, max) => {
   console.error('')
-  console.error('Re-pairing does not replace a key, it adds one: a device generates a fresh')
+  console.error('Re-pairing does not replace a key, it adds one: an app generates a fresh')
   console.error('keypair, so the old entry would stay authorized with nobody holding it.')
-  console.error('Either revoke the key this device replaces, then run this again:')
+  console.error('Either revoke the key this app replaces, then run this again:')
   console.error('')
   for (const c of clients)
     console.error(`  node scripts/pw-auth.mjs revoke ${c.id.slice(0, 12)}   # ${c.name}`)
@@ -286,7 +286,7 @@ const remindToRevokeOthers = id => {
     console.log(
       `  ${c.id.slice(0, 12)}…  ${c.name}  (added ${new Date(c.addedAt).toISOString()})${c.addedIp ? ` from ${c.addedIp}` : ''}`,
     )
-  console.log('If this device is replacing one of them, revoke it now — a re-paired device leaves')
+  console.log('If this app is replacing one of them, revoke it now — a re-paired app leaves')
   console.log('its old key enrolled and nobody holding it:')
   console.log(`  node scripts/pw-auth.mjs revoke ${others[0].id.slice(0, 12)}`)
 }
@@ -412,7 +412,9 @@ switch (cmd) {
     refuseIfNoFreeSlot()
     const { code, exp } = openWindow()
     const url = pairUrl(args[0], code)
-    console.log('Pairing window open for 2 minutes. On the device, open (or scan):\n')
+    console.log(
+      'Pairing window open for 2 minutes. In the app or browser to pair, open (or scan):\n',
+    )
     console.log('  ' + url + '\n')
     const qr = await renderQr(url)
     if (qr) console.log(qr)
@@ -427,9 +429,11 @@ switch (cmd) {
       console.log('No device paired within the window — closed.')
       break
     }
-    console.log('\nA device is requesting to pair. Compare this pattern with the device screen:\n')
+    console.log(
+      '\nAn app is requesting to pair. Compare this pattern with the one on its screen:\n',
+    )
     console.log(entry.art + '\n')
-    const ans = await ask('Do the patterns match on both screens? Approve this device? [y/N] ')
+    const ans = await ask('Do the patterns match on both screens? Approve this app? [y/N] ')
     if (/^y(es)?$/i.test(ans.trim())) {
       refuseIfFull(entry.id)
       doApprove(entry)
@@ -454,7 +458,7 @@ switch (cmd) {
       console.log(p.art)
     }
     console.log(
-      '\nCompare the art above with the device, then: approve <idPrefix> | reject <idPrefix>',
+      '\nCompare the art above with the one on the app’s screen, then: approve <idPrefix> | reject <idPrefix>',
     )
     break
   }

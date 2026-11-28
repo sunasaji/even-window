@@ -122,7 +122,7 @@ export function renderKeys(): void {
       'font:11px/1.6 ui-monospace,monospace;' +
       `color:${isNew ? '#ff6b57' : isMe ? '#9ad' : '#bdbdbd'}`
     const label = document.createElement('div')
-    label.textContent = `${isNew ? '⚠ NEW ' : ''}${c.name}${isMe ? ' (this device)' : ''}`
+    label.textContent = `${isNew ? '⚠ NEW ' : ''}${c.name}${isMe ? ' (this app)' : ''}`
     const id = document.createElement('div')
     id.textContent = c.id.slice(0, 12)
     const when = document.createElement('div')

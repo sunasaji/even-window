@@ -126,7 +126,7 @@ async function forgetServer(server: string, label: string): Promise<void> {
   toast(
     r === 'revoked'
       ? `Forgot ${label}. Its key was revoked on the server.`
-      : `Forgot ${label}. This phone was not paired with it.`,
+      : `Forgot ${label}. This app was not paired with it.`,
   )
 }
 
@@ -336,7 +336,7 @@ function renderRows(
         renderRootPanel()
         void forgetServer(t.server, targetLabel(t))
       },
-      'forget this server: its key is revoked on the server and discarded here. Tap twice',
+      'forget this server: this app’s key is revoked on the server and discarded here. Tap twice',
     )
     if (armed) del.style.cssText += ';background:#7a1f1f;color:#fff;border-color:#c33'
     acts.append(edit, del)
@@ -350,8 +350,8 @@ function renderRows(
     const why = document.createElement('div')
     why.textContent =
       'The server did not answer, so it could not be told. ' +
-      'If you forget it now, the key on this phone (what this phone logs in with) is deleted, ' +
-      'but the key on the server (what lets this phone in) is not revoked and stays enrolled. ' +
+      'If you forget it now, the key in this app (what this app logs in with) is deleted, ' +
+      'but the key on the server (what lets this app in) is not revoked and stays enrolled. ' +
       'To remove that one you will have to run this on the PC:'
     const cmd = document.createElement('div')
     cmd.style.cssText =
@@ -370,7 +370,7 @@ function renderRows(
         log(`root: forgot ${t.server} — its key stays enrolled on the server (confirmed)`)
         void discardServer(t.server)
       },
-      'delete the key on this phone and leave the one on the server',
+      'delete the key in this app and leave the one on the server',
     )
     anyway.style.cssText += ';background:#7a1f1f;color:#fff;border-color:#c33'
     btns.append(
@@ -979,13 +979,13 @@ export function mountUi(): void {
         setPairingPrompted(true)
         openPairingDialog(pairingHooks)
       },
-      'enrol this device with the server (once per device)',
+      'enrol this app with the server (once per app or browser, per server)',
     ),
   )
   const pairNote = document.createElement('span')
   pairNote.style.cssText = 'font:11px/1.35 system-ui;color:#888'
   pairNote.textContent =
-    'enrol this device — once per device, and only after you approve it' + ' on the server'
+    'enrol this app — once per app or browser, and only after you approve it' + ' on the server'
   pairRow.appendChild(pairNote)
   srv.appendChild(pairRow)
 
@@ -1004,7 +1004,7 @@ export function mountUi(): void {
   keysAckBtn = button(
     'mark as seen',
     () => ackKeys(),
-    'remember this exact set of keys on this device, and clear the warning',
+    'remember this exact set of keys in this app, and clear the warning',
   )
   keysAckBtn.style.display = 'none'
   keysHead.append(keysTitle, keysAckBtn)

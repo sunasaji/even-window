@@ -58,7 +58,7 @@ export function renderConnSummary(): void {
         // means this device's key is not in the registry the server reads: revoked, or the
         // server was started against a different PINHOLE_STATE_DIR.
         authState === 'unauthorized'
-        ? "connection — ⚠ this device's key is not enrolled: open to re-pair"
+        ? "connection — ⚠ this app's key is not enrolled: open to re-pair"
         : authState === 'offline'
           ? 'connection — ⚠ server unreachable'
           : // The open server is named here, since its row is inside the fold.

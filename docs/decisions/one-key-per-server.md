@@ -2,7 +2,7 @@
 
 ## Context
 
-The phone kept a single key pair, generated when "Pair this device" was tapped and replaced by
+The phone kept a single key pair, generated when the pair button was tapped and replaced by
 the next pairing. That was sound while the app knew one server. With a list of servers
 ([the app starts at the server list](root-is-the-server-list.md)) it is not: pairing with a
 second server generated a new key and overwrote the first, so the first server stopped

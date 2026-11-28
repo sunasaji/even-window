@@ -75,18 +75,18 @@ export function slotLine(
     return { text: `${used} key(s) enrolled on the server (no limit set)`, blocked: false }
   if (alreadyEnrolled)
     return {
-      text: `${used} of ${max} slot(s) used — this device is already one of them`,
+      text: `${used} of ${max} slot(s) used — this app is already one of them`,
       blocked: false,
     }
   const free = Math.max(0, max - used)
   if (free > 0)
     return {
-      text: `${used} of ${max} slot(s) used — ${free} free, so this device fits`,
+      text: `${used} of ${max} slot(s) used — ${free} free, so this app fits`,
       blocked: false,
     }
   return {
     text:
-      `${used} of ${max} slot(s) used — NO FREE SLOT, so approving this device will be` +
+      `${used} of ${max} slot(s) used — NO FREE SLOT, so approving this app will be` +
       ' REFUSED. On the server, either revoke the key it replaces' +
       ' (`pw-auth list` then `pw-auth revoke <id>`), or raise the cap for the whole run' +
       ' (PINHOLE_MAX_CLIENTS=2 in ~/.pinhole-window/env, then restart).',
@@ -142,13 +142,15 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     'div',
     'max-width:520px;width:100%;background:#232323;border:1px solid #3a3a3a;border-radius:10px;padding:20px;text-align:center',
   )
-  const title = el('div', 'font:600 18px system-ui;margin-bottom:8px', 'Pair this device')
+  const title = el('div', 'font:600 18px system-ui;margin-bottom:8px', 'Pair this app')
   const msg = el(
     'div',
     'margin-bottom:12px;color:#bdbdbd',
     initialCode
-      ? 'Tap “Pair this device” to register it with your server. It is enrolled only after you' +
-          ' approve it there, so nothing is granted by this tap alone.'
+      ? 'Tap “Pair this app” to register it with your server. It is enrolled only after you' +
+          ' approve it there, so nothing is granted by this tap alone. The key is kept by this' +
+          ' app (or this browser), not by the phone: another browser, or the store build, on' +
+          ' the same phone pairs separately.'
       : 'Paste the pairing URL (or just the code) printed by `pw-auth pair`, then tap Pair.' +
           ' A full URL also tells this app which server to talk to.',
   )
@@ -214,10 +216,10 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     'it prints a pairing URL, and a QR if <code style="' +
     cS +
     '">qrencode</code> is installed.</li>' +
-    '<li>Open that URL on this device (or paste it above), then tap <b>Pair</b>.</li>' +
+    '<li>Open that URL in this app or browser (or paste it above), then tap <b>Pair</b>.</li>' +
     '<li>Compare the pattern that appears here with the one on the server, and approve it' +
     ` there — answer <b>y</b>, or run <code style="${cS}">node scripts/pw-auth.mjs approve &lt;id&gt;</code>` +
-    ' (the device id is shown on this screen; the first 4 characters are enough).</li>' +
+    ' (the key id is shown on this screen; the first 4 characters are enough).</li>' +
     '</ol>' +
     '<div style="margin-top:8px;color:#8a8a8a">If pairing is approved but the app still gets' +
     ` 401s, the server's <code style="${cS}">PINHOLE_ORIGIN</code> does not match the URL this` +
@@ -241,7 +243,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
   const hint = el('div', 'display:none;margin-top:12px;color:#bdbdbd')
 
   const btnRow = el('div', 'display:flex;gap:10px;justify-content:center;margin-top:16px')
-  const pairBtn = el('button', BTN, 'Pair this device') as HTMLButtonElement
+  const pairBtn = el('button', BTN, 'Pair this app') as HTMLButtonElement
   const cancelBtn = el('button', BTN, 'Cancel') as HTMLButtonElement
   btnRow.append(pairBtn, cancelBtn)
 
@@ -273,8 +275,8 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
       'Pairing a different app or browser (a store build runs on its own origin)?' +
       ' <b>Copy</b> this and paste it into that app’s pair dialog — the key is generated' +
       ' wherever you paste it, and the URL carries the server address too.' +
-      ' Or scan the code from the device you want to pair.' +
-      '<br><b>One window pairs one device</b>: whichever submits first uses it up.'
+      ' Or scan the code with the phone whose app you want to pair.' +
+      '<br><b>One window pairs one app or browser</b>: whichever submits first uses it up.'
     // The QR encoder is loaded on demand to keep it out of the boot path. A failure here
     // (offline, over-long URL) leaves Copy working.
     void (async () => {
@@ -319,23 +321,23 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
       art.textContent = view.art
       art.style.display = 'block'
     }
-    idLine.textContent = 'device id: ' + view.id.slice(0, 12) + '…'
+    idLine.textContent = 'key id: ' + view.id.slice(0, 12) + '…'
     idLine.style.display = 'block'
     hint.style.display = 'block'
     if (view.mismatch) {
       // The one case where the operator must not approve: the grid cannot be vouched for.
       art.style.borderColor = '#b4402f'
-      msg.textContent = 'STOP — do not approve this device.'
+      msg.textContent = 'STOP — do not approve this request.'
       msg.style.color = '#ff9d8a'
       hint.innerHTML =
-        'The key your server staged is <b>not the key on this device</b>, so ' +
+        'The key your server staged is <b>not the key this app made</b>, so ' +
         'something between them changed it. Reject it on the server:' +
         '<br><code style="font:12px ui-monospace,monospace;color:#9ad">node scripts/pw-auth.mjs pending</code>' +
         '<br>Then check the server URL below and pair again over a trusted path ' +
         '(<code style="font:12px ui-monospace,monospace;color:#9ad">tailscale serve</code>, docs/getting-started.md).'
       return
     }
-    msg.textContent = 'Your server is waiting to approve this device.'
+    msg.textContent = 'Your server is waiting to approve this app.'
     hint.innerHTML =
       'Check that this pattern matches the one your server shows, then approve it there:' +
       '<br><code style="font:12px ui-monospace,monospace;color:#9ad">node scripts/pw-auth.mjs pending</code>' +
@@ -373,7 +375,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
             ? 'That pairing code is invalid. Copy it again from the' +
               ' `pw-auth pair` output — a code is single-use and expires in a few minutes.'
             : r?.error === 'bad key'
-              ? 'The server rejected this device key. Reload the app and try' +
+              ? 'The server rejected this app’s key. Reload the app and try' +
                 ' once more; if it keeps happening, this WebView may not support WebCrypto keys.'
               : 'Could not reach the server. Check the address in the `server` field just above this' +
                 ' dialog (▶ connection), and that the server is running.'
@@ -407,14 +409,14 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     timer = setInterval(() => {
       void (async () => {
         const st = await pairStatus(id)
-        if (st === 'approved') approved('This device is now paired.')
+        if (st === 'approved') approved('This app is now paired.')
         else if (st === 'rejected') {
           if (timer !== null) {
             clearInterval(timer)
             timer = null
           }
           title.textContent = 'Rejected'
-          msg.textContent = 'The server rejected this device. Run `pw-auth pair` again to retry.'
+          msg.textContent = 'The server rejected this app. Run `pw-auth pair` again to retry.'
           hint.style.display = 'none'
           hooks.log('pairing rejected by operator')
         } else if (st === 'unknown') {
