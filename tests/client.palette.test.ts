@@ -23,7 +23,7 @@ describe('the palette shell exists once', () => {
   it('one backdrop, one history entry, one Escape handler, one fit', () => {
     for (const once of [
       "backdrop.id = 'pw-palette-backdrop'",
-      "history.pushState({ ewPalette: true }, '')",
+      "history.pushState({ pwPalette: true }, '')",
       "if (e.key === 'Escape')",
       'function layoutPalette',
       'function closePalette',

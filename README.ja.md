@@ -134,7 +134,7 @@ node scripts/pw-auth.mjs pair 'http://127.0.0.1:5273/?server=http://127.0.0.1:87
 | --- | --- |
 | [はじめに](docs/getting-started.ja.md) | インストール、起動、ペアリング、スマホの接続、サービスとして動かす |
 | [使い方](docs/usage.ja.md) | ジェスチャ、グラスのメニュー、スマホ画面、音声入力 |
-| [設定](docs/configuration.ja.md) | 環境変数、env ファイル、状態ファイル |
+| [設定](docs/configuration.ja.md) | 環境変数、env ファイル、状態ファイル。[ランチャにアプリを追加する](docs/configuration.ja.md#appsconf)、[起動時に開くものを選ぶ](docs/configuration.ja.md#ミラーデスクトップlinux-バックエンド)（`PINHOLE_SPAWN`） |
 | [Firefox](docs/firefox.ja.md) | ミラーデスクトップで Firefox を動かす |
 | [トラブルシューティング](docs/troubleshooting.ja.md) | 症状・原因・対処 |
 | [ステータス](docs/status.ja.md) | 実機で確認済みの範囲と既知の制限 |

@@ -195,7 +195,7 @@ describe("source audit: the gesture's injection sites", () => {
   })
 
   it('repaints if something else is showing the arrow, so the lens cannot go stale', () => {
-    // `window.ewCursor.show(true)` can show the arrow. A moved cursor that is not repainted
+    // `window.pwCursor.show(true)` can show the arrow. A moved cursor that is not repainted
     // leaves the lens drawing an arrow where the pointer no longer is. The repaint is the only
     // one here, and it is behind the read.
     expect(MT.has('if (cursor.shown) refreshCursorTiles()')).toBe(true)

@@ -264,7 +264,7 @@ read from the URL of the current load only and are never stored
 | `pair=<code>` | one-shot | Open the pairing dialog with this code ([security.md](security.md)) |
 
 Debug objects on `window` (browser devtools only; the automation API cannot evaluate
-JavaScript): `ewInvert`, `ewMenu`, `ewVoice`, `ewCursor`.
+JavaScript): `pwInvert`, `pwMenu`, `pwVoice`, `pwCursor`.
 
 Timing comparisons need `?debug=1&stats=1` on real hardware, a fixed server build for both
 runs, and a deterministic workload that keeps all four tiles changing:

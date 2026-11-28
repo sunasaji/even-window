@@ -11,7 +11,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { splitExec } from '../src/server/platform/x11/desktop.ts'
-import { DEFAULT_SPAWN_ARGV, DEFAULT_SPAWN_CMD } from '../src/server/platform/x11/session.ts'
+import {
+  DEFAULT_SPAWN_ARGV,
+  DEFAULT_SPAWN_CMD,
+  splitSpawn,
+} from '../src/server/platform/x11/session.ts'
 import { resolveSpawnCwd, SPAWN_CWD } from '../src/server/platform/x11/xenv.ts'
 
 describe('the default client is dark-background', () => {
@@ -120,5 +124,25 @@ describe('PINHOLE_SPAWN_CWD resolution', () => {
   it('never silently points a client at our own state directory', () => {
     expect(resolveSpawnCwd(undefined, home, never)).not.toContain('.pw-x11')
     expect(SPAWN_CWD).not.toContain('.pw-x11')
+  })
+})
+
+describe('PINHOLE_SPAWN as a list', () => {
+  it('is one command when there is no separator', () => {
+    expect(splitSpawn(DEFAULT_SPAWN_CMD)).toEqual([DEFAULT_SPAWN_CMD])
+  })
+
+  it('splits on ; and trims each command', () => {
+    expect(splitSpawn('xterm -bg black ; xclock;  firefox ')).toEqual([
+      'xterm -bg black',
+      'xclock',
+      'firefox',
+    ])
+  })
+
+  it('drops empty parts, so an empty value starts nothing', () => {
+    expect(splitSpawn('')).toEqual([])
+    expect(splitSpawn(' ; ;')).toEqual([])
+    expect(splitSpawn('xterm;')).toEqual(['xterm'])
   })
 })

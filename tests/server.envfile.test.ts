@@ -104,7 +104,7 @@ describe('parseEnvFile — what it refuses, and why each one matters', () => {
         'PATH=/tmp/evil',
         'LD_PRELOAD=/tmp/evil.so',
         'DISPLAY=:0',
-        'ew_origin=https://x', // case matters: PINHOLE_* is upper case
+        'pinhole_origin=https://x', // case matters: PINHOLE_* is upper case
       ].join('\n'),
     )
     expect(vars).toEqual({})

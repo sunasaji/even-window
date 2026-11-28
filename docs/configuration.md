@@ -32,7 +32,7 @@ every setting it took from the file. Changes take effect when the server restart
 | `PINHOLE_X11_RUNTIME_DIR` | `<checkout>/.pw-x11` | Runtime files of the nested X session. |
 | `PINHOLE_BACKEND` | `auto` | `auto`, `xephyr` or `xvfb`. `auto` tries Xephyr first when a host display exists and Xvfb first otherwise, and falls back to the other. A pinned backend does not fall back. |
 | `PINHOLE_HOST_DISPLAY` | detected | The host display Xephyr opens its window on. Detected from `DISPLAY`, then from the lowest socket in `/tmp/.X11-unix`. Set it to empty to declare that there is no host desktop and prefer Xvfb. |
-| `PINHOLE_SPAWN` | a dark xterm | The program started in an empty mirrored desktop. Empty starts nothing. The default is `xterm` with a black background, white text, a 9×18 bold bitmap font, no border and no scrollbar. |
+| `PINHOLE_SPAWN` | a dark xterm | The program started in an empty mirrored desktop. Empty starts nothing. Several commands separated by `;` are all started, and the first one is left in view; the first is also what **New terminal** opens. A command cannot contain a `;` of its own. The default is `xterm` with a black background, white text, a 9×18 bold bitmap font, no border and no scrollbar. |
 | `PINHOLE_SPAWN_CWD` | `$HOME` | Working directory of launched programs. A leading `~` is expanded, a relative path is taken from `$HOME`, and a path that is not a directory falls back to `$HOME` with a warning. |
 | `PINHOLE_FPS` | `10` | Capture rate, 1 to 30. |
 | `PINHOLE_AA` | `0` | `1` allows font antialiasing in the mirrored desktop. Off by default because grey fringes quantise badly to 16 levels. |

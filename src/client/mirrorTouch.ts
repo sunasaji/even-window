@@ -95,7 +95,7 @@ let mtAnnounced = false
 function mirrorAim(p: { x: number; y: number }): void {
   cursor.x = p.x
   cursor.y = p.y
-  // If something else is showing the arrow (`window.ewCursor.show(true)`), it must not go
+  // If something else is showing the arrow (`window.pwCursor.show(true)`), it must not go
   // stale: the lens would draw the arrow where the pointer no longer is.
   if (cursor.shown) refreshCursorTiles()
 }

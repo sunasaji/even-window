@@ -114,7 +114,7 @@ export interface MenuApp {
  *  `Menu...` first: it is used more than a window switch, and the cursor opens on it.
  *
  *  ids are allocated sequentially from 2 and never reused within a list. They identify a row
- *  for the debug surface (`ewMenu.items`) and `mruOrderItems`; the drawn order is `rootRows`. */
+ *  for the debug surface (`pwMenu.items`) and `mruOrderItems`; the drawn order is `rootRows`. */
 export function buildMenuItems(
   list: readonly WinInfo[],
   apps: readonly MenuApp[] = [],

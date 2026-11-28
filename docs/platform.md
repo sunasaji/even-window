@@ -146,7 +146,7 @@ display.
 | Applications and ratpoison start in `PINHOLE_SPAWN_CWD` (default the home directory; `~` is expanded; a bad value falls back with a warning) | A launched terminal's prompt is read on the glasses, so its directory is part of the interface. ratpoison passes its own directory to what it launches |
 | The X server and capture start in the runtime directory | They write nothing relative |
 
-The default application (`PINHOLE_SPAWN`; empty disables it) is an xterm with a black background,
+The default application (`PINHOLE_SPAWN`; empty disables it; `;` separates several) is an xterm with a black background,
 white foreground and cursor, a 9x18 bold bitmap font, no border and no scrollbar: 64 columns
 by 16 rows. Dark background is a correctness matter on a see-through panel, where bright
 pixels emit light. Background: [decision record](decisions/default-terminal-client.md).

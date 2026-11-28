@@ -1,5 +1,5 @@
 // pinhole-window — Even Hub WebView client entry point: boot sequence, pairing hooks and the
-// console test hooks (`ewInvert`, `ewMenu`, `ewVoice`, `ewCursor`).
+// console test hooks (`pwInvert`, `pwMenu`, `pwVoice`, `pwCursor`).
 //
 // Invariants this client keeps (docs/glasses.md):
 //   * The page is established once (glassPage.ts); after that only differential pushes.
@@ -328,7 +328,7 @@ if (typeof document !== 'undefined') {
   // The one way to drive voice with no microphone — see `voiceFeedRun`. Inert without a URL.
   const feedUrl = voiceFeedUrl()
   if (feedUrl) void voiceFeedRun(feedUrl)
-  ;(window as unknown as { ewInvert: unknown }).ewInvert = {
+  ;(window as unknown as { pwInvert: unknown }).pwInvert = {
     set: (on: boolean) => {
       setInvert(on)
       if (invertBtn) invertBtn.textContent = invertLabel()
@@ -341,7 +341,7 @@ if (typeof document !== 'undefined') {
   }
   // Drives the menu with no hardware input: `open()` is a double-tap, `path()`/`rows()` are what
   // is on the glass, and `sel`/`choose`/`back` are the three gestures.
-  ;(window as unknown as { ewMenu: unknown }).ewMenu = {
+  ;(window as unknown as { pwMenu: unknown }).pwMenu = {
     items: () => menuItems.map(it => ({ ...it })),
     open: () => {
       openMenu()
@@ -372,16 +372,16 @@ if (typeof document !== 'undefined') {
   }
   // Drives the voice dialog with no microphone (the simulator has no audio). `frame()` is what
   // an `audioEvent` would deliver, so real PCM fed through it exercises the whole path.
-  ;(window as unknown as { ewVoice: unknown }).ewVoice = {
+  ;(window as unknown as { pwVoice: unknown }).pwVoice = {
     ready: () => sttReady,
     start: () => voiceStart(),
     /** One audio frame, as the host would have delivered it. */
     frame: (bytes: number[] | Uint8Array) => {
       onVoiceFrame(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes))
     },
-    stop: () => voiceStop('ewVoice'),
+    stop: () => voiceStop('pwVoice'),
     cancel: () => {
-      voiceCancel('ewVoice')
+      voiceCancel('pwVoice')
     },
     state: () => (voice ? { ...voice } : null),
     rows: () => (voice ? voiceRowsFor(voice).map(r => ({ ...r })) : []),
@@ -396,7 +396,7 @@ if (typeof document !== 'undefined') {
     overlay: () => (voice ? voiceOverlay(voice) : ''),
     box: () => textBox?.value ?? '',
   }
-  ;(window as unknown as { ewCursor: unknown }).ewCursor = {
+  ;(window as unknown as { pwCursor: unknown }).pwCursor = {
     set: (x: number, y: number) => {
       cursor.x = x
       cursor.y = y

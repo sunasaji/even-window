@@ -27,7 +27,7 @@ import { errText, errWhere } from './util.ts'
 
 // Synthetic cursor. The capture does not include the pointer (docs/platform.md), so an arrow is
 // baked into whichever grey tile holds it. Hidden by default, because glasses gestures are keys;
-// vPad shows and drives it (docs/phone-ui.md), and `window.ewCursor` is the debug way in.
+// vPad shows and drives it (docs/phone-ui.md), and `window.pwCursor` is the debug way in.
 //
 // Fractional by construction: the pad accumulates gain-scaled deltas, so anything that turns
 // these into a pixel goes through `cursorTilePixel`, never the raw value.

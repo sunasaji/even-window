@@ -134,7 +134,7 @@ For users (each has a Japanese translation):
 | --- | --- |
 | [Getting started](docs/getting-started.md) | Install, run, pair, connect a phone, run as a service |
 | [Usage](docs/usage.md) | Gestures, the glasses menu, the phone screen, voice input |
-| [Configuration](docs/configuration.md) | Environment variables, the env file, state files |
+| [Configuration](docs/configuration.md) | Environment variables, the env file, state files. [Add applications to the launcher](docs/configuration.md#appsconf); [choose what opens at start-up](docs/configuration.md#mirrored-desktop-x11-backend) (`PINHOLE_SPAWN`) |
 | [Firefox](docs/firefox.md) | Running Firefox on the mirrored desktop |
 | [Troubleshooting](docs/troubleshooting.md) | Symptoms, causes and fixes |
 | [Status](docs/status.md) | What is verified on hardware, and known limitations |

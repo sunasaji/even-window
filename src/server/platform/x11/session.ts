@@ -48,14 +48,28 @@ export const DEFAULT_SPAWN_ARGV: readonly string[] = [
 ]
 
 /** The same default as one string, for the two call sites that take a shell command line
- *  (`sh -c` in ensureClient, and ratpoison's `alias ewterm exec …`); the argv form wraps
+ *  (`sh -c` in ensureClient, and ratpoison's `alias pwterm exec …`); the argv form wraps
  *  terminal applications (./apps.ts). Lossless only because no
  *  token in DEFAULT_SPAWN_ARGV contains whitespace or shell syntax, which a unit test pins. */
 export const DEFAULT_SPAWN_CMD: string = DEFAULT_SPAWN_ARGV.join(' ')
 
-/** Client launched into a fresh/empty nested X so there is something to mirror. '' disables.
- *  PINHOLE_SPAWN is the operator's configuration and is not validated. */
-const SPAWN_CMD = process.env.PINHOLE_SPAWN ?? DEFAULT_SPAWN_CMD
+/** Pure: PINHOLE_SPAWN as its commands. `;` separates them, also inside quotes: each part is
+ *  one `sh -c` line of its own, so a command that needs a literal `;` belongs in a script. */
+export function splitSpawn(value: string): string[] {
+  return value
+    .split(';')
+    .map(c => c.trim())
+    .filter(c => c !== '')
+}
+
+/** Clients launched into a fresh/empty nested X so there is something to mirror. Empty disables.
+ *  The first is also the "new terminal" of the menu (ratpoison's `c`). PINHOLE_SPAWN is the
+ *  operator's configuration and is not validated. */
+const SPAWN_LIST = splitSpawn(process.env.PINHOLE_SPAWN ?? DEFAULT_SPAWN_CMD)
+const SPAWN_CMD = SPAWN_LIST[0] ?? ''
+
+/** How long ensureClient waits for one client's window before starting the next. */
+const SPAWN_MAP_WAIT_MS = 3000
 
 /** Backend preference. Xephyr draws a window on the host desktop, so it is preferred when
  *  there is a host display and headless Xvfb otherwise; the other stays as the fallback on the
@@ -424,8 +438,8 @@ function startWm(env: NodeJS.ProcessEnv): number {
     rc += 'unmanage ratmenu\n'
     for (const k of RP_UNBIND) rc += `unbind ${k}\n`
     if (SPAWN_CMD) {
-      rc += `alias ewterm exec ${SPAWN_CMD}\n`
-      rc += 'bind c ewterm\n'
+      rc += `alias pwterm exec ${SPAWN_CMD}\n`
+      rc += 'bind c pwterm\n'
     }
     writeFileSync(RC_FILE, rc)
   } catch (e) {
@@ -443,17 +457,25 @@ async function windowCount(): Promise<number> {
   return r.out.split('\n').filter(l => /^\s*\d+/.test(l)).length
 }
 
-/** Put one client on the nested display when it is empty, so there is something to mirror.
- *  Skipped when PINHOLE_SPAWN='' or when clients are already up (the reattach case: the previous
- *  process's client is still running and must not be duplicated). Starts in SPAWN_CWD because
- *  the client is usually a terminal whose prompt the operator reads. */
-async function ensureClient(env: NodeJS.ProcessEnv): Promise<number> {
-  if (!SPAWN_CMD) return 0
-  if ((await windowCount()) > 0) return 0
-  const p = spawnDetached('sh', ['-c', SPAWN_CMD], env, SPAWN_CWD)
-  p.on('error', e => logX(`client spawn error: ${(e as Error).message}`))
-  logX(`spawned client in ${SPAWN_CWD}: ${SPAWN_CMD}`)
-  return p.pid ?? 0
+/** Put the configured clients on the nested display when it is empty, so there is something
+ *  to mirror. Skipped when PINHOLE_SPAWN='' or when clients are already up (the reattach case:
+ *  the previous process's clients are still running and must not be duplicated). Starts in
+ *  SPAWN_CWD because the client is usually a terminal whose prompt the operator reads.
+ *  ratpoison shows the window that mapped last, so the list is started back to front and each
+ *  client is given time to map: the first one named ends up in view. */
+async function ensureClient(env: NodeJS.ProcessEnv): Promise<void> {
+  if (SPAWN_LIST.length === 0) return
+  if ((await windowCount()) > 0) return
+  for (let i = SPAWN_LIST.length - 1; i >= 0; i--) {
+    const cmd = SPAWN_LIST[i] as string
+    const before = i > 0 ? await windowCount() : 0
+    const p = spawnDetached('sh', ['-c', cmd], env, SPAWN_CWD)
+    p.on('error', e => logX(`client spawn error: ${(e as Error).message}`))
+    logX(`spawned client in ${SPAWN_CWD}: ${cmd}`)
+    if (i === 0) break
+    const until = Date.now() + SPAWN_MAP_WAIT_MS
+    while (Date.now() < until && (await windowCount()) <= before) await sleep(100)
+  }
 }
 
 // ── capture ─────────────────────────────────────────────────────────────────────

@@ -249,7 +249,7 @@ function closePalette(why = 'closed', keepHistory = false): void {
 
 function isPaletteHistoryState(): boolean {
   const s: unknown = history.state
-  return typeof s === 'object' && s !== null && (s as { ewPalette?: unknown }).ewPalette === true
+  return typeof s === 'object' && s !== null && (s as { pwPalette?: unknown }).pwPalette === true
 }
 
 /** What one palette has to say about itself. The backdrop, the keyboard arithmetic, the scroll
@@ -495,7 +495,7 @@ function openPaletteShell(spec: PaletteSpec): PaletteShell {
   // need two swipes to leave.
   if (!palettePushedState) {
     try {
-      history.pushState({ ewPalette: true }, '')
+      history.pushState({ pwPalette: true }, '')
       palettePushedState = true
     } catch {
       palettePushedState = false // a WebView that refuses pushState keeps ✕ / tap-outside
