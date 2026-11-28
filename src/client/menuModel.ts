@@ -17,8 +17,8 @@ import { glassWidth, plainText } from '../shared/voiceDialog.ts'
 // The root list — `Menu...`, then windows, then the curated launcher rows — is drawn by the
 // client into container 6 with `textContainerUpgrade` (a differential push, never a rebuild)
 // and opened by a double-tap. Everything below it is the hierarchy in src/shared/glassMenu.ts.
-// The firmware's `menuObject` is not used: a page may carry a z plan or that menu, never both
-// (docs/decisions/client-drawn-glasses-menu.md).
+// The firmware's `menuObject` is not used: it is one flat level of one-shot items, and this
+// menu has levels and a list that changes (docs/decisions/client-drawn-glasses-menu.md).
 
 /** Reserved `itemID` for the root's first row, `Menu...`. Fixed rather than positional so it
  *  never collides with a window item and never moves when the window set changes. Window items

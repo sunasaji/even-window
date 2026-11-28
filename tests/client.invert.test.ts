@@ -144,8 +144,8 @@ describe('a flip must get the glass consistent again', () => {
     // that failed to establish would claim it had, and `establishPage` refuses re-entry on that
     // flag.
     expect(src.count('established = true')).toBe(1)
-    // No menu-register scheduler and no `menuObject`: a page carries a z plan or the firmware's
-    // menu, never both (docs/glasses.md). Asserted as constructs, not as words.
+    // No menu-register scheduler and no `menuObject`: the app registers no items in the
+    // firmware's menu (docs/glasses.md). Asserted as constructs, not as words.
     expect(src.has('function scheduleMenuRegister')).toBe(false)
     expect(src.has('menuObject:')).toBe(false)
     // Neither the frame pump nor the flip may reach a rebuild.

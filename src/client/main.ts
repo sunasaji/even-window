@@ -199,7 +199,7 @@ async function boot(): Promise<void> {
   }
   log(
     'menu: root list + levels in container 6, opened by a double-tap; ' +
-      'zOrderIndex on every container (geom.ts) — no menuObject, the two cannot coexist',
+      'zOrderIndex on every container (geom.ts) — no menuObject (the firmware menu has no levels)',
   )
 
   try {

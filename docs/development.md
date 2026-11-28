@@ -154,8 +154,9 @@ touch the phone UI.
   `{"ok":true}` and the simulator log says `inject_input: no active event container`.
 - `click` is the least reliable action. After each one, confirm the state with a screenshot
   before sending the next.
-- `context_menu` raises the firmware's foreground-enter/exit system events; it is not a gesture
-  and the app does not use the firmware menu ([glasses.md](glasses.md)).
+- `context_menu` opens the firmware context menu, which a tap-then-long-press opens on the
+  glasses. The app registers no items in it ([glasses.md](glasses.md)); the simulator does not
+  draw the system rows.
 
 Background: [notes/2026-10-simulator-input-and-overlay-checks.md](notes/2026-10-simulator-input-and-overlay-checks.md).
 

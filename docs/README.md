@@ -84,6 +84,7 @@ what was observed at the time and is not kept in sync with the code.
 - [Client tile pipeline measurements](notes/2026-10-client-tile-pipeline.md)
 - [Firefox minimum width investigation](notes/2026-10-firefox-minimum-width.md)
 - [Gestures and the firmware menu](notes/2026-10-gestures-and-firmware-menu.md)
+- [The context menu on hardware](notes/2026-11-context-menu-on-hardware.md)
 - [Glasses container semantics observed on hardware](notes/2026-10-glasses-container-semantics.md)
 - [Link loss, establish and recovery on hardware](notes/2026-10-glasses-link-and-establish.md)
 - [Key probe: Bluetooth keyboard and trackpad in the Even App WebView](notes/2026-10-keyprobe-ios-hardware-input.md)

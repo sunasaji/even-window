@@ -34,7 +34,7 @@ Platform rules that shape this allocation:
 | Only one container may set `isEventCapture: 1`. | Every gesture arrives through container 1. |
 | Without `zOrderIndex`, images always render in front of text. | Text over the tiles needs a z-order plan. |
 | `zOrderIndex` is all-or-nothing: if one container sets it, every text and image container must, with unique values; larger is nearer the front. | All six containers carry one. A violation fails `create` and `rebuild` inside the SDK, before the host sees the page. |
-| The host refuses a page that has both `menuObject` and `zOrderIndex`. | The firmware context menu is not registered. |
+| The firmware context menu (`menuObject`) is one flat level of at most 10 one-shot items, opened by tap-then-long-press. | It is not registered: the menu needs levels and a changing window list. The system rows (Display off, Brightness, Close) are there regardless ([measured](notes/2026-11-context-menu-on-hardware.md)). |
 | Only image containers (`updateImageRawData`) and text containers (`textContainerUpgrade`) can be updated in place. | Anything that changes after creation is a tile or overlay text. |
 
 Background: [container semantics observed on hardware](notes/2026-10-glasses-container-semantics.md).
