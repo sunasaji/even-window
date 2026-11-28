@@ -1,4 +1,4 @@
-// even-window — the hardware keyboard path and the hover path for a real pointer.
+// pinhole-window — the hardware keyboard path and the hover path for a real pointer.
 //
 // Both inject into a shell on the host (docs/security.md), so the rules that decide whether a
 // keystroke is injected at all, and the arithmetic that decides where the pointer goes, are

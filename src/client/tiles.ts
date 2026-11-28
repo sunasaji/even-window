@@ -1,4 +1,4 @@
-// even-window — tile pixels: the cursor bake, decode, grey planes and the PNG encode.
+// pinhole-window — tile pixels: the cursor bake, decode, grey planes and the PNG encode.
 //
 // The client modules import each other freely, but only use each other from inside functions:
 // nothing here may touch another non-leaf module while this one is still loading.

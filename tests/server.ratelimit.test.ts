@@ -1,4 +1,4 @@
-// even-window — the token bucket in front of the gate-exempt routes (docs/security.md).
+// pinhole-window — the token bucket in front of the gate-exempt routes (docs/security.md).
 //
 // What is bounded is availability, not guessing: `POST /api/auth/session` runs an asymmetric
 // verify per attempt, the only unauthenticated CPU this server spends.

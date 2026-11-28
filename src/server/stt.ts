@@ -1,4 +1,4 @@
-// even-window — speech to text: the PCM the glasses captured, turned into a string.
+// pinhole-window — speech to text: the PCM the glasses captured, turned into a string.
 //
 // The contract is a URL, not an engine (docs/voice.md, docs/decisions/stt-backend-contract.md):
 // this module speaks OpenAI's `POST /v1/audio/transcriptions` and nothing else, so the

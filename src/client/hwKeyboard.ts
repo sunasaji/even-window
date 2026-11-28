@@ -1,4 +1,4 @@
-// even-window — a hardware keyboard attached to the phone.
+// pinhole-window — a hardware keyboard attached to the phone.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

@@ -1,4 +1,4 @@
-// even-window — glasses input: gestures to the server, X11 injection, the ring gate and the
+// pinhole-window — glasses input: gestures to the server, X11 injection, the ring gate and the
 // hub event router.
 //
 // The client modules import each other freely, but only use each other from inside functions:

@@ -1,4 +1,4 @@
-// even-window — the phone tour: a few cards, each spotlighting one part of the real phone UI
+// pinhole-window — the phone tour: a few cards, each spotlighting one part of the real phone UI
 // and saying what it does, so a first-time user reaches every kind of control without reading
 // the docs (docs/phone-ui.md). It opens by itself once per device, and the `?` pill in the
 // title row opens it again.

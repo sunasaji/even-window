@@ -202,7 +202,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     '<div style="margin-bottom:6px;color:#bdbdbd">First time? Set the server up, then pair:</div>' +
     '<ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">' +
     '<li>Start the server:' +
-    `<pre style="${pS}">cd even-window &amp;&amp; npm install\nnode src/server/main.ts</pre>` +
+    `<pre style="${pS}">cd pinhole-window &amp;&amp; npm install\nnode src/server/main.ts</pre>` +
     `(or install the unit: <code style="${cS}">systemd/even-window@.service</code>)</li>` +
     '<li>Put TLS in front — this server terminates none:' +
     `<pre style="${pS}">tailscale serve --bg --yes --https 8443 \\\n  --set-path /api http://127.0.0.1:8787/api\ntailscale serve --bg --yes --https 8443 http://127.0.0.1:5273</pre>` +

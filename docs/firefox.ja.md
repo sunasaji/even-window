@@ -16,7 +16,7 @@
 チェックアウトの絶対パスを使って 1 行追加します。
 
 ```
-app Firefox (G2) = /home/you/src/even-window/scripts/ew-firefox.sh
+app Firefox (G2) = /home/you/src/pinhole-window/scripts/ew-firefox.sh
 ```
 
 再起動は不要です。`Firefox (G2)` がスマホの **apps** パレットに現れ、一度起動したあとは

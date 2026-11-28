@@ -1,4 +1,4 @@
-// even-window — the voice dialog: recording, the STT round trip and its gestures (docs/voice.md).
+// pinhole-window — the voice dialog: recording, the STT round trip and its gestures (docs/voice.md).
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

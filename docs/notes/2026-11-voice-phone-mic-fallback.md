@@ -25,7 +25,7 @@ Not possible in the simulator: it sends no link drop and has no microphone.
 
 1. Glasses connected: press `voice` on the phone. Heading `Voice  opening the mic...` (no
    `phone`), log `voice: glasses mic requested => true`. Cancel with a double tap.
-2. Close the app, turn the phone's Bluetooth off, then start even-window again from the Even
+2. Close the app, turn the phone's Bluetooth off, then start pinhole-window again from the Even
    App. Log: `deviceInfo: no device — treating the link as DOWN`, `glasses link DOWN`.
    Do not turn Bluetooth off while the app is running: the host app goes down with it
    (reproduced that day with the first version of this procedure).

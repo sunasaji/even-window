@@ -1,4 +1,4 @@
-// even-window — mirror touch: absolute aim on the preview, without opening vPad.
+// pinhole-window — mirror touch: absolute aim on the preview, without opening vPad.
 //
 //   1. The arithmetic. `mirrorPixel` turns a finger on a phone into a pixel on a 576x288 panel,
 //      and every way it can be wrong is silent: a fractional coordinate is dropped by the index

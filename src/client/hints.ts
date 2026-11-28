@@ -1,4 +1,4 @@
-// even-window — first-use hints: short, self-retiring pointers to things a first-time user
+// pinhole-window — first-use hints: short, self-retiring pointers to things a first-time user
 // cannot discover by looking. Each hint is shown a few times per device and then never again;
 // the count lives in localStorage, so a browser that refuses storage just keeps showing them.
 //
@@ -51,7 +51,7 @@ export function retireHint(id: HintId): void {
  *  only when the server has a recogniser, because a long press does nothing otherwise. */
 export function startupHintText(voice: boolean): string {
   return [
-    'even-window — gestures (ring or temple)',
+    'pinhole-window — gestures (ring or temple)',
     '- double-tap: menu (windows, apps, keys)',
     '- swipe: Up / Down keys to the window',
     '- tap: Enter',
@@ -79,7 +79,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
   const last = 'double-tap: menu (Exit is in it)'
   if (kind === 'pair')
     return [
-      'even-window — pair this phone',
+      'pinhole-window — pair this phone',
       '1. PC: start the server (npm run server)',
       '2. PC: node scripts/ew-auth.mjs pair URL',
       '    URL = how the phone reaches the PC',
@@ -91,7 +91,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
     ].join('\n')
   if (kind === 'address')
     return [
-      'even-window — set the server address',
+      'pinhole-window — set the server address',
       'Use the card on the phone.',
       '- paired before: enter the server URL',
       '- first time, on the PC:',
@@ -101,7 +101,7 @@ export function setupNoticeText(kind: SetupNotice, server: string): string {
       last,
     ].join('\n')
   return [
-    'even-window — server unreachable',
+    'pinhole-window — server unreachable',
     shortServer(server),
     '- is the server running on the PC?',
     '- is the phone on the same network / VPN?',

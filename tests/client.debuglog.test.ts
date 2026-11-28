@@ -1,4 +1,4 @@
-// even-window — the client's own log: the on-screen buffer's stamp format, and the throttle
+// pinhole-window — the client's own log: the on-screen buffer's stamp format, and the throttle
 // that lets it be forwarded to the server without becoming a tile-rate firehose.
 //
 // The frame pump logs one line per tile push at the capture rate, so "POST each line as it

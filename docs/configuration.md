@@ -2,7 +2,7 @@
 
 English | [日本語](configuration.ja.md)
 
-even-window is configured with `EW_*` environment variables, optionally kept in an
+pinhole-window is configured with `EW_*` environment variables, optionally kept in an
 env file, and with three files in its state directory.
 
 ## Precedence
@@ -44,7 +44,7 @@ transparent and a light background lights the whole lens.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `EW_STATE_DIR` | `~/.even-window` | The state directory. Use an absolute path. |
+| `EW_STATE_DIR` | `~/.even-window` | The state directory. Use an absolute path. The default keeps the project's former name ([why](decisions/rename-to-pinhole-window.md)). |
 | `EW_ENV_FILE` | unset | An explicit env file. Empty means "read no file". |
 | `EW_QUIET` | unset | `1` silences the per-request access log. |
 
@@ -158,12 +158,12 @@ restart is needed.
 | `term <name> = <command line>` | Add an entry that runs inside a terminal |
 
 ```
-# even-window application overrides
+# pinhole-window application overrides
 hide xeyes
 show xdpyinfo
 app Clock = xclock -digital
 term Top = top
-app Firefox (G2) = /home/you/src/even-window/scripts/ew-firefox.sh
+app Firefox (G2) = /home/you/src/pinhole-window/scripts/ew-firefox.sh
 ```
 
 Command lines are split into arguments and executed directly, without a shell.
@@ -211,7 +211,7 @@ specific entry. An invalid entry is dropped and reported at start-up and in
 
 | Key form | Matches |
 | --- | --- |
-| `app:<launcher id>` | A window launched from even-window's launcher entry with that id, for example `app:desktop:xmountains`. The server remembers launches in memory, so the match is lost when it restarts. |
+| `app:<launcher id>` | A window launched from pinhole-window's launcher entry with that id, for example `app:desktop:xmountains`. The server remembers launches in memory, so the match is lost when it restarts. |
 | `exe:<absolute path>` | The executable of the window's process, for example `exe:/usr/bin/xterm` |
 | `comm:<name>` | The process name, for example `comm:vim` |
 | `cls:<class>` | The window class, in lower case, for example `cls:firefox` |

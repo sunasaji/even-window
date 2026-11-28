@@ -1,4 +1,4 @@
-// auth.ts — client authentication for the even-window API (the auth boundary).
+// auth.ts — client authentication for the pinhole-window API (the auth boundary).
 //
 // Every /api/* route is effectively remote code execution with the user's privileges
 // (`POST /api/spawn` execs an argv, `POST /api/desktop/input` types into a shell), so

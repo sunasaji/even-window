@@ -1,7 +1,7 @@
 {
   "package_id": "dev.sunasaji.evenwindow",
   "edition": "202601",
-  "name": "even-window",
+  "name": "pinhole-window",
   "version": "0.1.4",
   "min_app_version": "2.2.10",
   "min_sdk_version": "0.0.16",
@@ -17,7 +17,7 @@
     },
     {
       "name": "network",
-      "desc": "Connects to the even-window server you run on your own PC, at the address you enter. No other host is contacted.",
+      "desc": "Connects to the pinhole-window server you run on your own PC, at the address you enter. No other host is contacted.",
       "whitelist": []
     }
   ],

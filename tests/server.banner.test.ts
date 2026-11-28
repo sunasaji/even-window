@@ -1,4 +1,4 @@
-// even-window — the start-up banner's transport warning (src/server/main.ts).
+// pinhole-window — the start-up banner's transport warning (src/server/main.ts).
 //
 // Pinned: `EW_AUTH` on (the default) plus a published `EW_HOST` must warn, because auth is
 // not a channel — on a plain HTTP bind the bearer token is replayable off the wire and nothing

@@ -1,4 +1,4 @@
-// even-window — the palettes: one shell, three contents, and no second implementation of a row.
+// pinhole-window — the palettes: one shell, three contents, and no second implementation of a row.
 //
 // Source-structure cases. What they protect is an arrangement:
 //

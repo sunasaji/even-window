@@ -1,4 +1,4 @@
-// even-window — the swipe debouncer and its clock.
+// pinhole-window — the swipe debouncer and its clock.
 //
 // A leaf: it imports no other client module, so anything may use it at load time.
 

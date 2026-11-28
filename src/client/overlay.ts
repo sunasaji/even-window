@@ -1,4 +1,4 @@
-// even-window — the text overlay: lens / case pause, instance supersede, link baseline, and the
+// pinhole-window — the text overlay: lens / case pause, instance supersede, link baseline, and the
 // serialised show/hide transition.
 //
 // The client modules import each other freely, but only use each other from inside functions:

@@ -1,4 +1,4 @@
-// even-window — small helpers with no state: sleep, timeouts, error text.
+// pinhole-window — small helpers with no state: sleep, timeouts, error text.
 //
 // A leaf: it imports no other client module, so anything may use it at load time.
 

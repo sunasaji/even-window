@@ -1,10 +1,13 @@
-# even-window
+# pinhole-window
 
 English | [日本語](README.ja.md)
 
-even-window mirrors a desktop session on your PC to Even Realities G2 smart glasses
+pinhole-window mirrors a desktop session on your PC to Even Realities G2 smart glasses
 and lets you operate it from the glasses and from your phone. It is an Even Hub app
 (a WebView page inside the official Even App) plus a small server on the PC.
+
+It was called even-window until version 0.1.4. Paths such as `~/.even-window` keep that
+name ([why](docs/decisions/rename-to-pinhole-window.md)).
 
 The server runs a dedicated 576×288 mirrored desktop, captures it, and streams it to
 the glasses. Temple and ring gestures send keys back, a menu on the glasses switches
@@ -35,7 +38,7 @@ flowchart TB
   subgraph PC["PC"]
     X["<b>Mirrored desktop</b><br/>576x288, every window full-screen<br/>any application: terminal, browser, ..."]
     CAP["<b>Capture</b><br/>4 quadrant tiles, 16 colours<br/>changed tiles only"]
-    SRV["<b>even-window server</b><br/>HTTP + SSE, authenticated"]
+    SRV["<b>pinhole-window server</b><br/>HTTP + SSE, authenticated"]
     INJ["Input injection"]
     STT["Speech recogniser<br/>(optional, loopback)"]
     X --> CAP --> SRV
@@ -43,7 +46,7 @@ flowchart TB
     SRV <-.-> STT
   end
   subgraph PHONE["Phone: official Even App"]
-    CL["<b>even-window client</b> (WebView page)<br/>phone screen: preview, text box, keys,<br/>trackpad, window and app palettes<br/>tiles to 16-level grey PNG"]
+    CL["<b>pinhole-window client</b> (WebView page)<br/>phone screen: preview, text box, keys,<br/>trackpad, window and app palettes<br/>tiles to 16-level grey PNG"]
     BR["<b>Glasses bridge</b><br/>Even Hub SDK"]
     SK["<b>On-screen keyboard</b>"]
   end

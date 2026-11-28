@@ -1,4 +1,4 @@
-// even-window — URL / stored flag parsing (pure) and the sticky-flag note.
+// pinhole-window — URL / stored flag parsing (pure) and the sticky-flag note.
 //
 // A leaf: it imports no other client module, so anything may use it at load time.
 

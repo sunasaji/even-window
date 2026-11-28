@@ -1,5 +1,5 @@
 [Unit]
-Description=even-window API (mirror a PC window to Even Realities G2)
+Description=pinhole-window API (mirror a PC window to Even Realities G2)
 Documentation=file://%f/docs/getting-started.md
 Wants=network-online.target
 After=network-online.target

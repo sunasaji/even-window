@@ -1,4 +1,4 @@
-// even-window — route coverage for the auth gate.
+// pinhole-window — route coverage for the auth gate.
 //
 // The claim is "every route this server registers is gated", so the list is derived:
 //

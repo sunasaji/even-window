@@ -1,4 +1,4 @@
-// even-window — vPad, the on-phone trackpad.
+// pinhole-window — vPad, the on-phone trackpad.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

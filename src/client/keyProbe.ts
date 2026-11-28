@@ -1,4 +1,4 @@
-// even-window — the `?keyprobe=1` input probe.
+// pinhole-window — the `?keyprobe=1` input probe.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

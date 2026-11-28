@@ -1,4 +1,4 @@
-// even-window — who is enrolled, on the wire (`{t:'clients'}`, docs/protocol.md,
+// pinhole-window — who is enrolled, on the wire (`{t:'clients'}`, docs/protocol.md,
 // docs/security.md).
 //
 // Every connected device is told who is enrolled, and the phone compares that against what it

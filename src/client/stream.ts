@@ -1,4 +1,4 @@
-// even-window — the server event stream (SSE) and what each event updates.
+// pinhole-window — the server event stream (SSE) and what each event updates.
 //
 // The client modules import each other freely, but only use each other from inside functions:
 // nothing here may touch another non-leaf module while this one is still loading.

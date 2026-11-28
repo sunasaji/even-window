@@ -1,4 +1,4 @@
-// even-window — the debug log: buffer, panel, copy, the `?debug=1` forwarder and the error
+// pinhole-window — the debug log: buffer, panel, copy, the `?debug=1` forwarder and the error
 // funnel.
 //
 // The client modules import each other freely, but only use each other from inside functions:

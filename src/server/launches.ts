@@ -1,4 +1,4 @@
-// even-window — which launcher entry a window came from (the `app:` identity, docs/glasses.md;
+// pinhole-window — which launcher entry a window came from (the `app:` identity, docs/glasses.md;
 // docs/decisions/window-identity-without-stamping.md).
 //
 // `LauncherEntry.id` is the only identity that separates two launcher entries running the same

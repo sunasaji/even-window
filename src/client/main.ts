@@ -1,4 +1,4 @@
-// even-window — Even Hub WebView client entry point: boot sequence, pairing hooks and the
+// pinhole-window — Even Hub WebView client entry point: boot sequence, pairing hooks and the
 // console test hooks (`ewInvert`, `ewMenu`, `ewVoice`, `ewCursor`).
 //
 // Invariants this client keeps (docs/glasses.md):

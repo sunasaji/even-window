@@ -1,4 +1,4 @@
-// even-window — the server entry point: bare node:http, SSE tile stream, gesture router.
+// pinhole-window — the server entry point: bare node:http, SSE tile stream, gesture router.
 //
 // Shape of the process: bring up the mirrored desktop through the platform backend, poll its
 // window list at 1 Hz, and serve the routes of docs/protocol.md behind the authentication gate

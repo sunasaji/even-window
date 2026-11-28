@@ -1,6 +1,6 @@
 # Architecture
 
-even-window mirrors a small desktop on a PC to Even Realities G2 glasses and lets the wearer
+pinhole-window mirrors a small desktop on a PC to Even Realities G2 glasses and lets the wearer
 drive it. A server on the PC keeps a 576x288 mirrored desktop alive, captures it, and streams
 the parts that changed. A WebView page inside the Even App on the phone turns those into
 glasses images and sends gestures, keys, pointer events and speech back.

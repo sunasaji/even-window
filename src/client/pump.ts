@@ -1,4 +1,4 @@
-// even-window — the tile pump: latest-wins frames, the serial push loop and its stats state.
+// pinhole-window — the tile pump: latest-wins frames, the serial push loop and its stats state.
 //
 // The client modules import each other freely, but only use each other from inside functions:
 // nothing here may touch another non-leaf module while this one is still loading.

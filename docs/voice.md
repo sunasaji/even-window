@@ -174,7 +174,7 @@ goes on.
 
 The repository ships `systemd/speech-cpp.service`, a user unit that runs
 [speech.cpp](https://github.com/nyosegawa/speech.cpp) on `127.0.0.1:8757`. Nothing in it is
-specific to even-window, and it is separate from the server's unit so that either can restart
+specific to pinhole-window, and it is separate from the server's unit so that either can restart
 without the other.
 
 - speech.cpp has no authentication and no TLS. Keep it on loopback. This is about where

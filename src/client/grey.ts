@@ -1,4 +1,4 @@
-// even-window — the ANSI palette, the grey ramp and the index→grey lookup.
+// pinhole-window — the ANSI palette, the grey ramp and the index→grey lookup.
 //
 // A leaf: it imports no other client module, so anything may use it at load time.
 

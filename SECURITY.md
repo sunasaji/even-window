@@ -1,6 +1,6 @@
 # Security policy
 
-even-window gives a paired device keyboard, pointer and application-launch access to a
+pinhole-window gives a paired device keyboard, pointer and application-launch access to a
 desktop session, so every authenticated route is equivalent to remote code execution on
 the host. The security model, its assumptions and its limits are described in
 [docs/security.md](docs/security.md).

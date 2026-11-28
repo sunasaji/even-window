@@ -1,4 +1,4 @@
-// even-window — the on-screen keyboard (`keys` panel) and its one-shot modifiers.
+// pinhole-window — the on-screen keyboard (`keys` panel) and its one-shot modifiers.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

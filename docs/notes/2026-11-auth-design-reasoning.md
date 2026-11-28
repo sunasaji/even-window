@@ -21,7 +21,7 @@ The authentication code is `src/server/auth.ts`, the client auth module and
 
 Three different things are easy to conflate.
 
-| | SSH | even-window |
+| | SSH | pinhole-window |
 | --- | --- | --- |
 | Keys that encrypt traffic | Session keys from the key exchange, rekeyed by data volume (OpenSSH default; RFC 4253 suggests 1 GB or 1 hour) | None of its own. TLS and WireGuard do this and rekey more often (WireGuard about every 2 minutes; TLS 1.3 ephemeral keys per handshake) |
 | How long "authenticated" lasts | As long as the connection, possibly days | 1 hour, then a new signature with the device key; ticket 60 s; challenge 2 minutes, single use |

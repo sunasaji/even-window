@@ -1,4 +1,4 @@
-// even-window — the phone status line, the connection summary and the mirror preview.
+// pinhole-window — the phone status line, the connection summary and the mirror preview.
 //
 // The client modules import each other freely, but only use each other from inside functions:
 // nothing here may touch another non-leaf module while this one is still loading.

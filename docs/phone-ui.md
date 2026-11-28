@@ -14,7 +14,7 @@ Top to bottom, one scrolling column (max width 720 px):
 
 | Row | Contents |
 | --- | --- |
-| Title row | `even-window`, `?` (the [tour](#tour)), then the three palette openers `task`, `window`, `apps N` |
+| Title row | `pinhole-window`, `?` (the [tour](#tour)), then the three palette openers `task`, `window`, `apps N` |
 | Page warning | Hidden unless the glasses page is not established (see [glasses.md](glasses.md)) |
 | Mirror preview | 576x288 canvas showing the mirrored desktop; also a touch surface |
 | Text row | Text box, `🎤 voice` (only when the server reports speech-to-text; see [voice.md](voice.md)), `Submit` |

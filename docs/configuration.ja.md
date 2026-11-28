@@ -2,7 +2,7 @@
 
 [English](configuration.md) | 日本語
 
-even-window は `EW_*` 環境変数（env ファイルに置くこともできます）と、状態ディレクトリ内の
+pinhole-window は `EW_*` 環境変数（env ファイルに置くこともできます）と、状態ディレクトリ内の
 3 つのファイルで設定します。
 
 ## 優先順位
@@ -44,7 +44,7 @@ even-window は `EW_*` 環境変数（env ファイルに置くこともでき�
 
 | 変数 | 既定 | 意味 |
 | --- | --- | --- |
-| `EW_STATE_DIR` | `~/.even-window` | 状態ディレクトリ。絶対パスで指定します。 |
+| `EW_STATE_DIR` | `~/.even-window` | 状態ディレクトリ。絶対パスで指定します。既定値にはプロジェクトの旧名が残っています（[理由](decisions/rename-to-pinhole-window.md)）。 |
 | `EW_ENV_FILE` | 未設定 | env ファイルの明示指定。空は「ファイルを読まない」という意味です。 |
 | `EW_QUIET` | 未設定 | `1` でリクエストごとのアクセスログを止めます。 |
 
@@ -157,12 +157,12 @@ Linux バックエンドは、ランタイムファイル（`session.json`、生
 | `term <名前> = <コマンドライン>` | ターミナルの中で動かす項目を追加する |
 
 ```
-# even-window application overrides
+# pinhole-window application overrides
 hide xeyes
 show xdpyinfo
 app Clock = xclock -digital
 term Top = top
-app Firefox (G2) = /home/you/src/even-window/scripts/ew-firefox.sh
+app Firefox (G2) = /home/you/src/pinhole-window/scripts/ew-firefox.sh
 ```
 
 コマンドラインは引数に分割され、シェルを通さず直接実行されます。文法エラーは起動時の
@@ -210,7 +210,7 @@ app Firefox (G2) = /home/you/src/even-window/scripts/ew-firefox.sh
 
 | キーの形式 | 一致する対象 |
 | --- | --- |
-| `app:<ランチャの id>` | even-window のランチャで、その id の項目から起動したウィンドウ。例: `app:desktop:xmountains`。サーバは起動をメモリ上で覚えているので、再起動するとこの対応は失われます。 |
+| `app:<ランチャの id>` | pinhole-window のランチャで、その id の項目から起動したウィンドウ。例: `app:desktop:xmountains`。サーバは起動をメモリ上で覚えているので、再起動するとこの対応は失われます。 |
 | `exe:<絶対パス>` | ウィンドウのプロセスの実行ファイル。例: `exe:/usr/bin/xterm` |
 | `comm:<名前>` | プロセス名。例: `comm:vim` |
 | `cls:<クラス>` | ウィンドウクラス（小文字）。例: `cls:firefox` |

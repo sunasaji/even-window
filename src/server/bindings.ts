@@ -1,4 +1,4 @@
-// even-window — persistence for the per-app swipe bindings (docs/glasses.md).
+// pinhole-window — persistence for the per-app swipe bindings (docs/glasses.md).
 //
 // The model and every validator live in src/shared/bindings.ts, so the client edits and the
 // server writes through the same code; this file is only the file on disk.

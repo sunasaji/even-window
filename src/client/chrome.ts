@@ -1,4 +1,4 @@
-// even-window — shared phone-UI chrome: CSS constants, buttons, pills and the toast.
+// pinhole-window — shared phone-UI chrome: CSS constants, buttons, pills and the toast.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

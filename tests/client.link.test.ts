@@ -494,7 +494,7 @@ describe('a page that cannot be made says so where it will be read', () => {
     const body = src.fn('renderPageWarning')
     expect(body.has('const stuck = linkDown && !established && establishFails >= 2')).toBe(true)
     // Fragments, because the string is wrapped across source lines.
-    expect(body.has('Quit even-window')).toBe(true)
+    expect(body.has('Quit pinhole-window')).toBe(true)
     expect(body.has('the glasses')).toBe(true)
     expect(body.has('may need a reboot')).toBe(true)
     // Hedged wording.

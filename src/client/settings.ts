@@ -1,4 +1,4 @@
-// even-window — the stored settings: mirror mode, invert, natural scroll.
+// pinhole-window — the stored settings: mirror mode, invert, natural scroll.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

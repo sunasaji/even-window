@@ -1,4 +1,4 @@
-// even-window — the phone helper UI: `mountUi` and the element refs it fills in.
+// pinhole-window — the phone helper UI: `mountUi` and the element refs it fills in.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.
@@ -145,7 +145,7 @@ export function mountUi(): void {
   const titleRow = document.createElement('div')
   titleRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin:0 0 4px'
   const title = document.createElement('h1')
-  title.textContent = 'even-window'
+  title.textContent = 'pinhole-window'
   // Ellipsised rather than wrapped: on a narrow phone the title gives way to the buttons.
   title.style.cssText =
     'font-size:16px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;' +

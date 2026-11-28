@@ -1,6 +1,6 @@
 # NOTICE
 
-even-window is MIT licensed; see [LICENSE](LICENSE).
+pinhole-window is MIT licensed; see [LICENSE](LICENSE).
 
 ## Third-party projects cited (no code included)
 
@@ -13,6 +13,6 @@ repository.
 
 ## Trademarks
 
-even-window is **not affiliated with or endorsed by Even Realities.** "Even Realities" and
+pinhole-window is **not affiliated with or endorsed by Even Realities.** "Even Realities" and
 "G2" are trademarks of their respective owner. This project talks to hardware the author
 owns, over a protocol surface exposed by the vendor's own published SDK.

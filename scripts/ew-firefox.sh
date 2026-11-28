@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# ew-firefox.sh — launch Firefox as an even-window X11 client, tuned for the G2.
+# ew-firefox.sh — launch Firefox as an pinhole-window X11 client, tuned for the G2.
 #
 # Point ~/.even-window/apps.conf at this script so that the launcher lists it:
 #
 #     app Firefox (G2) = /abs/path/to/scripts/ew-firefox.sh
 #
-# even-window execs an app's argv directly, without a shell and without arguments, so
+# pinhole-window execs an app's argv directly, without a shell and without arguments, so
 # everything configurable comes from the environment or the profile.
 #
 #   1. Re-syncs the runtime profile from the template in scripts/firefox-profile/ on
@@ -58,7 +58,7 @@ fi
 LOCAL="$PROFILE/user-local.js"
 if [ ! -e "$LOCAL" ]; then
   cat > "$LOCAL" <<'LOCALEOF'
-// even-window Firefox — LOCAL prefs for this machine. Appended to user.js on
+// pinhole-window Firefox — LOCAL prefs for this machine. Appended to user.js on
 // every launch and never overwritten by the template. Keep secrets here, not in
 // the repository.
 

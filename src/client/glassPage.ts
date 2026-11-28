@@ -1,4 +1,4 @@
-// even-window — the glasses page: containers, establish / re-establish, link and device status,
+// pinhole-window — the glasses page: containers, establish / re-establish, link and device status,
 // and `pushImage`, the one path every image push takes.
 //
 // The client modules import each other freely, but only use each other from inside functions:
@@ -262,7 +262,7 @@ export function renderPageWarning(): void {
     // reached while this app is in the foreground. Leaving the app, from the phone, is the lever.
     txt.textContent = stuck
       ? // Only the steps, and hedged: a reload is not known to never help.
-        'the Even App has lost the glasses — a reload probably will not help. Quit even-window' +
+        'the Even App has lost the glasses — a reload probably will not help. Quit pinhole-window' +
         ' from the phone, reconnect them in the Even App, then start it again; the glasses' +
         ' may need a reboot.'
       : 'the glasses are not connected — nothing is being sent to them. This screen re-checks' +

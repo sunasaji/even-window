@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# dev.sh — run the even-window API/capture server and the Vite dev server together,
+# dev.sh — run the pinhole-window API/capture server and the Vite dev server together,
 # without the Even Hub simulator (scripts/sim.sh is the full end-to-end harness).
 #
 #   1. node src/server/main.ts -> HTTP on EW_PORT (default 8787); it owns its nested
@@ -35,7 +35,7 @@ usage() {
   cat <<'EOF'
 usage: scripts/dev.sh [options]
 
-  Runs the even-window API/capture server and Vite together (no simulator).
+  Runs the pinhole-window API/capture server and Vite together (no simulator).
 
   --port <N>       Vite port                      (default 5273)
   --api-port <N>   API server port / EW_PORT      (default 8787)
@@ -188,7 +188,7 @@ have curl || die "curl not found (needed for the readiness poll)"
 # satisfied by the other service while this run's node failed to bind.
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/${1}") >/dev/null 2>&1; }
 if port_busy "${API_PORT}"; then
-  die "port :${API_PORT} is already in use — something else is listening there (another even-window stack?).
+  die "port :${API_PORT} is already in use — something else is listening there (another pinhole-window stack?).
   Use --api-port <N>, or stop the other one.  ss -ltnp \"sport = :${API_PORT}\""
 fi
 if port_busy "${VITE_PORT}"; then

@@ -1,4 +1,4 @@
-// even-window — container allocation, the overlay's push ordering, the `zOrderIndex` plan, and
+// pinhole-window — container allocation, the overlay's push ordering, the `zOrderIndex` plan, and
 // the quadrant geometry the synthetic cursor is stamped with (`tileIndexAt` / `cursorTilePixel`,
 // at the end: the same 2x2 allocation seen from the other side).
 //

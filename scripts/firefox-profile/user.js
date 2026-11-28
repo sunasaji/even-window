@@ -1,4 +1,4 @@
-// even-window Firefox profile prefs, for the Even G2 through the mirrored desktop: a
+// pinhole-window Firefox profile prefs, for the Even G2 through the mirrored desktop: a
 // 576x288 screen, 16 levels of green, swipe/tap input.
 //
 // This is the template: scripts/ew-firefox.sh copies it into the runtime profile on

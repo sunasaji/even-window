@@ -1,4 +1,4 @@
-// even-window — the OS-neutral half of window handling: the per-window identity cache, the
+// pinhole-window — the OS-neutral half of window handling: the per-window identity cache, the
 // focus-recency order, launch attribution, and thin pass-throughs to the backend
 // (`platform.windows`), which is the only thing that talks to the window manager.
 

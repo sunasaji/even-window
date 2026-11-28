@@ -1,4 +1,4 @@
-// even-window — `EW_*` settings from a file (src/server/envFile.ts), in systemd's format.
+// pinhole-window — `EW_*` settings from a file (src/server/envFile.ts), in systemd's format.
 //
 // The format is a strict subset of systemd's `EnvironmentFile=`, so one file works in both
 // places and anything systemd rejects is rejected here too.

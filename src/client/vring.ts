@@ -1,4 +1,4 @@
-// even-window — vRing: a full-screen touch surface on the phone that stands in for the ring.
+// pinhole-window — vRing: a full-screen touch surface on the phone that stands in for the ring.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

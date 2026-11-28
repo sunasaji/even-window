@@ -1,4 +1,4 @@
-// even-window — invert (polarity), the client-side grey-derivation flip.
+// pinhole-window — invert (polarity), the client-side grey-derivation flip.
 //
 // The glasses are an optical see-through panel: black emits nothing and is transparent, bright
 // emits. The flip lives in the index→grey stage: one arithmetic op, no re-encode, and the

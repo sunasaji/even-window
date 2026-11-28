@@ -28,8 +28,8 @@ Linux バックエンドは、ミラーデスクトップをネストした X �
 ## インストール
 
 ```bash
-git clone <repository-url> even-window
-cd even-window
+git clone <repository-url> pinhole-window
+cd pinhole-window
 npm ci
 ```
 
@@ -166,7 +166,7 @@ tailnet 内の別の端末から結果を確認します。
 - `tailscale serve` を使い、`tailscale funnel` は使わないでください。funnel は
   インターネットに公開します。
 - tailnet 内のすべての端末がこのポートに届きます。Tailscale が認証するのはネットワークで
-  あってクライアントではないので、even-window の認証は有効のままにしてください。
+  あってクライアントではないので、pinhole-window の認証は有効のままにしてください。
 - 代わりにサーバを `0.0.0.0` にバインドしないでください。認証は通信路を暗号化しません。
   ループバック以外にバインドすると、サーバは起動のたびに警告します。
 - プロキシの解除は `tailscale serve --https=8443 off`。
@@ -190,7 +190,7 @@ tailnet 内の別の端末から結果を確認します。
   認証が有効なあいだサーバはすべてのオリジンを許可するので、CORS の設定は不要です。
   `EW_AUTH=0` の場合は、アプリのオリジンを `EW_ORIGINS` に指定する必要があります。
 
-- **ストアから。** even-window の公開後は、Even App で even-window を探してインストールし、
+- **ストアから。** pinhole-window の公開後は、Even App で pinhole-window を探してインストールし、
   アプリ一覧から開きます。ほかのアプリと同じ手順です。これはパッケージ版なので、
   上の注意がそのまま当てはまります。
 
@@ -268,14 +268,14 @@ Xephyr と Xvfb のバックエンドを切り替えたいときも同じ手順�
    curl -s http://127.0.0.1:8757/v1/models | grep -o '"id":"[^"]*"'
    ```
 
-3. `~/.even-window/env` で even-window にその場所を教え、サーバを再起動します。
+3. `~/.even-window/env` で pinhole-window にその場所を教え、サーバを再起動します。
 
    ```
    EW_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions
    EW_STT_LANG=en
    ```
 
-ユニットは `qwen3-asr-0.6b` を動かし、even-window は既定でそのモデルの HTTP 上の ID
+ユニットは `qwen3-asr-0.6b` を動かし、pinhole-window は既定でそのモデルの HTTP 上の ID
 `Qwen3-ASR-0.6B` を送るので、`EW_STT_MODEL` は未設定のままで構いません。この 2 つは同じ
 モデルを指す別の文字列です。片方を変えるならもう片方も変えてください
 （[voice.md](voice.md#speechcpp)）。食い違うと、ルートが無いように見える `404` が返ります。
@@ -283,7 +283,7 @@ Xephyr と Xvfb のバックエンドを切り替えたいときも同じ手順�
 ユニットの設定は `~/.config/speech.cpp/service.env` で上書きし（たとえば
 `SPEECH_MODEL_DIR=/path/to/models`）、
 `systemctl --user restart speech-cpp.service` で反映します。認識サービスはループバックに
-置いたままにしてください。認証を持たないサービスで、even-window は自身の認証つき API を
+置いたままにしてください。認証を持たないサービスで、pinhole-window は自身の認証つき API を
 通してこれを利用します。
 
 背景: [speech service device and model placement](notes/2026-11-speech-service-setup.md)。

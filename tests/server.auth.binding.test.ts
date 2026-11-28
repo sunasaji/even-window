@@ -1,4 +1,4 @@
-// even-window — session binding: the signed material names the destination
+// pinhole-window — session binding: the signed material names the destination
 // (src/shared/sessionBinding.ts, docs/decisions/session-origin-binding.md).
 //
 // The attack: a paired device is pointed at an attacker's API base, the attacker feeds it a

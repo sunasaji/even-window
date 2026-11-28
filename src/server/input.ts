@@ -1,4 +1,4 @@
-// even-window — the OS-neutral input vocabulary: which low-level kinds the wire accepts, and
+// pinhole-window — the OS-neutral input vocabulary: which low-level kinds the wire accepts, and
 // the key-name -> chord spelling translation. Injection itself is the backend's
 // (`platform.input`).
 

@@ -28,8 +28,8 @@ ffmpeg and injects input with xdotool. See [platform.md](platform.md).
 ## Install
 
 ```bash
-git clone <repository-url> even-window
-cd even-window
+git clone <repository-url> pinhole-window
+cd pinhole-window
 npm ci
 ```
 
@@ -167,7 +167,7 @@ Notes:
 
 - Use `tailscale serve`, never `tailscale funnel`: funnel publishes to the internet.
 - Every device in the tailnet can reach the port. Tailscale authenticates the
-  network, not the client, so keep even-window's authentication on.
+  network, not the client, so keep pinhole-window's authentication on.
 - Do not bind the server to `0.0.0.0` instead. Authentication does not encrypt the
   channel, and the server warns on every start when bound off loopback.
 - Remove the proxy with `tailscale serve --https=8443 off`.
@@ -191,7 +191,7 @@ The app is one web page (`index.html`, described by `app.json`).
   The server allows any origin while authentication is on, so no CORS setting is needed;
   with `EW_AUTH=0` the app's origin must be listed in `EW_ORIGINS`.
 
-- **From the store.** Once even-window is published, find it in the Even App,
+- **From the store.** Once pinhole-window is published, find it in the Even App,
   install it and open it from the app list, like any other app. That is the packaged
   build, so the notes above apply.
 
@@ -268,14 +268,14 @@ any compatible server works. How voice input works is in [voice.md](voice.md).
    curl -s http://127.0.0.1:8757/v1/models | grep -o '"id":"[^"]*"'
    ```
 
-3. Point even-window at it in `~/.even-window/env` and restart the server:
+3. Point pinhole-window at it in `~/.even-window/env` and restart the server:
 
    ```
    EW_STT_URL=http://127.0.0.1:8757/v1/audio/transcriptions
    EW_STT_LANG=en
    ```
 
-The unit serves `qwen3-asr-0.6b`, and even-window sends that model's HTTP id,
+The unit serves `qwen3-asr-0.6b`, and pinhole-window sends that model's HTTP id,
 `Qwen3-ASR-0.6B`, by default, so `EW_STT_MODEL` can stay unset. The two names are
 different strings for the same model; if you change one, change the other
 ([voice.md](voice.md#speechcpp)). A mismatch returns a `404` that looks like a missing
@@ -284,6 +284,6 @@ route.
 Override the unit's settings in `~/.config/speech.cpp/service.env` (for example
 `SPEECH_MODEL_DIR=/path/to/models`), then
 `systemctl --user restart speech-cpp.service`. Keep the recogniser on loopback: it
-has no authentication, and even-window reaches it through its own authenticated API.
+has no authentication, and pinhole-window reaches it through its own authenticated API.
 
 Background: [speech service device and model placement](notes/2026-11-speech-service-setup.md).

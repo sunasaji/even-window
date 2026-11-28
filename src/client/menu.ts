@@ -1,4 +1,4 @@
-// even-window — the window switcher: its state and the presenter that walks the menu levels.
+// pinhole-window — the window switcher: its state and the presenter that walks the menu levels.
 //
 // The client modules import each other freely, but only use each other from inside functions:
 // nothing here may touch another non-leaf module while this one is still loading.

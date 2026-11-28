@@ -1,4 +1,4 @@
-// even-window — the auth model itself (src/server/auth.ts).
+// pinhole-window — the auth model itself (src/server/auth.ts).
 //
 // These tests run the real crypto: node:crypto generates the keypairs and produces the
 // signatures, and src/server/auth.ts verifies them with createPublicKey/verify. Nothing is
@@ -896,7 +896,7 @@ describe('randomart', () => {
     const art = randomart('a'.repeat(64))
     const lines = art.split('\n')
     expect(lines).toHaveLength(11) // top bar + 9 rows + bottom bar
-    expect(lines[0]).toContain('[even-window]')
+    expect(lines[0]).toContain('[pinhole-window]')
     expect(lines.every(l => l.length === 19)).toBe(true)
     expect(art).toContain('S') // start marker
     expect(art).toContain('E') // end marker

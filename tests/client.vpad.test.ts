@@ -1,4 +1,4 @@
-// even-window — vPad: the mouse-button selector, the held modifier and the wheel.
+// pinhole-window — vPad: the mouse-button selector, the held modifier and the wheel.
 //
 //   1. The pure part: the pill table and the `clickat` argument, checked against the server's
 //      own `xdoArgs`, the only authority on whether `"x,y,2"` means button 2.

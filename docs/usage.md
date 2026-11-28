@@ -2,7 +2,7 @@
 
 English | [日本語](usage.ja.md)
 
-How to use even-window once it is running and a device is paired
+How to use pinhole-window once it is running and a device is paired
 ([getting-started.md](getting-started.md)). The glasses show the mirrored desktop;
 you operate it with gestures on the glasses and with the phone screen.
 

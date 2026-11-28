@@ -1,4 +1,4 @@
-// even-window — `{t:'supersede'}` on the wire: two live streams, one pair of glasses.
+// pinhole-window — `{t:'supersede'}` on the wire: two live streams, one pair of glasses.
 //
 // `tests/server.instances.test.ts` pins the rule. This file pins that the rule reaches the
 // socket (docs/decisions/glasses-instance-supersede.md).

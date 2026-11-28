@@ -1,6 +1,6 @@
 # Security
 
-How even-window decides who may use the server, what that decision protects, and what it
+How pinhole-window decides who may use the server, what that decision protects, and what it
 leaves to the transport in front of it. Wire shapes of the routes named here are in
 [protocol.md](protocol.md); set-up steps are in [getting-started.md](getting-started.md).
 Background: [design reasoning](notes/2026-11-auth-design-reasoning.md),

@@ -1,4 +1,4 @@
-// even-window — the pure parts of the WebView client. Imported under the node environment,
+// pinhole-window — the pure parts of the WebView client. Imported under the node environment,
 // where `document` is undefined, so src/client/main.ts does not boot (no SDK, no bridge).
 
 import { describe, expect, it } from 'vitest'

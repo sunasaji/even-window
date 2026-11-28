@@ -1,4 +1,4 @@
-// even-window — every client module loads on its own.
+// pinhole-window — every client module loads on its own.
 //
 // src/client is a set of modules that import each other in cycles. That is fine as long as a
 // module only uses another one from inside a function; a top-level statement that reaches into

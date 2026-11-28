@@ -1,4 +1,4 @@
-// even-window — the per-app bindings editor (the `▶ app` panel).
+// pinhole-window — the per-app bindings editor (the `▶ app` panel).
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

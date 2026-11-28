@@ -3,7 +3,7 @@
 [English](usage.md) | 日本語
 
 サーバが動いていて端末のペアリングが済んだ状態（[getting-started.ja.md](getting-started.ja.md)）
-からの、even-window の使い方です。グラスにはミラーデスクトップが映り、グラスのジェスチャと
+からの、pinhole-window の使い方です。グラスにはミラーデスクトップが映り、グラスのジェスチャと
 スマホ画面で操作します。
 
 ## グラスのジェスチャ

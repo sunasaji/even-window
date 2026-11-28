@@ -1,4 +1,4 @@
-// even-window — the window switcher's root list as data: items, MRU order, signature (pure).
+// pinhole-window — the window switcher's root list as data: items, MRU order, signature (pure).
 //
 // A leaf: it imports no other client module, so anything may use it at load time.
 

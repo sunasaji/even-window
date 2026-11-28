@@ -1,4 +1,4 @@
-// even-window — launch recency (src/server/appRecency.ts): the order behind the glasses menu's
+// pinhole-window — launch recency (src/server/appRecency.ts): the order behind the glasses menu's
 // curated slots. OS-neutral; the application list it filters against is a plain array here.
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'

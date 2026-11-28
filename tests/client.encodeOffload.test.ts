@@ -1,4 +1,4 @@
-// even-window — the encode worker's fallback. Pure: the port is injected, so there is no real
+// pinhole-window — the encode worker's fallback. Pure: the port is injected, so there is no real
 // `Worker` here.
 //
 // The worker is an optimisation; the tile reaching the glasses is not. Every failure mode below

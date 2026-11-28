@@ -1,4 +1,4 @@
-// even-window — `?keyprobe=1`, the instrument that answers "does a Bluetooth keyboard or
+// pinhole-window — `?keyprobe=1`, the instrument that answers "does a Bluetooth keyboard or
 // trackpad reach this WebView at all?"
 //
 // The probe's findings can only come from a real phone. What a test can do is make sure the

@@ -1,4 +1,4 @@
-// even-window — the index→grey lookup (src/client/grey.ts: levelOf / greyOf / GREY_LUT).
+// pinhole-window — the index→grey lookup (src/client/grey.ts: levelOf / greyOf / GREY_LUT).
 //
 // The scheme claims to be exact, not a quantisation: palette channel values get a code, the
 // 15-bit key is injective over the 16 palette colours, and anything else lands on a sentinel

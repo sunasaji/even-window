@@ -17,7 +17,7 @@ Add one line to `~/.even-window/apps.conf` ([configuration.md](configuration.md#
 with the absolute path of your checkout:
 
 ```
-app Firefox (G2) = /home/you/src/even-window/scripts/ew-firefox.sh
+app Firefox (G2) = /home/you/src/pinhole-window/scripts/ew-firefox.sh
 ```
 
 No restart is needed. `Firefox (G2)` appears in the phone's **apps** palette, and on

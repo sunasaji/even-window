@@ -1,4 +1,4 @@
-// even-window — the palette shell and the apps / task / window palettes.
+// pinhole-window — the palette shell and the apps / task / window palettes.
 //
 // Client modules import each other freely, but only from inside functions: nothing here may use
 // another non-leaf module while this one is still loading.

@@ -277,7 +277,7 @@ describe('source 3 — the user override file', () => {
   it('parses the four verbs, with comments and blank lines', () => {
     const o = parseOverrides(
       [
-        '# even-window overrides',
+        '# pinhole-window overrides',
         '',
         'hide xeyes',
         'show xdpyinfo',

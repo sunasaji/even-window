@@ -1,4 +1,4 @@
-// even-window — the capture-side frame diff (tiles.ts processFrame).
+// pinhole-window — the capture-side frame diff (tiles.ts processFrame).
 //
 // Two diffs sit in front of the BLE link:
 //

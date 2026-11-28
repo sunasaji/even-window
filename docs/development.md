@@ -2,7 +2,7 @@
 
 For people changing the code: the dev loop, the simulator harness, how to observe what the
 client and the glasses are doing, and recipes for verifying a change. Installing and operating
-even-window is covered in [getting-started.md](getting-started.md),
+pinhole-window is covered in [getting-started.md](getting-started.md),
 [configuration.md](configuration.md) and [troubleshooting.md](troubleshooting.md).
 
 The harness scripts are Linux-only: they drive the X11 backend ([platform.md](platform.md)),

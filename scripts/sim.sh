@@ -245,7 +245,7 @@ have xdpyinfo || die "xdpyinfo not found (install: sudo apt install x11-utils)"
 # satisfied by the other service while this run's node failed to bind.
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/${1}") >/dev/null 2>&1; }
 if port_busy "${API_PORT}"; then
-  die "port :${API_PORT} is already in use — something else is listening there (another even-window stack?).
+  die "port :${API_PORT} is already in use — something else is listening there (another pinhole-window stack?).
   Use --api-port <N>, or stop the other one.  ss -ltnp \"sport = :${API_PORT}\""
 fi
 if port_busy "${VITE_PORT}"; then

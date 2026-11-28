@@ -1,4 +1,4 @@
-// even-window — the two kinds of flag, and the line that keeps a stored one honest.
+// pinhole-window — the two kinds of flag, and the line that keeps a stored one honest.
 //
 //   * Instruments do not persist. `stats` and `debug` are read from this URL only, so the
 //     answer to "am I being measured" is no by default on every load. Settings (`server`,

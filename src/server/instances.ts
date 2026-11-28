@@ -1,4 +1,4 @@
-// even-window — which WebView instance owns the glasses
+// pinhole-window — which WebView instance owns the glasses
 // (docs/decisions/glasses-instance-supersede.md).
 //
 // When the Even App dies its old page can keep running, leaving two live clients pushing at

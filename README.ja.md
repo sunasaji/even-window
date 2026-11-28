@@ -1,10 +1,13 @@
-# even-window
+# pinhole-window
 
 [English](README.md) | 日本語
 
-even-window は、PC 上のデスクトップセッションを Even Realities G2 スマートグラスに
+pinhole-window は、PC 上のデスクトップセッションを Even Realities G2 スマートグラスに
 ミラーし、グラスとスマホから操作できるようにします。Even Hub アプリ（公式 Even App の
 中で動く WebView ページ）と、PC 上の小さなサーバで構成されています。
+
+バージョン 0.1.4 までは even-window という名前でした。`~/.even-window` などのパスには
+旧名が残っています（[理由](docs/decisions/rename-to-pinhole-window.md)）。
 
 サーバは専用の 576×288 のミラーデスクトップを動かし、それをキャプチャしてグラスへ
 配信します。テンプルやリングのジェスチャがキーを送り返し、グラス上のメニューで
@@ -36,7 +39,7 @@ flowchart TB
   subgraph PC["PC"]
     X["<b>ミラーデスクトップ</b><br/>576x288、全ウィンドウが全画面<br/>任意のアプリ: ターミナル、ブラウザ、..."]
     CAP["<b>キャプチャ</b><br/>4 分割タイル、16 色<br/>変化したタイルのみ"]
-    SRV["<b>even-window サーバ</b><br/>HTTP + SSE、認証あり"]
+    SRV["<b>pinhole-window サーバ</b><br/>HTTP + SSE、認証あり"]
     INJ["入力の注入"]
     STT["音声認識<br/>（任意、ループバック）"]
     X --> CAP --> SRV
@@ -44,7 +47,7 @@ flowchart TB
     SRV <-.-> STT
   end
   subgraph PHONE["スマホ: 公式 Even App"]
-    CL["<b>even-window クライアント</b>（WebView ページ）<br/>スマホ画面: プレビュー、テキスト欄、キー、<br/>トラックパッド、ウィンドウ／アプリのパレット<br/>タイルを 16 階調グレーの PNG に変換"]
+    CL["<b>pinhole-window クライアント</b>（WebView ページ）<br/>スマホ画面: プレビュー、テキスト欄、キー、<br/>トラックパッド、ウィンドウ／アプリのパレット<br/>タイルを 16 階調グレーの PNG に変換"]
     BR["<b>グラスブリッジ</b><br/>Even Hub SDK"]
     SK["<b>オンスクリーンキーボード</b>"]
   end

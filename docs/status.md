@@ -54,10 +54,10 @@ has been verified; the reference documents describe how each one works.
   so the path that restores the mirror after a link loss has not been exercised on
   hardware.
 - **The Even App can close right after a Bluetooth disconnect.** The cause is not
-  identified. It is believed to be independent of even-window, without proof. It
+  identified. It is believed to be independent of pinhole-window, without proof. It
   reproduced on 2026-11-23 when Bluetooth was switched off while the app was running.
 - **An uncaught WebKit `NotSupportedError` seen before one such crash is unexplained.**
-  A flood of log lines it used to trigger was a bug in even-window and is fixed.
+  A flood of log lines it used to trigger was a bug in pinhole-window and is fixed.
 - **No automatic pause on taking the glasses off.** `isWearing` is unreliable; use
   the **lens** latch or the case.
 - **Suppression of platform touch defaults on the phone's full-screen pads cannot be

@@ -1,4 +1,4 @@
-// even-window — the `?stats=1` counters and their formatting (pure).
+// pinhole-window — the `?stats=1` counters and their formatting (pure).
 //
 // A leaf: it imports no other client module, so anything may use it at load time.
 
