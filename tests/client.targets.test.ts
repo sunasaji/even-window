@@ -3,6 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { keySlot } from '../src/client/authClient.ts'
+import { EXIT_DIALOG_WINDOW_MS, isExitDialog } from '../src/client/exitCurtain.ts'
 import { startsAtRoot } from '../src/client/root.ts'
 import {
   cleanName,
@@ -159,5 +160,18 @@ describe('where a page load starts', () => {
     expect(startsAtRoot('?server=http://127.0.0.1:8791')).toBe(false)
     expect(startsAtRoot('?pair=ABCD-EFGH')).toBe(false)
     expect(startsAtRoot('?server=')).toBe(true)
+  })
+})
+
+describe('the phone stands aside for the exit dialog', () => {
+  it('takes the layer that follows the request for the dialog', () => {
+    expect(isExitDialog(1000, 1090)).toBe(true) // 88-90 ms on hardware
+    expect(isExitDialog(1000, 1000 + EXIT_DIALOG_WINDOW_MS)).toBe(true)
+  })
+
+  it('does not take a notification for it', () => {
+    expect(isExitDialog(0, 5000)).toBe(false) // nothing was asked
+    expect(isExitDialog(1000, 1001 + EXIT_DIALOG_WINDOW_MS)).toBe(false) // long after
+    expect(isExitDialog(1000, 900)).toBe(false)
   })
 })

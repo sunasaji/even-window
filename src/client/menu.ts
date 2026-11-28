@@ -21,6 +21,7 @@ import type { LauncherEntry, WinInfo } from '../shared/types.ts'
 import { renderAppPanel } from './bindingsEditor.ts'
 import { toast } from './chrome.ts'
 import { log } from './debugLog.ts'
+import { noteExitAsked } from './exitCurtain.ts'
 import { bridge } from './main.ts'
 import {
   buildMenuItems,
@@ -491,6 +492,8 @@ export async function exitApp(): Promise<void> {
   try {
     const ok = await withTimeout(Promise.resolve(bridge.shutDownPageContainer(1)), 8000, 'shutdown')
     log(`exit (shutDownPageContainer(1)) => ${String(ok)}`)
+    // The system's dialog follows on the lens; the phone stands aside for it (exitCurtain.ts).
+    if (ok) noteExitAsked()
   } catch (e) {
     log(`exit failed: ${errText(e)}`)
   }

@@ -373,6 +373,18 @@ adopted. The app's own origin is a row too when it is served from a real one (th
 A URL with `?server=` or `?pair=` opens that server directly, without stopping at the list.
 While the list is up the client sends no request except to the pairing routes.
 
+### While the glasses ask whether to close the app
+
+A double tap at the list makes the system show its own dialog on the lens. Until it is answered
+the gestures go to that dialog, so the phone page is covered with `Answer on the glasses`
+(`src/client/exitCurtain.ts`): a tap on the page would otherwise open a server behind the
+dialog. The cover goes when the dialog leaves the lens, and it has `use the phone anyway` in
+case that event is lost.
+
+Only this dialog covers the page. A foreground layer is announced the same way whatever it is,
+so the dialog is recognised as the layer that arrives within two seconds of the request; a
+phone notification or the system menu leaves the page usable.
+
 ### When the list is empty
 
 With no `?server=` and no stored address the list is empty. The client's built-in default

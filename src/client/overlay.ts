@@ -9,6 +9,7 @@ import { pathHeader } from '../shared/glassMenu.ts'
 import { LatestAsyncWriter } from '../shared/latestAsyncWriter.ts'
 import { voiceOverlay } from '../shared/voiceDialog.ts'
 import { log } from './debugLog.ts'
+import { exitCurtainOnLayer } from './exitCurtain.ts'
 import { established, flushLogNow, glassLinkUp, pushImage, renderPageWarning } from './glassPage.ts'
 import { setupNoticeKind, setupNoticeText, startupHintText, takeHint } from './hints.ts'
 import {
@@ -220,6 +221,7 @@ export let glassCovered = false
 export function setGlassCovered(on: boolean): void {
   if (glassCovered === on) return
   glassCovered = on
+  exitCurtainOnLayer(on)
   if (on) {
     log('foreground layer entered — pump stands down (nothing can be seen under it)')
     renderStatus()
