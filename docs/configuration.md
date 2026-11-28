@@ -44,7 +44,7 @@ transparent and a light background lights the whole lens.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `EW_STATE_DIR` | `~/.pinhole-window` | The state directory. Use an absolute path. `~/.even-window`, the former name, is used while it is the only one of the two ([details](decisions/rename-to-pinhole-window.md)). |
+| `EW_STATE_DIR` | `~/.pinhole-window` | The state directory. Use an absolute path. |
 | `EW_ENV_FILE` | unset | An explicit env file. Empty means "read no file". |
 | `EW_QUIET` | unset | `1` silences the per-request access log. |
 

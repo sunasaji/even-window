@@ -15,17 +15,14 @@ The name is pinhole-window: a small, single-colour image of something that is el
 replaces the old name wherever a person reads it: the app name in `app.json`, the page title,
 the lens notices, the package name, the repository and the documentation.
 
-The paths and unit names follow, with a fallback so that an install made under the old name
-keeps working without moving anything:
+The paths and unit names follow, with no fallback to the old ones: the state directory is
+`~/.pinhole-window`, the env files are `~/.pinhole-window/env` and
+`~/.config/pinhole-window/env`, the unit is `pinhole-window@.service`, and the Firefox profile
+is `~/.local/share/pinhole-window/firefox` with window class `pinhole-window-firefox`.
 
-| Now | Former name, still honoured |
-| --- | --- |
-| State directory `~/.pinhole-window` | `~/.even-window` is used while it is the only one of the two (`defaultStateDir`) |
-| Env files `~/.pinhole-window/env`, `~/.config/pinhole-window/env` | The same two under `even-window` are read after them, so the new files win a key both set |
-| Unit `pinhole-window@.service` | An enabled `even-window@…` unit has to be disabled and the new one enabled; the unit reads all four env files |
-| Firefox profile `~/.local/share/pinhole-window/firefox`, window class `pinhole-window-firefox` | The old profile directory is used while it is the only one |
-
-To migrate, stop the server, move each directory to its new name and start again.
+An install made under the old name has to be moved by hand: stop the server, rename
+`~/.even-window`, `~/.config/even-window` and `~/.local/share/even-window`, disable the
+`even-window@…` unit and enable the new one. Until then the server starts as a fresh install.
 
 Two things keep the old spelling:
 
@@ -38,8 +35,8 @@ Two things keep the old spelling:
 
 - Keep the name and see whether review accepts it: a rename after public release costs more
   than one during beta, with one tester.
-- Rename the paths with no fallback: a clean break, at the price of every existing install
-  losing its pairings and settings until someone moves the directory by hand.
+- Keep reading the old paths as a fallback: it protects existing installs, but there were
+  almost none during the beta, and the fallback would stay in the code for good.
 - Change the package id too: it would be a different app on Even Hub.
 - eye-window, following-window and others: "following" reads as "the window below" in running
   text; "pinhole" is a noun that does not blend into a sentence, and no project or package of
@@ -47,6 +44,6 @@ Two things keep the old spelling:
 
 ## Consequences
 
-- `even-window` in the code is the fallback above (`LEGACY_NAME`), not a leftover.
+- `even-window` no longer appears in the code or the paths; only the package id carries it.
 - GitHub redirects the old repository URL.
 - The Even Hub display name has to be changed to match `app.json`.

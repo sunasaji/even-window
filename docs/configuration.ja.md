@@ -44,7 +44,7 @@ pinhole-window は `EW_*` 環境変数（env ファイルに置くこともで�
 
 | 変数 | 既定 | 意味 |
 | --- | --- | --- |
-| `EW_STATE_DIR` | `~/.pinhole-window` | 状態ディレクトリ。絶対パスで指定します。旧名の `~/.even-window` しか無いあいだは、そちらが使われます（[詳細](decisions/rename-to-pinhole-window.md)）。 |
+| `EW_STATE_DIR` | `~/.pinhole-window` | 状態ディレクトリ。絶対パスで指定します。 |
 | `EW_ENV_FILE` | 未設定 | env ファイルの明示指定。空は「ファイルを読まない」という意味です。 |
 | `EW_QUIET` | 未設定 | `1` でリクエストごとのアクセスログを止めます。 |
 

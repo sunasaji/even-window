@@ -17,9 +17,6 @@ WorkingDirectory=%f
 # both takes the value from ~/.pinhole-window/env. The later file wins in systemd, so that
 # one comes last.
 # The leading `-` tolerates a missing file.
-# The first two are the paths under the project's former name, for an install made then.
-EnvironmentFile=-%h/.config/even-window/env
-EnvironmentFile=-%h/.even-window/env
 EnvironmentFile=-%h/.config/pinhole-window/env
 EnvironmentFile=-%h/.pinhole-window/env
 ExecStart=/usr/bin/env node %f/src/server/main.ts

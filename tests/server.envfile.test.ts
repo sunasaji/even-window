@@ -18,7 +18,6 @@ import {
   envFileCandidates,
   parseEnvFile,
 } from '../src/server/envFile.ts'
-import { defaultStateDir } from '../src/server/stateDir.ts'
 
 const dirs: string[] = []
 function tempFile(contents: string, mode = 0o600): string {
@@ -196,37 +195,7 @@ describe('envFileCandidates — where it looks', () => {
     expect(envFileCandidates({ HOME: '/home/u', XDG_CONFIG_HOME: '/home/u/.conf' })).toEqual([
       '/home/u/.pinhole-window/env',
       '/home/u/.conf/pinhole-window/env',
-      // the former name, so an install made before the rename still finds its settings
-      '/home/u/.even-window/env',
-      '/home/u/.conf/even-window/env',
     ])
-  })
-
-  it('lets a file under the new name win over one under the former name', () => {
-    const home = mkdtempSync(join(tmpdir(), 'ew-home-'))
-    dirs.push(home)
-    for (const d of ['.pinhole-window', '.even-window']) {
-      mkdirSync(join(home, d))
-      writeFileSync(
-        join(home, d, 'env'),
-        d === '.even-window' ? 'EW_PORT=9\nEW_FPS=3\n' : 'EW_PORT=1\n',
-      )
-      chmodSync(join(home, d, 'env'), 0o600)
-    }
-    const env: NodeJS.ProcessEnv = { HOME: home, XDG_CONFIG_HOME: join(home, '.config') }
-    applyEnvFile(env)
-    expect(env.EW_PORT).toBe('1')
-    expect(env.EW_FPS).toBe('3') // only the old file sets it: still applied
-  })
-
-  it('uses the former state dir only while it is the only one', () => {
-    const home = mkdtempSync(join(tmpdir(), 'ew-home-'))
-    dirs.push(home)
-    expect(defaultStateDir(home)).toBe(join(home, '.pinhole-window')) // neither exists
-    mkdirSync(join(home, '.even-window'))
-    expect(defaultStateDir(home)).toBe(join(home, '.even-window'))
-    mkdirSync(join(home, '.pinhole-window'))
-    expect(defaultStateDir(home)).toBe(join(home, '.pinhole-window'))
   })
 
   it('falls back to ~/.config when XDG_CONFIG_HOME is unset or empty', () => {

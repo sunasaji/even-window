@@ -28,11 +28,6 @@ TEMPLATE="$SCRIPT_DIR/firefox-profile"
 # Persistent and under $HOME, not /tmp: WSL clears /tmp, and the profile holds logins
 # and site storage.
 PROFILE="${EW_FIREFOX_PROFILE:-$HOME/.local/share/pinhole-window/firefox}"
-# A profile made under the project's former name is used where it is the only one.
-if [ -z "${EW_FIREFOX_PROFILE:-}" ] && [ ! -d "$PROFILE" ] \
-  && [ -d "$HOME/.local/share/even-window/firefox" ]; then
-  PROFILE="$HOME/.local/share/even-window/firefox"
-fi
 FIREFOX_BIN="${EW_FIREFOX_BIN:-firefox}"
 
 [ -d "$TEMPLATE" ] || { echo "ew-firefox: template not found: $TEMPLATE" >&2; exit 1; }

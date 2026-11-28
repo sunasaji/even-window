@@ -27,7 +27,7 @@ import { execFileSync } from 'node:child_process'
 // src/server/auth.ts, src/client/authClient.ts and src/shared/sessionBinding.ts byte for
 // byte (docs/security.md). Accepts Ed25519 (OKP, only `x`) and ECDSA P-256 (EC, `x`+`y`).
 import { createHash, createPrivateKey, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -94,13 +94,7 @@ const loadEnvFile = () => {
   const xdg = process.env.XDG_CONFIG_HOME || join(homedir(), '.config')
   const candidates = explicit
     ? [explicit]
-    : [
-        join(homedir(), '.pinhole-window', 'env'),
-        join(xdg, 'pinhole-window', 'env'),
-        // the former name: an install made before the rename
-        join(homedir(), '.even-window', 'env'),
-        join(xdg, 'even-window', 'env'),
-      ]
+    : [join(homedir(), '.pinhole-window', 'env'), join(xdg, 'pinhole-window', 'env')]
   for (const file of candidates) {
     let text
     try {
@@ -138,13 +132,7 @@ const loadEnvFile = () => {
 }
 loadEnvFile()
 
-// As src/server/stateDir.ts: the former name's directory is used while it is the only one.
-const defaultStateDir = () => {
-  const now = join(homedir(), '.pinhole-window')
-  const old = join(homedir(), '.even-window')
-  return !existsSync(now) && existsSync(old) ? old : now
-}
-const DIR = process.env.EW_STATE_DIR || defaultStateDir()
+const DIR = process.env.EW_STATE_DIR || join(homedir(), '.pinhole-window')
 const CLIENTS = join(DIR, 'clients.json')
 const PENDING = join(DIR, 'pending.json')
 const PAIRING = join(DIR, 'pairing.json')
