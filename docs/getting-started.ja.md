@@ -93,6 +93,7 @@ npm run dev
 | `ew-auth.mjs list` | 登録済みの端末 |
 | `ew-auth.mjs pending` | 承認待ちの端末とそのパターン |
 | `ew-auth.mjs approve <id>` / `reject <id>` | 承認待ちの端末を承認／拒否する（ID の先頭 4 文字で足ります） |
+| `ew-auth.mjs rename <id> <名前>` | 端末に名前を付ける。登録時に付いた `client-…` の代わりに、`list` とスマホの登録済み鍵の表に表示されます |
 | `ew-auth.mjs revoke <id>` | 端末を外す。その端末の次のリクエストから効きます |
 | `ew-auth.mjs rotate` | 生きているセッションをすべて無効にする。登録は残ります |
 

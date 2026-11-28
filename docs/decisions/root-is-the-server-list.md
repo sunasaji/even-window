@@ -45,8 +45,8 @@ is added to the list. The list holds nine, which is what the panel shows under i
 ## Consequences
 
 - Every start costs one more tap. The cursor starts on the server used last.
-- One device key is used for every server. Forgetting a server on the phone removes the row; the
-  enrolment stays on that server until it is revoked there.
+- Each server has its own device key ([decision](one-key-per-server.md)). Forgetting a server
+  on the phone removes the row and its key, and asks that server to drop the enrolment.
 - The gesture hint of the first launches waits for the first server to be opened, since the
   gestures it lists mean nothing at the list.
 - While the list is up the client sends nothing: `authFetch` refuses everything except the

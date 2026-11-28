@@ -3,8 +3,9 @@
 // Identity is a WebCrypto keypair: Ed25519 where supported, else ECDSA P-256. In a plain
 // browser the private key is non-extractable and lives in IndexedDB. Pairing enrols the
 // public key; a session is obtained by signing a server challenge together with the origin
-// this device believes it is talking to (src/shared/sessionBinding.ts). "Paired" means a
-// local keypair exists; unpaired requests go out unauthenticated.
+// this device believes it is talking to (src/shared/sessionBinding.ts). There is one keypair
+// per server. "Paired" means a keypair for the current server exists; unpaired requests go out
+// unauthenticated.
 
 import { normaliseOrigin, sessionMaterial } from '../shared/sessionBinding.ts'
 
@@ -77,9 +78,9 @@ let durable: DurableStore | null = null
 export function setDurableStore(s: DurableStore): void {
   durable = s
   // The stream opens before the bridge is ready, so `loadKeypair()` may already have cached
-  // "no identity" from an empty IndexedDB. Invalidate that negative result so the next load
+  // "no identity" from an empty IndexedDB. Invalidate those negative results so the next load
   // consults the mirror; a loaded keypair is never dropped.
-  if (kpCache === null) kpCache = undefined
+  for (const [origin, kp] of kpCache) if (kp === null) kpCache.delete(origin)
 }
 // Rebuild a CryptoKeyPair from a mirrored JWK pair; the in-memory private key is non-extractable.
 async function importPair(priv: JsonWebKey, pub: JsonWebKey): Promise<CryptoKeyPair> {
@@ -91,42 +92,116 @@ async function importPair(priv: JsonWebKey, pub: JsonWebKey): Promise<CryptoKeyP
 }
 
 // ── keypair lifecycle ─────────────────────────────────────────────────────────
-let kpCache: CryptoKeyPair | null | undefined // undefined = not yet loaded from idb
-async function loadKeypair(): Promise<CryptoKeyPair | null> {
-  if (kpCache !== undefined) return kpCache
-  try {
-    kpCache = (await idbGet<CryptoKeyPair>(KEY_ID)) ?? null
-  } catch {
-    kpCache = null
-  }
-  // IndexedDB empty: rebuild from the durable JWK mirror and re-seed IndexedDB.
-  if (!kpCache && durable) {
-    try {
-      const raw = await durable.get(JWK_KEY)
-      if (raw) {
-        const { priv, pub } = JSON.parse(raw) as { priv: JsonWebKey; pub: JsonWebKey }
-        kpCache = await importPair(priv, pub)
-        try {
-          await idbPut(KEY_ID, kpCache)
-        } catch {
-          /* ignore */
-        }
-      }
-    } catch {
-      kpCache = kpCache ?? null
-    }
-  }
-  return kpCache
+// One keypair per server, named by the server's origin. A key enrolled at one server is never
+// presented to another, pairing with a second server does not replace the first one's key, and
+// forgetting a server discards its key (docs/decisions/one-key-per-server.md).
+
+/** Pure: the suffix that names a server's key in both stores. Empty for no origin, which is
+ *  also the name of the single key earlier versions kept. */
+export function keySlot(origin: string): string {
+  return origin ? `@${origin}` : ''
 }
-/** Has this device been paired (a local identity exists)? */
+
+/** Which origin took over the single key of earlier versions. Kept in both stores, because
+ *  the packaged app loses localStorage on restart. */
+const LEGACY_OWNER = 'ew-auth.owner'
+
+/** May the current base adopt that single key? Only an address somebody chose: the built-in
+ *  default is a guess, and a guess must not claim the key (serverLink.ts sets this). */
+let legacyAdoptable = false
+export function setLegacyAdoptable(v: boolean): void {
+  legacyAdoptable = v
+}
+
+const kpCache = new Map<string, CryptoKeyPair | null>() // absent = not loaded yet
+
+/** One slot: IndexedDB first, then the durable JWK mirror, which re-seeds IndexedDB. */
+async function readSlot(slot: string): Promise<CryptoKeyPair | null> {
+  let kp: CryptoKeyPair | null = null
+  try {
+    kp = (await idbGet<CryptoKeyPair>(KEY_ID + slot)) ?? null
+  } catch {
+    kp = null
+  }
+  if (kp || !durable) return kp
+  try {
+    const raw = await durable.get(JWK_KEY + slot)
+    if (!raw) return null
+    const { priv, pub } = JSON.parse(raw) as { priv: JsonWebKey; pub: JsonWebKey }
+    kp = await importPair(priv, pub)
+    try {
+      await idbPut(KEY_ID + slot, kp)
+    } catch {
+      /* ignore */
+    }
+  } catch {
+    return null
+  }
+  return kp
+}
+
+async function legacyOwner(): Promise<string> {
+  try {
+    const v = localStorage.getItem(LEGACY_OWNER)
+    if (v) return v
+  } catch {
+    /* storage blocked */
+  }
+  try {
+    return (await durable?.get(LEGACY_OWNER)) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+/** The single key of earlier versions becomes the key of the first chosen server that asks
+ *  for one, which is the server it was enrolled at: the stored address is opened first. */
+async function adoptLegacy(origin: string): Promise<CryptoKeyPair | null> {
+  if (!legacyAdoptable) return null
+  const owner = await legacyOwner()
+  if (owner && owner !== origin) return null
+  const kp = await readSlot('')
+  if (!kp) return null
+  try {
+    await idbPut(KEY_ID + keySlot(origin), kp)
+  } catch {
+    /* ignore */
+  }
+  try {
+    const raw = await durable?.get(JWK_KEY)
+    if (raw) await durable?.set(JWK_KEY + keySlot(origin), raw)
+  } catch {
+    /* ignore */
+  }
+  try {
+    localStorage.setItem(LEGACY_OWNER, origin)
+  } catch {
+    /* storage blocked */
+  }
+  void durable?.set(LEGACY_OWNER, origin)
+  return kp
+}
+
+async function loadKeypair(): Promise<CryptoKeyPair | null> {
+  const origin = authOrigin()
+  const hit = kpCache.get(origin)
+  if (hit !== undefined) return hit
+  let kp = await readSlot(keySlot(origin))
+  if (!kp && origin) kp = await adoptLegacy(origin)
+  kpCache.set(origin, kp)
+  return kp
+}
+/** Has this device been paired with the current server (a key for it exists)? */
 export async function isPaired(): Promise<boolean> {
   return (await loadKeypair()) != null
 }
 
-/** Create and persist a fresh device identity, returning the public key JWK to enrol.
- *  Prefers Ed25519, falling back to ECDSA P-256. The private key is extractable only when a
- *  durable store is wired up (see `DurableStore`). */
+/** Create and persist a fresh identity for the current server, returning the public key JWK to
+ *  enrol. Prefers Ed25519, falling back to ECDSA P-256. The private key is extractable only
+ *  when a durable store is wired up (see `DurableStore`). */
 export async function generateKeypair(): Promise<JsonWebKey> {
+  const origin = authOrigin()
+  const slot = keySlot(origin)
   const extractable = durable != null // only mirrored keys need to be extractable
   let kp: CryptoKeyPair
   try {
@@ -140,19 +215,83 @@ export async function generateKeypair(): Promise<JsonWebKey> {
       'verify',
     ])
   }
-  await idbPut(KEY_ID, kp)
-  kpCache = kp
+  await idbPut(KEY_ID + slot, kp)
+  kpCache.set(origin, kp)
   if (durable && extractable) {
     try {
       const priv = await crypto.subtle.exportKey('jwk', kp.privateKey)
       const pub = await crypto.subtle.exportKey('jwk', kp.publicKey)
-      await durable.set(JWK_KEY, JSON.stringify({ priv, pub }))
+      await durable.set(JWK_KEY + slot, JSON.stringify({ priv, pub }))
     } catch {
       /* ignore: IndexedDB still holds it for this session */
     }
   }
   resetSession()
   return await crypto.subtle.exportKey('jwk', kp.publicKey)
+}
+
+/** Ask a server to drop this device's enrolment, signed with the key kept for that server.
+ *  Used when the phone forgets a server, before the key itself is discarded. `failed` covers a
+ *  server that does not answer: the enrolment then stays until it is revoked on the host. */
+export async function revokeSelf(server: string): Promise<'revoked' | 'no-key' | 'failed'> {
+  const keep = base
+  const work = async (): Promise<'revoked' | 'no-key' | 'failed'> => {
+    base = server
+    resetSession()
+    if (!(await loadKeypair())) return 'no-key'
+    const tok = await bearer()
+    if (!tok) return 'failed'
+    const r = await fetch(`${server}/api/auth/revoke-self`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}` },
+    })
+    if (!r.ok) return 'failed'
+    const j = (await r.json().catch(() => ({}))) as { ok?: boolean }
+    return j.ok ? 'revoked' : 'failed'
+  }
+  try {
+    // Bounded: an address that leads nowhere must not hold the row on the screen.
+    return await Promise.race([
+      work(),
+      new Promise<'failed'>(resolve => {
+        setTimeout(() => {
+          resolve('failed')
+        }, REVOKE_TIMEOUT_MS)
+      }),
+    ])
+  } catch {
+    return 'failed'
+  } finally {
+    base = keep
+    resetSession()
+  }
+}
+const REVOKE_TIMEOUT_MS = 6000
+
+/** Discard the key kept for a server: the phone forgot that server (phoneUi.ts). The enrolment
+ *  on the server stays until it is revoked there, but nothing here can use it any more. */
+export async function forgetKey(server: string): Promise<void> {
+  const origin = normaliseOrigin(server)
+  if (!origin) return
+  kpCache.delete(origin)
+  try {
+    const db = await idb()
+    await new Promise<void>((resolve, reject) => {
+      const r = db
+        .transaction(STORE, 'readwrite')
+        .objectStore(STORE)
+        .delete(KEY_ID + keySlot(origin))
+      r.onsuccess = () => resolve()
+      r.onerror = () => reject(r.error)
+    })
+  } catch {
+    /* ignore */
+  }
+  try {
+    await durable?.set(JWK_KEY + keySlot(origin), '')
+  } catch {
+    /* ignore */
+  }
 }
 // Sign params matching the keypair's algorithm (Ed25519 has no separate hash).
 function signAlgo(kp: CryptoKeyPair): AlgorithmIdentifier | EcdsaParams {

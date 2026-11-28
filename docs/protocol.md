@@ -41,6 +41,7 @@ with `ok: false` and a `msg`. An HTTP error means the request was wrong or refus
 | POST | `/api/auth/pair` | open | Submit a device key with a one-time code |
 | GET | `/api/auth/me` | gated | The caller's enrolled identity |
 | GET | `/api/auth/ticket` | gated | Short-lived ticket for the stream |
+| POST | `/api/auth/revoke-self` | gated | The caller removes its own key from the registry |
 | GET | `/api/stream` | gated (ticket) | The SSE stream |
 | GET | `/api/health` | gated | Display session status and capabilities |
 | GET | `/api/windows` | gated | Window list and focus recency |
@@ -69,6 +70,7 @@ The model, the token kinds and the pairing procedure are described in
 | `POST /api/auth/pair` | `{"code":"<one-time code>","pub":<public JWK>}` | `{"status":"pending"\|"approved","id":"<fingerprint>","art":"<randomart>","slots":{"used":n,"max":n}}`; `max: 0` means unlimited. Refused: `403 {"error":"pairing closed"\|"bad code"\|"bad key"}` |
 | `GET /api/auth/pair/status?id=<fingerprint>` | none | `{"status":"approved"\|"pending"\|"rejected"\|"unknown"}` |
 | `GET /api/auth/me` | none | `{"id":"<fingerprint>","name":"…","custom":bool,"authEnabled":bool}`; `id` is `""` when authentication is off |
+| `POST /api/auth/revoke-self` | none | `{"ok":true}` when the caller's key was enrolled and is now removed. Sent by a phone that forgets this server. With authentication off: `{"ok":false,"authEnabled":false}` |
 | `GET /api/auth/ticket` | none | `{"ticket":"…","exp":<ms>,"authEnabled":true}`; a ticket lasts 60 seconds and only opens the stream. With authentication off: `{"ticket":"","exp":0,"authEnabled":false}` |
 
 ### `GET /api/health`

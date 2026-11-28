@@ -62,7 +62,14 @@ import {
 } from './settings.ts'
 import { invertLabel, setStatus } from './statusUi.ts'
 import { startStream, streamTicketed, sttReady } from './stream.ts'
-import { loadTargets, rootOpen, setRootOpen, setRootSel, targetList } from './targets.ts'
+import {
+  loadTargets,
+  rootOpen,
+  setRootOpen,
+  setRootSel,
+  targetIndex,
+  targetList,
+} from './targets.ts'
 import { cursor, refreshGrey } from './tiles.ts'
 import { errText, withTimeout } from './util.ts'
 import {
@@ -157,7 +164,7 @@ async function boot(): Promise<void> {
   log(`boot: query=${rawQuery || '(none)'} inst=${INSTANCE_ID}`)
   // The app starts at the server list unless the URL asks for a server (root.ts).
   setRootOpen(startsAtRoot(rawQuery))
-  setRootSel(targetList().indexOf(SERVER))
+  setRootSel(targetIndex(SERVER))
   log(
     rootOpen
       ? `root: at the server list (${String(targetList().length)} known)`
@@ -260,7 +267,7 @@ async function boot(): Promise<void> {
     if (invertBtn) invertBtn.textContent = invertLabel()
     // The list of servers is one of the restored keys in the packaged app.
     loadTargets()
-    setRootSel(targetList().indexOf(SERVER))
+    setRootSel(targetIndex(SERVER))
     renderRootPanel()
   }
   // Before the identity is declared settled: an address kept in the store must be adopted

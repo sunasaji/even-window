@@ -3,7 +3,14 @@
 // The client modules import each other freely, but only from inside functions: nothing here may
 // use another non-leaf module while this one is still loading.
 
-import { bearer, type DurableStore, isPaired, resetSession, setAuthBase } from './authClient.ts'
+import {
+  bearer,
+  type DurableStore,
+  isPaired,
+  resetSession,
+  setAuthBase,
+  setLegacyAdoptable,
+} from './authClient.ts'
 import { log } from './debugLog.ts'
 import { flagSource, noteFlag } from './flags.ts'
 import { maybePromptPairing } from './main.ts'
@@ -91,6 +98,9 @@ export function initServer(): void {
   // Recorded like the boolean flags, so a server URL persisted by a previous run is visible.
   noteFlag('server', from, normaliseServer(v))
   setServer(v, from === 'default')
+  // An app served from a real origin (the dev server, a single-origin proxy) was loaded from
+  // that server, so it is listed without anyone typing it. The loopback default never is.
+  if (from === 'default' && SERVER !== LOOPBACK_SERVER) addTarget(SERVER)
 }
 
 /** Point the client at an API base. `guess` marks the built-in default, which is used but not
@@ -98,6 +108,8 @@ export function initServer(): void {
 export function setServer(raw: string, guess = false): void {
   SERVER = normaliseServer(raw)
   serverIsGuess = guess
+  // The key of an earlier version goes to a server somebody chose, never to the default.
+  setLegacyAdoptable(!guess)
   if (!guess) {
     try {
       localStorage.setItem(SERVER_KEY, SERVER)

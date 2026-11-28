@@ -13,7 +13,15 @@ import { renderRootPanel } from './phoneUi.ts'
 import { SERVER, setAuthState, switchServer } from './serverLink.ts'
 import { setStatus } from './statusUi.ts'
 import { resetStreamState, stopStream } from './stream.ts'
-import { moveRoot, rootOpen, rootSel, setRootOpen, setRootSel, targetList } from './targets.ts'
+import {
+  moveRoot,
+  rootOpen,
+  rootSel,
+  setRootOpen,
+  setRootSel,
+  targetIndex,
+  targetList,
+} from './targets.ts'
 import { forgetTiles } from './tiles.ts'
 import { voiceActive, voiceCancel } from './voice.ts'
 
@@ -45,7 +53,7 @@ export function enterRoot(why: string): void {
   // the cache gone it stays black until the next server sends its own.
   forgetTiles()
   setRootOpen(true)
-  setRootSel(targetList().indexOf(SERVER))
+  setRootSel(targetIndex(SERVER))
   // No server, so no auth state: this also clears a setup notice.
   setAuthState('unknown')
   setStatus(ROOT_STATUS)
@@ -79,8 +87,8 @@ export function rootGesture(g: 'tap' | 'double' | 'up' | 'down'): void {
   }
   const list = targetList()
   if (g === 'tap') {
-    const server = list[rootSel]
-    if (server) openTarget(server)
+    const t = list[rootSel]
+    if (t) openTarget(t.server)
     else log('root: tap — no server in the list')
     return
   }

@@ -15,7 +15,7 @@ import { createServer, type Server } from 'node:http'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { issueTicket } from '../src/server/auth.ts'
+import { issueTicket, listClients } from '../src/server/auth.ts'
 import { corsOrigin, route, routes } from '../src/server/main.ts'
 import { resetAppCache } from '../src/server/platform/x11/apps.ts'
 import { enrolAndSession, makeEd25519Key, useTempStateDir } from './authFixture.ts'
@@ -426,5 +426,24 @@ describe('CORS', () => {
       // gate off this refusal is the only thing between a web page and /api/spawn.
       expect(bad.headers.get('access-control-allow-origin')).toBeNull()
     })
+  })
+})
+
+// Last in the file: it removes the client the cases above authenticate as.
+describe('a device withdraws its own key', () => {
+  it('is refused without a session, like any gated route', async () => {
+    const res = await req('POST', '/api/auth/revoke-self')
+    expect(res.status).toBe(401)
+  })
+
+  it('removes the caller, and only the caller, from the registry', async () => {
+    const before = listClients().map(c => c.id)
+    expect(before).toContain(clientId)
+    const res = await req('POST', '/api/auth/revoke-self', { token })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(listClients().map(c => c.id)).toEqual(before.filter(id => id !== clientId))
+    // The session it was sent with stops working at once.
+    expect((await req('GET', '/api/auth/me', { token })).status).toBe(401)
   })
 })

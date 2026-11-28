@@ -15,9 +15,8 @@ Top to bottom, one scrolling column (max width 720 px):
 | Row | Contents |
 | --- | --- |
 | Title row | `PinholeWindow`, `?` (the [tour](#tour)), then the three palette openers `task`, `window`, `apps N` |
-| Server list | Only at the list: one row per known server (tap to open) with `✕` to forget it (see [the server list](#server-list)) |
 | Page warning | Hidden unless the glasses page is not established (see [glasses.md](glasses.md)) |
-| Mirror preview | 576x288 canvas showing the mirrored desktop; also a touch surface |
+| Mirror preview, or the server list | Inside a server: a 576x288 canvas showing the mirrored desktop, also a touch surface. At the list the canvas is hidden and the [server list](#server-list) card stands in its place |
 | Text row | Text box, `🎤 voice` (only when the server reports speech-to-text; see [voice.md](voice.md)), `Submit` |
 | Gesture row | `▼ dn`, `▲ up`, `● tap`, `●● dbl`, `font −`, `font +` |
 | Tools row | `keys`, `vRing`, `vPad`, `inv:off`, `color`, `lens:on` |
@@ -353,19 +352,23 @@ never learns its state. Pairing is described in [security.md](security.md).
 ### Server list
 
 The app starts at the list of servers this device knows and connects to none until one is
-opened ([decision](decisions/root-is-the-server-list.md)). The panel under the title row is
-the phone's view of it, and the mirror preview shows the same text the lens does.
+opened ([decision](decisions/root-is-the-server-list.md)). Its card stands where the mirror
+is, and the mirror is hidden meanwhile: it would show the same list as text, and nothing below
+it works until a server is open.
 
 | Element | Effect |
 | --- | --- |
-| A server row | `openTarget()`: connects, and the panel is hidden so the mirror has the room |
-| `✕` | Removes the row from this phone. The enrolment on that server is not touched |
+| A server row | `openTarget()`: connects, and the mirror takes the card's place. A named row shows the address under the name |
+| `…` | Shows `name` and `forget` under the row. Both are rare, so the row itself is one target to open |
+| `name` | Turns the row into a field: a name of up to 24 characters, shown on the lens instead of the address. An empty name shows the address again |
+| `forget` | Two taps: the first arms it for four seconds. The second asks the server to remove this phone's key, discards the key here and removes the row ([one key per server](decisions/one-key-per-server.md)). When the server does not answer within six seconds, nothing is discarded: a question under the row says that the key on the server would stay enrolled and names the `ew-auth.mjs revoke` that removes it, with `keep it`, `try again` and `forget anyway` |
 | `disconnect` (inside a server, in the `connection` fold) | `enterRoot()`: stops the stream and returns to the list. It is in the fold because leaving a server is rare |
 
-The list is `ew.targets`, a JSON array of origins, kept like the settings (localStorage,
+The list is `ew.targets`, a JSON array of `{server, name?}`, kept like the settings (localStorage,
 mirrored to the bridge's storage). It holds nine. An address becomes a row when somebody
 chooses it: `apply`, a pasted pairing URL, the server-address card, a `?server=` that was
-adopted. The address stored as `ew.server` by an earlier version becomes the first row.
+adopted. The address stored as `ew.server` by an earlier version becomes the first row, and
+so does the app's own origin when it is served from a real one (the dev server).
 
 A URL with `?server=` or `?pair=` opens that server directly, without stopping at the list.
 While the list is up the client sends no request except to the pairing routes.

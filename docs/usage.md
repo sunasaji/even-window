@@ -14,7 +14,11 @@ and tap; on the phone, tap its row. The cursor starts on the server you used las
 
 To add a server, type its URL under **connection** and tap **apply**, or tap **pair** and paste
 a pairing URL. To come back to the list, choose `Disconnect` in the menu on the glasses, or tap
-**disconnect** under **connection** on the phone. The **✕** beside a row forgets that server on this phone.
+**disconnect** under **connection** on the phone. **…** beside a row offers **name**, which gives the server a name that the
+glasses show instead of its address, and **forget**, which removes the server from this phone
+and this phone's key from the server. Forget asks for a second tap. If the
+server cannot be reached it asks again, since this phone's key would then stay enrolled there
+until you revoke it on the PC.
 
 A double tap at the list leaves the app, after the system's confirmation.
 

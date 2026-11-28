@@ -48,6 +48,7 @@ import {
   overCapRefusal,
   pairingStatus,
   redeemSession,
+  removeClient,
   sessionBindingStatus,
   stateDir,
   stateDirWarning,
@@ -656,6 +657,23 @@ export const routes: readonly Route[] = [
         custom: !!(c && cid && c.name !== autoName(cid)),
         authEnabled: authEnabled(),
       })
+    },
+  },
+
+  // The caller withdraws its own enrolment: a phone that forgets this server takes its key
+  // off the registry as it goes. Only the caller's own key, named by the session it presents,
+  // so it grants nothing the caller did not already have (docs/security.md).
+  {
+    method: 'POST',
+    path: '/api/auth/revoke-self',
+    handler: (req, res) => {
+      const cid = authClientId(req)
+      if (!cid) return sendJson(res, { ok: false, authEnabled: authEnabled() })
+      const ok = removeClient(cid)
+      console.log(
+        `[auth] ${cid.slice(0, 12)}… revoked its own key${ok ? '' : ' (was not enrolled)'}`,
+      )
+      return sendJson(res, { ok })
     },
   },
 

@@ -5,6 +5,7 @@
 
 import { SCREEN_H, SCREEN_W } from '../shared/geom.ts'
 import { submitChordLabel } from '../shared/keys.ts'
+import { forgetKey, revokeSelf } from './authClient.ts'
 import { activeWin, buildAppPanel, newlineChordFor, submitChordFor } from './bindingsEditor.ts'
 import { button, pillRow, setLit, toast } from './chrome.ts'
 import { ackKeys, renderKeys } from './clients.ts'
@@ -48,7 +49,17 @@ import {
 } from './settings.ts'
 import { connFoldToggledByUser, invertLabel, renderConnSummary, renderStatus } from './statusUi.ts'
 import { sttReady } from './stream.ts'
-import { removeTarget, rootOpen, rootSel, targetLabel, targetList } from './targets.ts'
+import {
+  NAME_MAX,
+  originLabel,
+  removeTarget,
+  renameTarget,
+  rootOpen,
+  rootSel,
+  serverLabel,
+  targetLabel,
+  targetList,
+} from './targets.ts'
 import { openTour, registerTourDemo, registerTourTarget } from './tour.ts'
 import { onVoiceBtn, voiceResolve } from './voice.ts'
 import { closeVPad, openVPad, SUBMIT_HINT_MS, SUBMIT_HOLD_MS, vpadOpen } from './vpad.ts'
@@ -87,20 +98,66 @@ let rootPanelEl: HTMLElement | null = null
 /** Where the open server and `disconnect` are shown: the first row inside `connection`. */
 let connServerEl: HTMLElement | null = null
 
-/** Redraw the server list panel from `targets.ts`. Safe before the page is mounted. */
+/** By server: the row whose `…` is open, the one being renamed, the one whose `forget` is
+ *  armed, and the one being forgotten right now. */
+let rowMenu = ''
+let renaming = ''
+let forgetArmed = ''
+let forgetting = ''
+
+/** The server whose `forget` could not reach it, awaiting the answer to "discard anyway?". */
+let forgetUnreached = ''
+
+/** Forget a server. Its key is withdrawn on the server first, because the key is what signs
+ *  that request. When the server cannot be told, nothing is discarded yet: the person is asked,
+ *  since the enrolment would outlive the only thing that can withdraw it from here. */
+async function forgetServer(server: string, label: string): Promise<void> {
+  const r = await revokeSelf(server)
+  forgetting = ''
+  if (r === 'failed') {
+    log(`root: forget ${server} — the server did not answer; asking before discarding the key`)
+    forgetUnreached = server
+    renderRootPanel()
+    return
+  }
+  await discardServer(server)
+  log(`root: forgot ${server} — key on the server: ${r}`)
+  toast(
+    r === 'revoked'
+      ? `Forgot ${label}. Its key was revoked on the server.`
+      : `Forgot ${label}. This phone was not paired with it.`,
+  )
+}
+
+/** Discard the key kept for a server and drop its row. */
+async function discardServer(server: string): Promise<void> {
+  await forgetKey(server)
+  removeTarget(server)
+  forgetUnreached = ''
+  rowMenu = ''
+  renderRootPanel()
+  syncOverlay()
+}
+
+let forgetTimer: ReturnType<typeof setTimeout> | null = null
+/** How long an armed `forget` waits for its second tap. */
+const FORGET_ARM_MS = 4000
+
+/** Redraw the server list from `targets.ts`. Safe before the page is mounted.
+ *
+ *  At the list the card stands where the mirror is, and the mirror is hidden: it would show
+ *  the same list as text, and nothing below it works until a server is open. Inside a server
+ *  the mirror is back and the open server, with `disconnect`, is the first row of the
+ *  `connection` fold, because leaving a server is rare. */
 export function renderRootPanel(): void {
   const top = rootPanelEl
   if (!top) return
   top.replaceChildren()
   connServerEl?.replaceChildren()
-  // At the list the panel is at the top of the page, where the choice is made. Inside a server
-  // it would only take room from the mirror, so the open server and `disconnect` go into the
-  // `connection` fold: leaving a server is rare.
   top.style.display = rootOpen ? '' : 'none'
+  if (mirrorEl) mirrorEl.style.display = rootOpen ? 'none' : 'block'
   if (connServerEl) connServerEl.style.display = rootOpen ? 'none' : ''
   renderConnSummary() // it names the open server
-  const box = rootOpen ? top : connServerEl
-  if (!box) return
   const line = (text: string, color = '#aaa'): HTMLElement => {
     const d = document.createElement('div')
     d.style.cssText = `font:13px/1.4 system-ui;color:${color}`
@@ -108,9 +165,10 @@ export function renderRootPanel(): void {
     return d
   }
   if (!rootOpen) {
+    if (!connServerEl) return
     const row = document.createElement('div')
     row.style.cssText = 'display:flex;align-items:center;gap:8px'
-    const name = line(`● ${targetLabel(SERVER)}`, '#9e9')
+    const name = line(`● ${serverLabel(SERVER)}`, '#9e9')
     name.style.cssText +=
       ';flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'
     row.append(
@@ -123,43 +181,195 @@ export function renderRootPanel(): void {
         'back to the list of servers',
       ),
     )
-    box.append(row)
+    connServerEl.append(row)
     return
   }
   const list = targetList()
-  box.append(line(list.length ? 'Choose a server to open:' : 'No server yet.', '#e5e5e5'))
-  list.forEach((server, i) => {
+  const head = line(list.length ? 'Choose a server to open' : 'No server yet', '#e5e5e5')
+  head.style.cssText += ';font-weight:600;font-size:15px'
+  top.append(head)
+  list.forEach((t, i) => {
     const row = document.createElement('div')
-    row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:6px'
+    row.style.cssText = 'display:flex;align-items:stretch;gap:6px;margin-top:8px'
+    if (renaming === t.server) {
+      const field = document.createElement('input')
+      field.value = t.name ?? ''
+      field.maxLength = NAME_MAX
+      field.setAttribute('placeholder', 'a name for this server')
+      field.setAttribute('aria-label', `name for ${originLabel(t.server)}`)
+      field.style.cssText =
+        'flex:1;min-width:0;padding:7px 9px;font:16px system-ui;' +
+        'background:#000;color:#E5E5E5;border:1px solid #a78bfa;border-radius:6px'
+      const save = (): void => {
+        renameTarget(t.server, field.value)
+        renaming = ''
+        renderRootPanel()
+        syncOverlay()
+      }
+      field.addEventListener('keydown', e => {
+        if (e.key === 'Enter') save()
+      })
+      row.append(
+        field,
+        button('save', save, 'keep this name; empty shows the address again'),
+        button(
+          'cancel',
+          () => {
+            renaming = ''
+            renderRootPanel()
+          },
+          'leave the name as it was',
+        ),
+      )
+      top.append(row)
+      setTimeout(() => {
+        field.focus()
+      }, 0)
+      return
+    }
     const open = button(
-      `${i === rootSel ? '▸ ' : ''}${targetLabel(server)}`,
+      '',
       () => {
-        openTarget(server)
+        openTarget(t.server)
       },
       'open this server',
     )
     open.style.cssText +=
-      ';flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis'
-    const del = button(
-      '✕',
+      ';flex:1;min-width:0;text-align:left;padding:8px 10px;overflow:hidden;line-height:1.3'
+    const main = document.createElement('div')
+    main.style.cssText = 'font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'
+    main.textContent = `${i === rootSel ? '▸ ' : ''}${targetLabel(t)}`
+    open.append(main)
+    // Under a name, the address it stands for: a name alone does not say where it leads.
+    if (t.name) {
+      const sub = document.createElement('div')
+      sub.style.cssText =
+        'font:11px ui-monospace,monospace;opacity:.7;overflow:hidden;text-overflow:ellipsis;' +
+        'white-space:nowrap'
+      sub.textContent = originLabel(t.server)
+      open.append(sub)
+    }
+    // `name` and `forget` are rare, so they sit behind `…` and the row is one target to open.
+    const expanded = rowMenu === t.server
+    const more = button(
+      '…',
       () => {
-        removeTarget(server)
+        rowMenu = expanded ? '' : t.server
+        forgetArmed = ''
+        forgetUnreached = ''
         renderRootPanel()
-        syncOverlay()
       },
-      'forget this server (its pairing on the server stays until revoked there)',
+      'name or forget this server',
     )
-    del.setAttribute('aria-label', `forget ${targetLabel(server)}`)
-    row.append(open, del)
-    box.append(row)
+    more.setAttribute('aria-label', `more for ${targetLabel(t)}`)
+    more.setAttribute('aria-expanded', String(expanded))
+    more.style.cssText += ';min-width:44px;font-weight:700'
+    row.append(open, more)
+    top.append(row)
+    if (!expanded) return
+    const acts = document.createElement('div')
+    acts.style.cssText = 'display:flex;gap:6px;margin:4px 0 0 14px;align-items:center'
+    const edit = button(
+      'name',
+      () => {
+        renaming = t.server
+        rowMenu = ''
+        renderRootPanel()
+      },
+      'give this server a name',
+    )
+    // Two taps: the first arms the button, as the destructive rows of the palettes do.
+    const armed = forgetArmed === t.server
+    const del = button(
+      forgetting === t.server ? 'forgetting…' : armed ? 'forget — tap again' : 'forget',
+      () => {
+        if (forgetting) return
+        if (forgetTimer !== null) clearTimeout(forgetTimer)
+        forgetTimer = null
+        if (forgetArmed !== t.server) {
+          forgetArmed = t.server
+          forgetTimer = setTimeout(() => {
+            forgetArmed = ''
+            forgetTimer = null
+            renderRootPanel()
+          }, FORGET_ARM_MS)
+          renderRootPanel()
+          return
+        }
+        forgetArmed = ''
+        forgetting = t.server
+        renderRootPanel()
+        void forgetServer(t.server, targetLabel(t))
+      },
+      'forget this server: its key is revoked on the server and discarded here. Tap twice',
+    )
+    if (armed) del.style.cssText += ';background:#7a1f1f;color:#fff;border-color:#c33'
+    acts.append(edit, del)
+    top.append(acts)
+    if (forgetUnreached !== t.server) return
+    // The server could not be told. Discarding the key now leaves its enrolment behind.
+    const ask = document.createElement('div')
+    ask.style.cssText =
+      'margin:6px 0 0 14px;padding:8px;border:1px solid #c33;border-radius:6px;' +
+      'font:13px/1.45 system-ui;color:#e5e5e5;background:#2a1414'
+    const why = document.createElement('div')
+    why.textContent =
+      'The server did not answer, so it could not be told. ' +
+      'If you forget it now, the key on this phone (what this phone logs in with) is deleted, ' +
+      'but the key on the server (what lets this phone in) is not revoked and stays enrolled. ' +
+      'To remove that one you will have to run this on the PC:'
+    const cmd = document.createElement('div')
+    cmd.style.cssText =
+      'margin:6px 0;font:12px ui-monospace,monospace;color:#cfe;user-select:text;' +
+      '-webkit-user-select:text'
+    cmd.textContent = 'node scripts/ew-auth.mjs list\nnode scripts/ew-auth.mjs revoke <id>'
+    cmd.style.whiteSpace = 'pre'
+    const q = document.createElement('div')
+    q.style.cssText = 'font-weight:600'
+    q.textContent = 'Forget it now anyway?'
+    const btns = document.createElement('div')
+    btns.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-wrap:wrap'
+    const anyway = button(
+      'forget anyway',
+      () => {
+        log(`root: forgot ${t.server} — its key stays enrolled on the server (confirmed)`)
+        void discardServer(t.server)
+      },
+      'delete the key on this phone and leave the one on the server',
+    )
+    anyway.style.cssText += ';background:#7a1f1f;color:#fff;border-color:#c33'
+    btns.append(
+      button(
+        'keep it',
+        () => {
+          forgetUnreached = ''
+          renderRootPanel()
+        },
+        'change nothing; try again when the server is reachable',
+      ),
+      button(
+        'try again',
+        () => {
+          forgetUnreached = ''
+          forgetting = t.server
+          renderRootPanel()
+          void forgetServer(t.server, targetLabel(t))
+        },
+        'ask the server again',
+      ),
+      anyway,
+    )
+    ask.append(why, cmd, q, btns)
+    top.append(ask)
+    return
   })
-  box.append(
-    line(
-      list.length
-        ? 'Add another under connection below: type its URL and apply, or paste a pairing URL in pair.'
-        : 'Under connection below: type the server URL and apply, or tap pair and paste a pairing URL.',
-    ),
+  const foot = line(
+    list.length
+      ? 'To add one: under connection below, type its URL and apply, or tap pair and paste a pairing URL.'
+      : 'Under connection below: type the server URL and apply, or tap pair and paste a pairing URL.',
   )
+  foot.style.cssText += ';margin-top:8px'
+  top.append(foot)
 }
 export let logEl: HTMLElement | null = null
 export let logCountEl: HTMLElement | null = null
@@ -291,13 +501,6 @@ export function mountUi(): void {
   })
   ui.appendChild(titleRow)
 
-  rootPanelEl = document.createElement('div')
-  rootPanelEl.id = 'ew-servers'
-  rootPanelEl.style.cssText =
-    'margin:0 0 6px;padding:8px;border:1px solid #333;border-radius:8px;background:#161616'
-  ui.appendChild(rootPanelEl)
-  renderRootPanel()
-
   // Above the preview, because it explains a mirror that never lights up. Not a toast: it must
   // persist.
   pageWarnEl = document.createElement('div')
@@ -335,6 +538,14 @@ export function mountUi(): void {
     ' (A finger dragged across the mirror does not page scroll this column — that is what' +
     ' makes a drag a drag. Swipe anywhere else to scroll.)'
   ui.appendChild(mirrorEl)
+  // The server list takes the mirror's place while no server is open (`renderRootPanel`).
+  rootPanelEl = document.createElement('div')
+  rootPanelEl.id = 'ew-servers'
+  rootPanelEl.style.cssText =
+    `max-width:${String(SCREEN_W)}px;box-sizing:border-box;padding:12px;` +
+    'border:1px solid #a78bfa;border-radius:8px;background:#161616'
+  ui.appendChild(rootPanelEl)
+  renderRootPanel()
   wireMirrorTouch(mirrorEl)
   registerTourTarget('mirror', mirrorEl)
 

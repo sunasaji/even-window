@@ -12,43 +12,81 @@ export const TARGETS_KEY = 'ew.targets'
 /** The header and nine rows fill the panel, so the list has no pages. */
 export const TARGETS_MAX = 9
 
-/** Pure: the stored JSON as a list of server origins; anything malformed is an empty list. */
-export function parseTargets(raw: string | null): string[] {
+/** One server this device can open. `name` is what the person calls it; without one the row
+ *  shows the origin. */
+export interface Target {
+  server: string
+  name?: string
+}
+
+/** The longest name kept. It has to fit a row of the lens with the cursor in front of it. */
+export const NAME_MAX = 24
+
+/** Pure: a name as it is stored: trimmed, one line, at most `NAME_MAX` characters. */
+export function cleanName(raw: string): string {
+  return raw.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
+}
+
+/** Pure: the stored JSON as a list. An entry is `{server, name?}`; a bare string is an entry of
+ *  the first version of the list, which had no names. Anything malformed is dropped. */
+export function parseTargets(raw: string | null): Target[] {
   if (!raw) return []
+  let v: unknown
   try {
-    const v: unknown = JSON.parse(raw)
-    if (!Array.isArray(v)) return []
-    return v.filter((x): x is string => typeof x === 'string' && x !== '').slice(0, TARGETS_MAX)
+    v = JSON.parse(raw)
   } catch {
     return []
   }
+  if (!Array.isArray(v)) return []
+  const out: Target[] = []
+  for (const x of v) {
+    if (typeof x === 'string' && x !== '') out.push({ server: x })
+    else if (x && typeof x === 'object') {
+      const o = x as { server?: unknown; name?: unknown }
+      if (typeof o.server !== 'string' || o.server === '') continue
+      const name = typeof o.name === 'string' ? cleanName(o.name) : ''
+      out.push(name ? { server: o.server, name } : { server: o.server })
+    }
+  }
+  return out.slice(0, TARGETS_MAX)
 }
 
 /** The longest label a row shows whole. A tailnet origin with its scheme and port is about 40
  *  characters; anything longer is cut so the firmware does not fold the row. */
 const ROW_CHARS = 46
 
-/** Pure: the list with `server` in it. An address already listed stays where it is; a full
- *  list drops its oldest entry. */
-export function withTarget(list: readonly string[], server: string): string[] {
-  if (!server || list.includes(server)) return [...list]
-  return [...list, server].slice(-TARGETS_MAX)
+/** Pure: the list with `server` in it. An address already listed stays where it is, with its
+ *  name; a full list drops its oldest entry. */
+export function withTarget(list: readonly Target[], server: string): Target[] {
+  if (!server || list.some(t => t.server === server)) return [...list]
+  return [...list, { server }].slice(-TARGETS_MAX)
 }
 
 /** Pure: the list without `server`. */
-export function withoutTarget(list: readonly string[], server: string): string[] {
-  return list.filter(s => s !== server)
+export function withoutTarget(list: readonly Target[], server: string): Target[] {
+  return list.filter(t => t.server !== server)
 }
 
-/** Pure: how a server is named in a row: its origin, scheme included, because `http` and
- *  `https` on one host are two different servers to this client. */
-export function targetLabel(server: string): string {
+/** Pure: the list with `server` named `name`; an empty name removes the name. */
+export function withName(list: readonly Target[], server: string, name: string): Target[] {
+  const n = cleanName(name)
+  return list.map(t => (t.server !== server ? t : n ? { server, name: n } : { server }))
+}
+
+/** Pure: a server's origin as shown: scheme included, because `http` and `https` on one host
+ *  are two different servers to this client. */
+export function originLabel(server: string): string {
   return server.replace(/\/$/, '')
+}
+
+/** Pure: how a server is named in a row: its name, or its origin when it has none. */
+export function targetLabel(t: Target): string {
+  return t.name || originLabel(t.server)
 }
 
 /** Pure: the lens text of the list. A label wider than a line is cut, since the firmware would
  *  fold it and push the last rows off the panel. */
-export function rootText(list: readonly string[], sel: number, name = 'PinholeWindow'): string {
+export function rootText(list: readonly Target[], sel: number, name = 'PinholeWindow'): string {
   if (list.length === 0)
     return [
       `${name} — add a server`,
@@ -60,17 +98,23 @@ export function rootText(list: readonly string[], sel: number, name = 'PinholeWi
       '',
       'double-tap: exit',
     ].join('\n')
-  const rows = list.map((s, i) => {
-    const label = targetLabel(s)
-    return `${i === sel ? '>' : ' '} ${label.length > ROW_CHARS ? `${label.slice(0, ROW_CHARS - 1)}…` : label}`
+  const rows = list.map((t, i) => {
+    const label = targetLabel(t)
+    const shown = label.length > ROW_CHARS ? `${label.slice(0, ROW_CHARS - 1)}…` : label
+    return `${i === sel ? '>' : ' '} ${shown}`
   })
   return [`${name}  (tap=open  dbl=exit)`, ...rows].join('\n')
 }
 
-let targets: string[] = []
+let targets: Target[] = []
 
-export function targetList(): readonly string[] {
+export function targetList(): readonly Target[] {
   return targets
+}
+
+/** Where `server` is in the list, or -1. */
+export function targetIndex(server: string): number {
+  return targets.findIndex(t => t.server === server)
 }
 
 /** Read the stored list. Called at boot, and again once the durable store has restored
@@ -83,7 +127,7 @@ export function loadTargets(): void {
   }
 }
 
-function store(next: string[]): void {
+function store(next: Target[]): void {
   targets = next
   keep(TARGETS_KEY, JSON.stringify(next))
 }
@@ -91,9 +135,14 @@ function store(next: string[]): void {
 /** True when the list changed. */
 export function addTarget(server: string): boolean {
   const next = withTarget(targets, server)
-  if (next.length === targets.length && next.every((s, i) => s === targets[i])) return false
+  if (next.length === targets.length) return false
   store(next)
   return true
+}
+
+/** Name a server, or clear its name with an empty string. */
+export function renameTarget(server: string, name: string): void {
+  store(withName(targets, server, name))
 }
 
 export function removeTarget(server: string): void {
@@ -117,4 +166,10 @@ export function setRootSel(i: number): void {
 export function moveRoot(dir: -1 | 1): void {
   const n = targets.length
   if (n > 0) rootSel = (rootSel + dir + n) % n
+}
+
+/** How a server is called wherever one line names it: its name if it has one, else its origin. */
+export function serverLabel(server: string): string {
+  const t = targets.find(x => x.server === server)
+  return t ? targetLabel(t) : originLabel(server)
 }

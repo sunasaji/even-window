@@ -19,6 +19,7 @@ import { execFileSync } from 'node:child_process'
 //                                                 #   (origin = what the device claims to be
 //                                                 #    talking to; must equal the server's
 //                                                 #    EW_ORIGIN when it is set)
+//   node scripts/ew-auth.mjs rename <idPrefix> <name>   # what `list` and the phone call this key
 //   node scripts/ew-auth.mjs revoke <idPrefix>
 //   node scripts/ew-auth.mjs rotate               # new token-signing secret: ends every
 //                                                 #   session now (enrollments stay)
@@ -518,6 +519,35 @@ switch (cmd) {
     )
     break
   }
+  case 'rename': {
+    const prefix = args[0]
+    const name = (args.slice(1).join(' ') || '').replace(/\s+/g, ' ').trim()
+    if (!prefix || prefix.length < 4 || !name) {
+      console.error('usage: rename <idPrefix> <name> (id prefix: min 4 chars)')
+      process.exit(1)
+    }
+    if (name.length > 40) {
+      console.error('the name is limited to 40 characters')
+      process.exit(1)
+    }
+    const reg = readReg()
+    const matches = reg.clients.filter(c => c.id === prefix || c.id.startsWith(prefix))
+    if (!matches.length) {
+      console.error(`no client matching "${prefix}"`)
+      process.exit(1)
+    }
+    if (matches.length > 1) {
+      console.error(
+        `ambiguous prefix "${prefix}" matches ${matches.length} clients — use more characters`,
+      )
+      process.exit(1)
+    }
+    const was = matches[0].name
+    matches[0].name = name
+    writeReg(reg)
+    console.log(`renamed ${matches[0].id.slice(0, 12)}…  ${was} -> ${name}`)
+    break
+  }
   case 'revoke': {
     const prefix = args[0]
     if (!prefix || prefix.length < 4) {
@@ -555,7 +585,7 @@ switch (cmd) {
   }
   default:
     console.error(
-      "usage: ew-auth.mjs {list|add '<jwk>' [name]|pair [appUrl]|open [appUrl]|pending|approve <id>|reject <id>|add-test [name]|sign <nonce> [origin]|revoke <idPrefix>|rotate}",
+      "usage: ew-auth.mjs {list|add '<jwk>' [name]|pair [appUrl]|open [appUrl]|pending|approve <id>|reject <id>|add-test [name]|sign <nonce> [origin]|rename <idPrefix> <name>|revoke <idPrefix>|rotate}",
     )
     console.error(`state dir: ${DIR}  (EW_STATE_DIR)`)
     process.exit(1)

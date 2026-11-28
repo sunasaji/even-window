@@ -44,6 +44,13 @@ device's private key.
 
 - Generated with WebCrypto: Ed25519 when the WebView supports it, otherwise ECDSA P-256. The
   server accepts both and verifies whichever was enrolled.
+- The device keeps one key pair per server, named by the server's origin, generated when it
+  pairs with that server and discarded when it forgets it
+  ([decision](decisions/one-key-per-server.md)).
+- A device can remove its own key from the registry (`POST /api/auth/revoke-self`), which is
+  what forgetting a server on the phone does. The route removes only the key the session was
+  made with, so it gives a holder of that key nothing the key did not already give. Removing
+  any other key stays with the host (`ew-auth.mjs revoke`).
 - In a browser the private key is non-extractable and lives in IndexedDB, so script on the
   page can use it but not export it.
 - Inside the packaged Even Hub app IndexedDB does not survive a restart, so the key is

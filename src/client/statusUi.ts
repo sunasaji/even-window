@@ -14,7 +14,7 @@ import { connDetailsEl, connSumEl, mirrorEl, statusEl } from './phoneUi.ts'
 import { authState, SERVER } from './serverLink.ts'
 import { invert } from './settings.ts'
 import { availMsg } from './stream.ts'
-import { rootOpen, targetLabel } from './targets.ts'
+import { rootOpen, serverLabel } from './targets.ts'
 import { cursor, cursorArrow, cursorTilePixel, repaintMirror, tileFaultTotal } from './tiles.ts'
 
 export function invertLabel(): string {
@@ -64,7 +64,7 @@ export function renderConnSummary(): void {
           : // The open server is named here, since its row is inside the fold.
             rootOpen
             ? 'connection'
-            : `connection — ${targetLabel(SERVER)}`
+            : `connection — ${serverLabel(SERVER)}`
   connSumEl.style.color = keysNew ? '#ff6b57' : needs || offline ? '#ffb46e' : ''
   if (!connDetailsEl) return
   const reason = keysNew > 0 ? 'keys' : needs || offline ? authState : ''

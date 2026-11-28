@@ -94,6 +94,7 @@ Other commands:
 | `ew-auth.mjs list` | Enrolled devices |
 | `ew-auth.mjs pending` | Devices waiting for approval, with their patterns |
 | `ew-auth.mjs approve <id>` / `reject <id>` | Decide a pending device (first 4 characters of the id are enough) |
+| `ew-auth.mjs rename <id> <name>` | Name a device, in place of the `client-…` it was given. The name is shown by `list` and in the phone's enrolled keys table |
 | `ew-auth.mjs revoke <id>` | Remove a device; takes effect on its next request |
 | `ew-auth.mjs rotate` | Invalidate every live session; enrolments stay |
 
