@@ -1,8 +1,10 @@
 # PinholeWindow
 
+_Your desktop, through a pinhole._
+
 English | [日本語](README.ja.md)
 
-PinholeWindow (repository `pinhole-window`) mirrors a desktop session on your PC to Even Realities G2 smart glasses
+Your PC renders. Your glasses show. PinholeWindow (repository `pinhole-window`) mirrors a desktop session on your PC to Even Realities G2 smart glasses
 and lets you operate it from the glasses and from your phone. It is an Even Hub app
 (a WebView page inside the official Even App) plus a small server on the PC.
 

@@ -1,8 +1,10 @@
 # PinholeWindow
 
+_あなたのデスクトップを、ピンホール越しに。_
+
 [English](README.md) | 日本語
 
-PinholeWindow（リポジトリ名は `pinhole-window`）は、PC 上のデスクトップセッションを Even Realities G2 スマートグラスに
+描くのは PC、映すのはグラス。PinholeWindow（リポジトリ名は `pinhole-window`）は、PC 上のデスクトップセッションを Even Realities G2 スマートグラスに
 ミラーし、グラスとスマホから操作できるようにします。Even Hub アプリ（公式 Even App の
 中で動く WebView ページ）と、PC 上の小さなサーバで構成されています。
 
