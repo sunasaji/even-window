@@ -48,7 +48,7 @@ flowchart TB
     SK["<b>On-screen keyboard</b>"]
   end
   G2["<b>G2 glasses</b><br/>576x288, 4-bit grey"]
-  KB["Bluetooth keyboard"]
+  KB["Bluetooth<br/>keyboard<br/>trackpad<br/>mouse"]
   style KB stroke-dasharray: 5 5
   style STT stroke-dasharray: 5 5
 
@@ -60,7 +60,7 @@ flowchart TB
   CL ~~~ SK
   SK -. "keys" .-> CL
   CL ~~~ KB
-  KB -. "keys" .-> CL
+  KB -. "keys, pointer" .-> CL
   CL -. "gestures, audio, keys,<br/>pointer, text, launch" .-> SRV
 ```
 

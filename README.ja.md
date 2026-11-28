@@ -49,7 +49,7 @@ flowchart TB
     SK["<b>オンスクリーンキーボード</b>"]
   end
   G2["<b>G2 グラス</b><br/>576x288、4 ビットグレー"]
-  KB["Bluetooth キーボード"]
+  KB["Bluetooth<br/>キーボード<br/>トラックパッド<br/>マウス"]
   style KB stroke-dasharray: 5 5
   style STT stroke-dasharray: 5 5
 
@@ -61,7 +61,7 @@ flowchart TB
   CL ~~~ SK
   SK -. "キー" .-> CL
   CL ~~~ KB
-  KB -. "キー" .-> CL
+  KB -. "キー、ポインタ" .-> CL
   CL -. "ジェスチャ、音声、キー、<br/>ポインタ、テキスト、起動" .-> SRV
 ```
 
