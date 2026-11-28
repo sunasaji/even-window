@@ -203,8 +203,11 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
   guide.innerHTML =
     '<div style="margin-bottom:6px;color:#bdbdbd">First time? Set the server up, then pair:</div>' +
     '<ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">' +
-    '<li>Start the server:' +
-    `<pre style="${pS}">cd pinhole-window &amp;&amp; npm install\nnode src/server/main.ts</pre>` +
+    '<li>On a Linux PC with Node.js 22.18 or newer, install what the server drives' +
+    ' (Debian or Ubuntu; elsewhere, the same programs under their own package names):' +
+    `<pre style="${pS}">sudo apt install -y xserver-xephyr xvfb ratpoison \\\n  ffmpeg xdotool x11-utils xterm</pre></li>` +
+    '<li>Get the server and start it:' +
+    `<pre style="${pS}">git clone https://github.com/sunasaji/pinhole-window\ncd pinhole-window &amp;&amp; npm install\nnode src/server/main.ts</pre>` +
     `(or install the unit: <code style="${cS}">systemd/pinhole-window@.service</code>)</li>` +
     '<li>Put TLS in front — this server terminates none:' +
     `<pre style="${pS}">tailscale serve --bg --yes --https 8443 \\\n  --set-path /api http://127.0.0.1:8787/api\ntailscale serve --bg --yes --https 8443 http://127.0.0.1:5273</pre>` +
@@ -223,7 +226,7 @@ async function runDialog(initialCode: string, hooks: PairingHooks): Promise<void
     '</ol>' +
     '<div style="margin-top:8px;color:#8a8a8a">If pairing is approved but the app still gets' +
     ` 401s, the server's <code style="${cS}">PINHOLE_ORIGIN</code> does not match the URL this` +
-    ' device dials: every signature names its destination, and the server refuses one made' +
+    ' app dials: every signature names its destination, and the server refuses one made' +
     ' out to anywhere else.</div>'
 
   // The enrolled-slot line, filled from the pairing response; amber when no slot is free.
